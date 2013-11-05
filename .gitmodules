@@ -1,0 +1,6 @@
+[submodule "lib/terminal"]
+	path = lib/terminal
+	url = git@github.com:jcubic/jquery.terminal.git
+[submodule "lib/json-rpc"]
+	path = lib/json-rpc
+	url = git@github.com:jcubic/json-rpc.git
