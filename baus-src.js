@@ -58,6 +58,8 @@ $(function() {
         }
     })(function(service) {
         service.installed()(function(installed) {
+            // display version only if inside versioned file
+            var version = baus.version != '{{VERSION}}' ? 'v. ' + baus.version : '';
             var project_name = [
                 ' _                        _',
                 '| |__   __ _ _   _ ___   (_)___',
@@ -65,33 +67,60 @@ $(function() {
                 '| |_) | (_| | |_| \\__ \\_ | \\__ \\',
                 '|_.__/ \\__,_|\\__,_|___(_)/ |___/',
                 '                       |__/',
-                'Browser Access Unix Shell',
+                'Browser Access Unix Shell' + version,
                 ''
             ].join('\n');
             var terminal = $('body').terminal(function(command, term) {
-                if (command === 'install') {
-                    term.echo('Type your admin password');
-                    term.set_mask(true);
-                    term.push(function(password) {
-                        term.pop();
-                        term.set_mask(false);
-                        service.set_admin_password(password)(function() {
+                if (!installed) {
+                    if (command === 'install') {
+                        term.echo('Type your root password');
+                        // Server Name
+                        //
+                        term.set_mask(true);
+                        term.push(function(password) {
+                            term.pop();
+                            term.set_mask(false);
+                            term.pause();
+                            service.set_root_password(password)(function() {
+                                term.resume();
+                                term.echo("Your root password has been set");
+                            });
+                        }, {
+                            prompt: 'password: '
                         });
-                    }, {
-                        prompt: 'password: '
-                    });
+                    }
+                } else {
+                    var cmd = $.terminal.parseCommand(command);
+                    switch(cmd.name) {
+                        case 'mysql':
+                            break;
+                        case 'adduser':
+                            break;
+                        case 'micro':
+                            break;
+                        default:
+                            // shell
+                    }
                 }
             }, {
                 greetings: installed ? null : project_name,
+                prompt: installed ? function(callback) {
+                    
+                } : '> ',
                 onBeforeLogin: function(term) {
                     term.echo(project_name);
                 },
                 onAfterLogin: function(term) {
                     login_callback = null;
                 },
+                outputLimit: 200,
                 tabcompletion: true,
                 completion: function(term, string, callback) {
-                    callback(['install']);
+                    if (!installed) {
+                        callback(['install', 'help']);
+                    } else {
+                        callback(['help']);
+                    }
                 },
                 login: installed ? function(user, password, callback) {
                     login_callback = callback;

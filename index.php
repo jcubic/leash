@@ -23,14 +23,12 @@ if ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <!--
-    <link href="css/style.css" rel="stylesheet"/>
-    -->
     <link href="lib/terminal/css/jquery.terminal.css" rel="stylesheet"/>
     <style>
 body {
     margin: 0;
     padding: 0;
+    background-color: black;
 }
 .terminal {
     font-weight: bold;
@@ -40,94 +38,7 @@ body {
     <script src="lib/json-rpc/json-rpc.js"></script>
     <script src="lib/terminal/js/jquery.terminal-min.js"></script>
     <script src="lib/terminal/js/jquery.mousewheel-min.js"></script>
-    <script>
-$(function() {
-    var colors = $.omap({
-        blue:  '#55f',
-        green: '#4d4',
-        grey:  '#999'
-    }, function(_, color) {
-        return function(str) {
-            return '[[;' + color + ';]' + str + ']';
-        };
-    });
-    function unix_prompt(user, server, path) {
-        var name = colors.green(user + '&#64;' + server);
-        return name + colors.grey(':') + colors.blue(path) + colors.grey('$ ');
-    }
-    var login_callback;
-    rpc({
-        url: '',
-        error: function(error) {
-            var message;
-            if (error.error) {
-                message = error.error.message + '\n[' + error.error.at + '] ' + error.error.line;
-            } else {
-                message = error.message || error;
-            }
-            var terminal = $.terminal.active();
-            if (terminal) {
-                terminal.resume();
-                terminal.error(message);
-            } else {
-                alert(message);
-            }
-            if (login_callback) {
-                login_callback(null);
-            }
-        }
-    })(function(service) {
-        service.installed()(function(installed) {
-            var project_name = [
-                ' _                        _',
-                '| |__   __ _ _   _ ___   (_)___',
-                '| \'_ \\ / _` | | | / __|  | / __|',
-                '| |_) | (_| | |_| \\__ \\_ | \\__ \\',
-                '|_.__/ \\__,_|\\__,_|___(_)/ |___/',
-                '                       |__/',
-                'Browser Access Unix Shell',
-                ''
-            ].join('\n');
-            var terminal = $('body').terminal(function(command, term) {
-                if (command === 'install') {
-                    term.echo('Type your admin password');
-                    term.set_mask(true);
-                    term.push(function(password) {
-                        term.pop();
-                        term.set_mask(false);
-                        service.set_admin_password(password)(function() {
-                        });
-                    }, {
-                        prompt: 'password: '
-                    });
-                }
-            }, {
-                greetings: installed ? null : project_name,
-                onBeforeLogin: function(term) {
-                    term.echo(project_name);
-                },
-                onAfterLogin: function(term) {
-                    login_callback = null;
-                },
-                tabcompletion: true,
-                completion: function(term, string, callback) {
-                    callback(['install']);
-                },
-                login: installed ? function(user, password, callback) {
-                    login_callback = callback;
-                    service.login(user, password)(callback);
-                } : false
-            }).css({
-                overflow: 'auto'
-            });
-
-            $(window).resize(function() {
-               terminal.css('height', $(window).height()-20);
-            }).resize();
-        });
-    });
-});
-    </script>
+    <script src="baus-src.js"></script>
 </head>
 <body>
     <div id="shell"></div>

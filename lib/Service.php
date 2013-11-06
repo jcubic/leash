@@ -175,9 +175,9 @@ class Service {
         if (empty($this->config->users)) {
             return false;
         } else {
-            $admin = $this->get_user('admin');
-            return $admin != null && isset($admin->password) &&
-                preg_match(self::password_regex, $admin->password);
+            $root = $this->get_user('root');
+            return $root != null && isset($root->password) &&
+                preg_match(self::password_regex, $root->password);
         }
     }
 
@@ -253,47 +253,47 @@ class Service {
     }
 
     // -----------------------------------------------------------------
-    // ADMIN
+    // root
     // -----------------------------------------------------------------
 
     function get_config($token) {
-        $this->validate_admin($token);
+        $this->validate_root($token);
         return $this->config;
     }
 
     // -----------------------------------------------------------------
-    private function create_admin_password($password) {
+    private function create_root_password($password) {
         $password = call_user_func(self::password_crypt, $password);
         $this->config->users[] =
-                new User('admin', self::password_crypt . ':' . $password);
+                new User('root', self::password_crypt . ':' . $password);
     }
     // executed when config file don't exists
-    public function set_admin_password($password) {
+    public function set_root_password($password) {
         if ($this->installed()) {
-            throw new Exception("You can't call this function, Admin already installed");
+            throw new Exception("You can't call this function, root already installed");
         }
-        $this->create_admin_password($password);
+        $this->create_root_password($password);
     }
 
     // -----------------------------------------------------------------
-    private function validate_admin($token) {
+    private function validate_root($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        if ($this->get_session($token)->username != 'admin') {
-            throw new Exception("Only Admin can create new account");
+        if ($this->get_session($token)->username != 'root') {
+            throw new Exception("Only root can create new account");
         }
     }
 
     // -----------------------------------------------------------------
     public function add_user($token, $username, $password) {
-        $this->validate_admin($token);
+        $this->validate_root($token);
         $this->config->users[] = new User($username, $password);
     }
 
     // -----------------------------------------------------------------
     public function remove_user($token, $username, $password) {
-        $this->validate_admin($token);
+        $this->validate_root($token);
         if (($idx = $this->get_user_index($this->get_username($token))) == -1) {
             throw new Exception("User '$username' don't exists");
         }

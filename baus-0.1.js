@@ -18,7 +18,7 @@
  */
 
 var baus = {
-    version: '{{VERSION}}'
+    version: '0.1'
 };
 
 $(function() {
@@ -65,7 +65,7 @@ $(function() {
                 '| |_) | (_| | |_| \\__ \\_ | \\__ \\',
                 '|_.__/ \\__,_|\\__,_|___(_)/ |___/',
                 '                       |__/',
-                'Browser Access Unix Shell',
+                'Browser Access Unix Shell v. ' + baus.version,
                 ''
             ].join('\n');
             var terminal = $('body').terminal(function(command, term) {
