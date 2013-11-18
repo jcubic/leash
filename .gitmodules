@@ -4,3 +4,6 @@
 [submodule "lib/json-rpc"]
 	path = lib/json-rpc
 	url = git@github.com:jcubic/json-rpc.git
+[submodule "lib/micro"]
+	path = lib/micro
+	url = git@github.com:jcubic/jquery.micro.git
