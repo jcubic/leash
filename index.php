@@ -24,6 +24,7 @@ if ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
     <link href="lib/terminal/css/jquery.terminal.css" rel="stylesheet"/>
+    <link href="lib/micro/css/jquery.micro.css" rel="stylesheet"/>
     <style>
 body {
     margin: 0;
@@ -36,9 +37,10 @@ body {
     </style>
     <script src="http://code.jquery.com/jquery-latest.min.js"></script>
     <script src="lib/json-rpc/json-rpc.js"></script>
-    <script src="../terminal/js/jquery.terminal-src.js"></script>
+    <script src="lib/terminal/js/jquery.terminal-src.js"></script>
     <script src="lib/terminal/js/jquery.mousewheel-min.js"></script>
-    <script src="baus-src.js"></script>
+    <script src="lib/micro/js/jquery.micro-src.js"></script>
+    <script src="bush-src.js"></script>
 </head>
 <body>
     <div id="shell"></div>

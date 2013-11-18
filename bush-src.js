@@ -60,40 +60,63 @@ $(function() {
     })(function(service) {
         service.installed()(function(installed) {
             // display version only if inside versioned file
-            var version = baus.version != '{{VERSION}}' ? 'v. ' + baus.version : '';
+            var version = baus.version != '{{VERSION}}' ? ' v. ' + baus.version : '';
             var project_name = [
-                ' _                        _',
-                '| |__   __ _ _   _ ___   (_)___',
-                '| \'_ \\ / _` | | | / __|  | / __|',
-                '| |_) | (_| | |_| \\__ \\_ | \\__ \\',
-                '|_.__/ \\__,_|\\__,_|___(_)/ |___/',
-                '                       |__/',
-                'Browser Access Unix Shell' + version,
+                ' _               _',
+                '| |__  _   _ ___| |__',
+                '| \'_ \\| | | / __| \'_ \\' ,
+                '| |_) | |_| \\__ \\ | | |',
+                '|_.__/ \\__,_|___/_| |_|',
+                'Browser Unix Shell' + version,
+                '(C) 2013 Jakub Jankiewicz',
                 ''
             ].join('\n');
             var cwd = '~';
-            var terminal = $('body').terminal(function(command, term) {
+            var installing = false;
+            var install_step = 0;
+            var terminal = $('body').terminal(function interpreter(command, term) {
                 if (!installed) {
+                    var settings = {};
                     if (command === 'install') {
-                        term.echo('Type your root password');
-                        // Server Name
-                        //
-                        term.set_mask(true);
-                        term.push(function(password) {
-                            term.pop();
-                            term.set_mask(false);
-                            term.pause();
-                            service.set_root_password(password)(function() {
-                                term.resume();
-                                term.echo("Your root password has been set");
-                            });
-                        }, {
-                            prompt: 'password: '
-                        });
+                        installing = true;
+                    }
+                    if (installing) {
+                        switch(install_step) {
+                            case 0:
+                                term.echo('Type your root password');
+                                // Server Name
+                                //
+                                term.set_mask(true);
+                                term.push(function(password) {
+                                    term.pop();
+                                    term.set_mask(false);
+                                    term.pause();
+                                    service.set_root_password(password)(function() {
+                                        term.resume();
+                                        term.echo("Your root password has been set");
+                                        install_step++;
+                                        interpreter(undefined, term);
+                                    });
+                                }, {
+                                    prompt: 'password: '
+                                });
+                                break;
+                            case 1:
+                                term.echo('Type server name');
+                                term.push(function(server_name) {
+                                    settings['server'] = server_name;
+                                    term.echo('Refresh the browser so you can login');
+                                }, {
+                                    prompt: 'name: '
+                                });
+                                break;
+                        }
                     }
                 } else {
                     var cmd = $.terminal.parseCommand(command);
                     switch(cmd.name) {
+                        case 'sqlite':
+                            break;
                         case 'mysql':
                             break;
                         case 'adduser':
