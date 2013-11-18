@@ -36,7 +36,7 @@ body {
     </style>
     <script src="http://code.jquery.com/jquery-latest.min.js"></script>
     <script src="lib/json-rpc/json-rpc.js"></script>
-    <script src="lib/terminal/js/jquery.terminal-min.js"></script>
+    <script src="../terminal/js/jquery.terminal-src.js"></script>
     <script src="lib/terminal/js/jquery.mousewheel-min.js"></script>
     <script src="baus-src.js"></script>
 </head>

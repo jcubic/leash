@@ -18,7 +18,7 @@
  */
 
 var baus = {
-    version: '{{VERSION}}'
+    version: '0.1'
 };
 
 $(function() {
@@ -33,7 +33,8 @@ $(function() {
     });
     function unix_prompt(user, server, path) {
         var name = colors.green(user + '&#64;' + server);
-        return name + colors.grey(':') + colors.blue(path) + colors.grey('$ ');
+        var end = colors.grey(user === 'root' ? '# ' : '$ ');
+        return name + colors.grey(':') + colors.blue(path) + end;
     }
     var login_callback;
     rpc({
@@ -59,7 +60,7 @@ $(function() {
     })(function(service) {
         service.installed()(function(installed) {
             // display version only if inside versioned file
-            var version = baus.version != '{{VERSION}}' ? 'v. ' + baus.version : '';
+            var version = baus.version != '0.1' ? 'v. ' + baus.version : '';
             var project_name = [
                 ' _                        _',
                 '| |__   __ _ _   _ ___   (_)___',
@@ -70,6 +71,7 @@ $(function() {
                 'Browser Access Unix Shell' + version,
                 ''
             ].join('\n');
+            var cwd = '~';
             var terminal = $('body').terminal(function(command, term) {
                 if (!installed) {
                     if (command === 'install') {
@@ -105,7 +107,7 @@ $(function() {
             }, {
                 greetings: installed ? null : project_name,
                 prompt: installed ? function(callback) {
-                    
+                    callback(unix_prompt($.terminal.active().login_name(), '???', cwd));
                 } : '> ',
                 onBeforeLogin: function(term) {
                     term.echo(project_name);
@@ -124,12 +126,13 @@ $(function() {
                 },
                 login: installed ? function(user, password, callback) {
                     login_callback = callback;
-                    service.login(user, password)(callback);
+                    service.login(user, password)(function(token) {
+                        callback(token);
+                    });
                 } : false
             }).css({
                 overflow: 'auto'
             });
-
             $(window).resize(function() {
                terminal.css('height', $(window).height()-20);
             }).resize();

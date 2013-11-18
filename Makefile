@@ -3,13 +3,13 @@ JSC=java -jar lib/terminal/bin/closure.bin/compiler.jar --js
 SED=sed
 CP=cp
 
-ALL: baus-$(VERSION).js baus-$(VERSION).min.js
+ALL: bush.js bush.min.js
 
-baus-$(VERSION).js: baus-src.js .$(VERSION)
-	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" baus-src.js > baus-$(VERSION).js
+bush.js: bush-src.js .$(VERSION)
+	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" bush-src.js > bush.js
 
-baus-$(VERSION).min.js: baus-$(VERSION).js
-	$(JSC) baus-$(VERSION).js > baus-$(VERSION).min.js
+bush.min.js: bush.js
+	$(JSC) bush.js > bush.min.js
 
 .$(VERSION):
 	touch .$(VERSION)
