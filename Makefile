@@ -5,8 +5,8 @@ CP=cp
 
 ALL: bush.js bush.min.js
 
-bush.js: bush-src.js .$(VERSION)
-	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" bush-src.js > bush.js
+bush.js: bush-src.js .$(VERSION) Makefile
+	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" -e "s/{{DATE}}/`date -uR`/g" bush-src.js > bush.js
 
 bush.min.js: bush.js
 	$(JSC) bush.js > bush.min.js

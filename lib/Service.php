@@ -1,6 +1,6 @@
 <?php
 /**
- *  This file is part of Baus.js (acronym for Browser Access Unix Shell)
+ *  This file is part of Bush.js (acronym for Browser Unix Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
  *
  */
 
-require('lib/Database.php');
+require('Database.php');
 
 class User {
     function __construct($username, $password) {
@@ -234,6 +234,16 @@ class Service {
         $session = $this->get_session($token);
         return $session->$name;
     }
+    // -----------------------------------------------------------------
+    public function user_sessions($token) {
+        $current = $this->get_session($token);
+        if (!$current) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        return array_filter($this->config->sessions, function($session) {
+            return $session->username == $current->username;
+        });
+    }
 
     // -----------------------------------------------------------------
     // for client convient all functions have token - in this case it's ignored
@@ -267,12 +277,32 @@ class Service {
         $this->config->users[] =
                 new User('root', self::password_crypt . ':' . $password);
     }
+    // -----------------------------------------------------------------
     // executed when config file don't exists
-    public function set_root_password($password) {
+    public function configure($settings) {
         if ($this->installed()) {
             throw new Exception("You can't call this function, root already installed");
         }
+        $settings = (array)$settings;
+        $password = $settings['password'];
+        unset($settings['password']);
+        foreach ($settings as $key => $val) {
+            if (in_array($key, array("sessions", "users"))) {
+                throw new Exception("You can save '" . $key . "' as settings");
+            }
+            $this->config->$key = $val;
+        }
         $this->create_root_password($password);
+    }
+    // -----------------------------------------------------------------
+    public function get_settings($token) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $settings = (array)$this->config;
+        unset($settings["sessions"]);
+        unset($settings["users"]);
+        return $settings;
     }
 
     // -----------------------------------------------------------------
