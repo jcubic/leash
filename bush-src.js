@@ -18,7 +18,7 @@
  *  Date: {{DATE}}
  */
 
-var baus = {
+var bush = {
     version: '{{VERSION}}'
 };
 
@@ -61,20 +61,23 @@ $(function() {
     })(function(service) {
         service.installed()(function(installed) {
             // display version only if inside versioned file
-            var version = !baus.version.match(/\{{2}VERSION\}{2}/) ? ' v. ' + baus.version : '';
-            var project_name = [
-                ' _               _',
-                '| |__  _   _ ___| |__',
-                '| \'_ \\| | | / __| \'_ \\' ,
-                '| |_) | |_| \\__ \\ | | |',
-                '|_.__/ \\__,_|___/_| |_|',
-                ' [[b;#fff;]Browser Unix Shell 0.1' + version + ']',
-                ''
-            ].join('\n');
+            function banner() {
+                var version = !bush.version.match(/\{{2}VERSION\}{2}/) ? ' v. ' + bush.version : '';
+                var banner = [
+                    ' _               _',
+                    '| |__  _   _ ___| |__',
+                    '| \'_ \\| | | / __| \'_ \\' ,
+                    '| |_) | |_| \\__ \\ | | |',
+                    '|_.__/ \\__,_|___/_| |_|',
+                    '[[b;#fff;]Browser Unix Shell' + version + ']',
+                    'Today is: ' + (new Date()).toUTCString(),
+                    ''
+                ].join('\n');
+                return banner;
+            }
             var cwd = '~';
             var config;
-            
-            
+            var invalid_token = false;
             var terminal = $('body').terminal(function interpreter(command, term) {
                 if (!installed) {
                     term.error("Invalid command, you need to refresh the page");
@@ -84,15 +87,22 @@ $(function() {
                     }
                     var cmd = $.terminal.parseCommand(command);
                     switch(cmd.name) {
-                        case 'help':
-                            not_implemented();
-                            break;
                         case 'su':
                             term.login(term.settings.login, function() {
                                 term.push(function(command) {
                                     term.echo('[[i;;]' + command + ']');
                                 }, {prompt: '$ '});
                             });
+                            break;
+                        case 'todo':
+                            term.echo([
+                                'record terminal keystroke with animation and allow to playback',
+                                'guess login',
+                                'less as command and as last command',
+                                '[[;#fff;]cat] without argument',
+                                'pick the shell',
+                                '#["guess", "guess", "play: xxxx"]'
+                            ].join('\n'));
                             break;
                         case 'rpc':
                             term.push(function(command) {
@@ -108,15 +118,36 @@ $(function() {
                                 });
                             }, {
                                 name: 'rpc',
-                                prompt: 'rpc> '
+                                prompt: 'rpc> ',
+                                completion: Object.keys(service)
                             });
                             break;
+                        case 'history':
+                            term.echo("Should show history");
+                            break;
+                        case 'purge':
+                            service.logout(term.token())(function() {
+                                term.purge().logout();
+                            });
+                            break;
+                        case 'js':
+                            term.push(function(command, term) {
+                                if (command !== undefined && command !== '') {
+                                    try {
+                                        var result = window.eval(command);
+                                        if (result !== undefined) {
+                                            term.echo(new String(result));
+                                        }
+                                    } catch(e) {
+                                        term.error(new String(e));
+                                    }
+                                }
+                            }, {prompt: '[[;#D72424;]js]> ', name: 'js'});
+                        case 'jargon':
                         case 'sessions':
-                            not_implemented();
-                            break;
                         case 'sqlite':
-                            not_implemented();
-                            break;
+                        case 'help':
+                        case 'python':
                         case 'mysql':
                             not_implemented();
                             break;
@@ -154,11 +185,17 @@ $(function() {
                             not_implemented();
                             break;
                         default:
-                            // shell
+                            term.pause();
+                            service.shell(term.token(), command)(function(result) {
+                                if (result) {
+                                    term.echo(result);
+                                }
+                                term.resume();
+                            });
                     }
                 }
             }, {
-                greetings: installed ? null : project_name,
+                greetings: installed ? null : banner(), // if installed there is onBeforeLogin
                 prompt: installed ? function(callback) {
                     var server;
                     if (config && config.server) {
@@ -169,19 +206,17 @@ $(function() {
                     callback(unix_prompt($.terminal.active().login_name(), server, cwd));
                 } : '> ',
                 onBeforeLogin: function(term) {
-                    term.echo(project_name);
-                },
-                onAfterLogin: function(term) {
-                    login_callback = null;
-                    term.pause();
-                    service.get_settings(term.token())(function(result) {
-                        config = result;
-                        term.resume();
-                    });
+                    term.echo(banner());
                 },
                 outputLimit: 200,
                 tabcompletion: true,
                 onInit: function(term) {
+                    term.on('click', '.jargon', function() {
+                        var command = 'jargon ' + $(this).data('text').replace(/\s/g, ' ');
+                        term.exec(command);
+                    }).on('click', '.exec', function() {
+                        term.exec($(this).data('text'));
+                    });
                     if (!installed) {
                         var settings = {};
                         // new settings set here
@@ -199,6 +234,8 @@ $(function() {
                             }
                         ];
                         term.echo("You are running Bush for the first time. You need to configure it\n");
+                        // don't store user configuration
+                        term.history().disable();
                         (function install(step, finish) {
                             var question = questions[step];
                             if (question) {
@@ -219,25 +256,30 @@ $(function() {
                                 finish();
                             }
                         })(0, function() {
-                            term.echo(JSON.stringify(settings));
                             term.pause();
                             service.configure(settings)(function() {
                                 term.resume().echo("Your instalation is complete now you can refresh the page and login");
                             });
                         });
-                    };
+                    }; // !instaled
                     var token = term.token();
                     // check if token is valid
-                    if (token) {
+                    if (token) { // NOTE: this is also call after login
                         term.pause();
                         service.valid_token(token)(function(valid) {
                             if (!valid) {
-                                term.resume();
+                                invalid_token = true; // inform onBeforeLogout not to logout from the server
                                 term.logout();
+                                term.resume();
                             } else {
                                 service.get_settings(term.token())(function(result) {
                                     config = result;
                                     term.resume();
+                                    if (config.purgeOnUnload) {
+                                        $(window).unload(function() {
+                                            term.purge();
+                                        });
+                                    }
                                 });
                             }
                         });
@@ -245,6 +287,13 @@ $(function() {
                 },
                 completion: function(term, string, callback) {
                     callback(['help']);
+                },
+                onBeforeLogout: function(term) {
+                    if (!invalid_token) {
+                        service.logout(term.token())(function() {
+                            // nothing to do here
+                        });
+                    }
                 },
                 login: installed ? function(user, password, callback) {
                     // store login callback to call with null on ajax error
@@ -256,6 +305,28 @@ $(function() {
             }).css({
                 overflow: 'auto'
             });
+            function exec_hash() {
+                if (location.hash != '') {
+                    var commands;
+                    try {
+                        commands = $.parseJSON(location.hash.replace(/^#/, ''));
+                    } catch (e) {
+                        //invalid json - ignore
+                    }
+                    if (commands) {
+                        try {
+                            $.each(commands, function(i, command) {
+                                terminal.exec(command, command.match(/^ /));
+                            });
+                        } catch(e) {
+                            terminal.error("Error while exec with command " +
+                                           $.terminal.escape_brackets(command));
+                        }
+                    }
+                }
+            }
+            exec_hash();
+            $(window).hashchange(exec_hash);
             var $win = $(window);
             $win.resize(function() {
                 var height = $win.height();

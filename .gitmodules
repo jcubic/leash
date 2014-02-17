@@ -7,3 +7,6 @@
 [submodule "lib/micro"]
 	path = lib/micro
 	url = git@github.com:jcubic/jquery.micro.git
+[submodule "lib/jquery-hashchange"]
+	path = lib/jquery-hashchange
+	url = https://github.com/cowboy/jquery-hashchange.git

@@ -80,6 +80,11 @@ class Service {
             } catch (Exception $e) {
                 $this->config = new stdClass();
             }
+            $full_path = getcwd() . "/" . $this->config_file;
+            // it had no write permission when first created while testing
+            if (!is_writable($full_path)) {
+                chmod($full_path, 0755);
+            }
         } else {
             $this->config = new stdClass();
         }
@@ -96,7 +101,7 @@ class Service {
             $this->config->users = array();
         }
     }
-
+    // -----------------------------------------------------------------
     function __destruct() {
         $this->__write($this->config_file, json_encode($this->config));
     }
@@ -154,14 +159,6 @@ class Service {
 
     // -----------------------------------------------------------------
     private function __write($filename, $content) {
-        /*
-        if (!file_exists($filename)) {
-            throw new Exception("File '$filename' don't exists");
-        }
-        if (!is_writable($filename)) {
-            throw new Exception("You don't have write permission to file '$filename'");
-        }
-        */
         $file = fopen($filename, 'w+');
         if (!$file) {
             throw new Exception("Couldn't open file '$filename' for write");
@@ -183,9 +180,8 @@ class Service {
 
     // -----------------------------------------------------------------
     public function valid_token($token) {
-        return $this->get_session($token) != null;
+        return $token ? $this->get_session($token) != null : false;
     }
-
     // -----------------------------------------------------------------
     function login($username, $password) {
         $user = $this->get_user($username);
@@ -284,25 +280,19 @@ class Service {
             throw new Exception("You can't call this function, root already installed");
         }
         $settings = (array)$settings;
-        $password = $settings['password'];
+        $this->create_root_password($settings['password']);
         unset($settings['password']);
+        $this->config->settings = array();
         foreach ($settings as $key => $val) {
-            if (in_array($key, array("sessions", "users"))) {
-                throw new Exception("You can save '" . $key . "' as settings");
-            }
-            $this->config->$key = $val;
+            $this->config->settings[$key] = $val;
         }
-        $this->create_root_password($password);
     }
     // -----------------------------------------------------------------
     public function get_settings($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $settings = (array)$this->config;
-        unset($settings["sessions"]);
-        unset($settings["users"]);
-        return $settings;
+        return $this->config->settings;
     }
 
     // -----------------------------------------------------------------
@@ -410,13 +400,42 @@ class Service {
         $db = mysql_connection_from_session($token);
         return $db->get_array($query);
     }
-
+    // -----------------------------------------------------------------
+    public function list_shells($token = null) {
+        if (installed() && !valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        return array(
+            "exec",
+            "shell_exec",
+            "system",
+            "cgi-python",
+            "cgi-perl",
+            "cgi-bash"
+        );
+    }
+    // -----------------------------------------------------------------
+    public function test_shell($token, $name) {
+        if (installed() && !valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+    }
+    public function cwd() {
+        return getcwd();
+    }
     // -----------------------------------------------------------------
     public function shell($token, $code) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        
+        $code = escapeshellarg(". .bashrc;" . $code);
+        //$rc_file = getcwd() . "/";
+        exec('/bin/bash -ic ' . $code, $result);
+        return implode("\n", $result);
+    }
+    // -----------------------------------------------------------------
+    function shell_exec($code) {
+        return shell_exec($code);
     }
 }
 
