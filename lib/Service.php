@@ -1,6 +1,6 @@
 <?php
 /**
- *  This file is part of Bush.js (acronym for Browser Unix Shell)
+ *  This file is part of Bush.js (Browser Unix Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -69,7 +69,7 @@ class Service {
 
     protected $config_file;
     protected $config;
-    const password_crypt = 'sha1';
+    const password_hash = 'sha1';
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]+):(.*)/';
 
     function __construct($config_file) {
@@ -83,7 +83,7 @@ class Service {
             $full_path = getcwd() . "/" . $this->config_file;
             // it had no write permission when first created while testing
             if (!is_writable($full_path)) {
-                chmod($full_path, 0755);
+                chmod($full_path, 0644);
             }
         } else {
             $this->config = new stdClass();
@@ -113,7 +113,6 @@ class Service {
         $index = $this->get_user_index($username);
         return $index == -1 ? null : $this->config->users[$index];
     }
-
     // -----------------------------------------------------------------
     private function get_user_index($username) {
         foreach($this->config->users as $i => $user) {
@@ -132,7 +131,7 @@ class Service {
     }
 
     // -----------------------------------------------------------------
-    public function delete_session($token) {
+    private function delete_session($token) {
         //need index to unset and indexes may not be sequential
         foreach (array_keys($this->config->sessions) as $i) {
             if ($token == $this->config->sessions[$i]->token) {
@@ -146,6 +145,7 @@ class Service {
     public function get_session($token) {
         foreach ($this->config->sessions as $session) {
             if ($token == $session->token) {
+                $session->last_access = date('r');
                 return $session;
             }
         }
@@ -196,7 +196,10 @@ class Service {
             throw new Exception("Password for user '$username' have invalid format");
         }
         if ($match[2] == call_user_func($match[1], $password)) {
-            return $this->new_session($username)->token;
+            $session = $this->new_session($username);
+            $session->browser = $_SERVER['HTTP_USER_AGENT'];
+            $session->start = date('r');
+            return $session->token;
         } else {
             throw new Exception("Password for user '$username' is invalid");
         }
@@ -269,9 +272,9 @@ class Service {
 
     // -----------------------------------------------------------------
     private function create_root_password($password) {
-        $password = call_user_func(self::password_crypt, $password);
+        $password = call_user_func(self::password_hash, $password);
         $this->config->users[] =
-                new User('root', self::password_crypt . ':' . $password);
+                new User('root', self::password_hash . ':' . $password);
     }
     // -----------------------------------------------------------------
     // executed when config file don't exists
@@ -292,7 +295,9 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        return $this->config->settings;
+        $settings = (array)$this->config->settings;
+        $settings['cwd'] = getcwd();
+        return $settings;
     }
 
     // -----------------------------------------------------------------
@@ -332,7 +337,6 @@ class Service {
             }
         }
     }
-    
     // -----------------------------------------------------------------
     public function list_users($token) {
         if (!$this->valid_token($token)) {
@@ -342,6 +346,7 @@ class Service {
             return $user->username;
         }, $this->config->users);
     }
+    // -----------------------------------------------------------------
     public function function_exists($token, $function) {
         if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -392,6 +397,75 @@ class Service {
     }
 
     // -----------------------------------------------------------------
+    function jargon_list() {
+        $db = new SQLiteDatabase('jargon.db');
+        $res = $db->query("SELECT term FROM terms");
+        if ($res) {
+            return array_map(function($a) {
+                return $term['term'];
+            }, $res->fetchAll(SQLITE_ASSOC));
+        } else {
+            return array();
+        }
+    }
+    // -----------------------------------------------------------------
+    private function jargon_sqlite2($search_term) {
+        $db = new SQLiteDatabase('jargon.db');
+        $search_term = sqlite_escape_string($search_term);
+        $res = $db->query("SELECT * FROM terms WHERE term like '$search_term'");
+        $result = array();
+        if ($res) {
+            $result = $res->fetchAll(SQLITE_ASSOC);
+            foreach($result as &$term) {
+                $query = "SELECT name FROM abbrev WHERE term = " . $term['id'];
+                $res = $db->query($query);
+                if ($res) {
+                    $abbr_array = $res->fetchAll(SQLITE_ASSOC);
+                    if (!empty($abbr_array)) {
+                        foreach ($abbr_array as $abbr) {
+                            $term['abbr'][] = $abbr['name'];
+                        }
+                    }
+                }
+            }
+        }
+        return $result;
+    }
+    // -----------------------------------------------------------------
+    private function jargon_sqlite3($search_term) {
+        $db = new SQLite3('jargon3.db');
+        $search_term = SQLite3::escapeString($search_term);
+        $res = $db->query("SELECT * FROM terms WHERE term like '$search_term'");
+        $result = array();
+        if ($res) {
+            while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+                $result[] = $row;
+            }
+            foreach($result as &$term) {
+                $id = $term['id'];
+                $query = "SELECT name FROM abbrev WHERE term = " . $id;
+                $res = $db->query($query);
+                if ($res) {
+                    $abbr_array = array();
+                    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+                        $term['abbr'][] = $row['name'];
+                    }
+                }
+            }
+        }
+        return $result;
+    }
+    // -----------------------------------------------------------------
+    function jargon($search_term) {
+        if (class_exists('SQLiteDatabase')) {
+            return $this->jargon_sqlite2($search_term);
+        } else if (class_exists('SQLite3')) {
+            return $this->jargon_sqlite3($search_term);
+        } else {
+            throw new Exception('SQLite not installed');
+        }
+    }
+    // -----------------------------------------------------------------
     public function mysql($token, $query) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -419,7 +493,25 @@ class Service {
         if (installed() && !valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        switch ($name) {
+            case 'exec':
+            case 'shell_exec':
+            case 'system':
+                return function_exists($name);
+            case 'cgi-python':
+                $path = "/cgi-bin/cmd.py";
+                break;
+            case 'cgi-perl':
+                $path = "/cgi-bin/cmd.py";
+                break;
+            case 'cgi-bash':
+                $path = "/cgi-bin/cmd";
+                break;
+            default:
+                throw new Exception("Invalid shell type");
+        }
     }
+    // -----------------------------------------------------------------
     public function cwd() {
         return getcwd();
     }
@@ -428,14 +520,27 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $code = escapeshellarg(". .bashrc;" . $code);
-        //$rc_file = getcwd() . "/";
-        exec('/bin/bash -ic ' . $code, $result);
+        $code = escapeshellarg(". .bashrc\n" . $code);
+        return $this->exec('/bin/bash -c ' . $code);
+    }
+    // -----------------------------------------------------------------
+    private function shell_exec($code) {
+        return shell_exec($code);
+    }
+    // -----------------------------------------------------------------
+    private function exec($code) {
+        exec($code, $result);
         return implode("\n", $result);
     }
     // -----------------------------------------------------------------
-    function shell_exec($code) {
-        return shell_exec($code);
+    private function system($code) {
+        return system($code);
+    }
+    // -----------------------------------------------------------------
+    public function python($token, $code) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
     }
 }
 

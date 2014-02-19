@@ -1,6 +1,6 @@
 <?php
 /**
- *  This file is part of Baus.js (acronym for Browser Access Unix Shell)
+ *  This file is part of Bush.js (Browser Unix Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify

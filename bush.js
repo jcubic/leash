@@ -1,5 +1,5 @@
 /**@license
- *  This file is part of Bush (acronym for Browser Unix Shell)
+ *  This file is part of Bush (Browser Unix Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Mon, 17 Feb 2014 09:19:07 +0000
+ *  Date: Wed, 19 Feb 2014 19:01:08 +0000
  */
 
 var bush = {
@@ -55,7 +55,7 @@ $(function() {
                 alert(message);
             }
             if (login_callback) {
-                login_callback(null);
+                login_callback(null, true);
             }
         }
     })(function(service) {
@@ -77,6 +77,7 @@ $(function() {
             }
             var cwd = '~';
             var config;
+          
             var invalid_token = false;
             var terminal = $('body').terminal(function interpreter(command, term) {
                 if (!installed) {
@@ -87,82 +88,133 @@ $(function() {
                     }
                     var cmd = $.terminal.parseCommand(command);
                     switch(cmd.name) {
-                        case 'su':
-                            term.login(term.settings.login, function() {
-                                term.push(function(command) {
-                                    term.echo('[[i;;]' + command + ']');
-                                }, {prompt: '$ '});
-                            });
-                            break;
-                        case 'rpc':
+                    case 'su':
+                        term.login(term.settings.login, function() {
                             term.push(function(command) {
-                                var cmd = $.terminal.parseCommand(command.replace('$TOKEN', term.token()));
-                                $.jrpc('', cmd.name, cmd.args, function(result) {
-                                    if (result.error && result.error.message) {
-                                        term.error(result.error.message);
-                                    } else {
-                                        term.echo(JSON.stringify(result.result));
-                                    }
-                                }, function(xhr, status) {
-                                    term.error($.terminal.escape_brackets('[AJAX]: ') + status);
-                                });
-                            }, {
-                                name: 'rpc',
-                                prompt: 'rpc> '
+                                term.echo('[[i;;]' + command + ']');
+                            }, {prompt: '$ '});
+                        });
+                        break;
+                    case 'todo':
+                        term.echo([
+                            'record terminal keystroke with animation and allow to playback',
+                            'guess login',
+                            'drag and drop upload',
+                            'filesystem API',
+                            'Option to block access when 3 fail attempts (create file on disk and check if it exist)',
+                            'less as command and as last command',
+                            '[[;#fff;]cat] without argument',
+                            'pick the shell',
+                            '#["guess", "guess", "play: xxxx"]'
+                        ].join('\n'));
+                        break;
+                    case 'rpc':
+                        term.push(function(command) {
+                            var cmd = $.terminal.parseCommand(command.replace('$TOKEN', term.token()));
+                            $.jrpc('', cmd.name, cmd.args, function(result) {
+                                if (result.error && result.error.message) {
+                                    term.error(result.error.message);
+                                } else {
+                                    term.echo(JSON.stringify(result.result));
+                                }
+                            }, function(xhr, status) {
+                                term.error($.terminal.escape_brackets('[AJAX]: ') + status);
                             });
-                            break;
-                        case 'history':
-                            term.echo("Should show history");
-                            break;
-                        case 'purge':
-                            service.logout(term.token())(function() {
-                                term.purge().logout();
-                            });
-                            break;
-                        case 'jargon':
-                        case 'sessions':
-                        case 'sqlite':
-                        case 'js':
-                        case 'help':
-                        case 'mysql':
-                            not_implemented();
-                            break;
-                        case 'adduser':
-                            (function() {
-                                var user;
-                                var password;
-                                var history = term.history();
-                                history.disable();
-                                term.push(function(command) {
-                                    if (!user) {
-                                        user = command;
-                                        term.set_mask(true).set_prompt('password: ');
-                                    } else {
-                                        password = command;
-                                        term.set_mask(false).pop();
-                                        service.add_user(term.token(), user, password)(function() {
-                                            history.enable();
-                                        });
+                        }, {
+                            name: 'rpc',
+                            prompt: 'rpc> ',
+                            completion: Object.keys(service)
+                        });
+                        break;
+                    case 'history':
+                        term.echo("Should show history");
+                        break;
+                    case 'purge':
+                        service.logout(term.token())(function() {
+                            term.purge().logout();
+                        });
+                        break;
+                    case 'js':
+                        term.push(function(command, term) {
+                            if (command !== undefined && command !== '') {
+                                try {
+                                    var result = window.eval(command);
+                                    if (result !== undefined) {
+                                        term.echo(new String(result));
                                     }
-                                }, {prompt: 'name: '});
-                            })();
-                            break;
-                        case 'micro':
-                            var micro = $('#micro').micro({
-                                height: $(window).height()
-                            }).show();
-                            if (cmd.args.length >= 1) {
-                                service.file(term.token(), cmd.args[0])(function(file) {
-                                    micro.micro('set', file);
-                                });
+                                } catch(e) {
+                                    term.error(new String(e));
+                                }
                             }
-                            break;
-                        case 'vi':
-                            not_implemented();
-                            break;
-                        default:
-                            term.echo("shell not implemented");
-                            // shell
+                        }, {prompt: '[[;#D72424;]js]> ', name: 'js'});
+                    case 'jargon':
+                        if (cmd.args.length == 0) {
+                            var msg = 'This is the Jargon File, a comprehensive'+
+                                ' compendium of hacker slang illuminating many '+
+                                'aspects of hackish tradition, folklore, and hu'+
+                                'mor.\n\nusage: jargon [QUERY]';
+                            term.echo(msg);
+                        } else {
+                            term.pause();
+                            service.jargon(cmd.args.join(' '))(function(res) {
+                                term.echo($.map(res, function(term) {
+                                    var text = '[[b;#fff;]' + term.term + ']';
+                                    if (term.abbr) {
+                                        text += ' (' + term.abbr.join(', ') + ')';
+                                    }
+                                    return text + '\n' + term.def + '\n';
+                                }).join('\n').replace(/\n$/, '')).resume();
+                            });
+                        }
+                        break;
+                    case 'sessions':
+                    case 'sqlite':
+                    case 'help':
+                    case 'python':
+                    case 'mysql':
+                        not_implemented();
+                        break;
+                    case 'adduser':
+                        (function() {
+                            var user;
+                            var password;
+                            var history = term.history();
+                            history.disable();
+                            term.push(function(command) {
+                                if (!user) {
+                                    user = command;
+                                    term.set_mask(true).set_prompt('password: ');
+                                } else {
+                                    password = command;
+                                    term.set_mask(false).pop();
+                                    service.add_user(term.token(), user, password)(function() {
+                                        history.enable();
+                                    });
+                                }
+                            }, {prompt: 'name: '});
+                        })();
+                        break;
+                    case 'micro':
+                        var micro = $('#micro').micro({
+                            height: $(window).height()
+                        }).show();
+                        if (cmd.args.length >= 1) {
+                            service.file(term.token(), cmd.args[0])(function(file) {
+                                micro.micro('set', file);
+                            });
+                        }
+                        break;
+                    case 'vi':
+                        not_implemented();
+                        break;
+                    default:
+                        term.pause();
+                        service.shell(term.token(), command)(function(result) {
+                            if (result) {
+                                term.echo(result);
+                            }
+                            term.resume();
+                        });
                     }
                 }
             }, {
@@ -227,7 +279,6 @@ $(function() {
                                 finish();
                             }
                         })(0, function() {
-                            term.echo(JSON.stringify(settings));
                             term.pause();
                             service.configure(settings)(function() {
                                 term.resume().echo("Your instalation is complete now you can refresh the page and login");
