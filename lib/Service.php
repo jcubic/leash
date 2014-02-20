@@ -31,10 +31,15 @@ class Session {
     public $storage;
     public $token;
     public $username;
-    private function __construct($username, $token, $storage) {
-        $this->storage = $storage;
-        $this->token = $token;
-        $this->username = $username;
+    public $browser;
+    public $start;
+    public $last_access;
+    private function __construct($u, $t, $s = null, $b = null, $d = null) {
+        $this->storage = $s ? $s : new stdClass();
+        $this->username = $u;
+        $this->token = $t;
+        $this->browser = $b ? $b : $_SERVER['HTTP_USER_AGENT'];
+        $this->start = $d ? $d : date('r');
     }
     function __get($name) {
         return $this->storage->$name;
@@ -50,29 +55,37 @@ class Session {
         foreach ($sessions as $session) {
             $result[] = new Session($session->username,
                                     $session->token,
-                                    $session->storage);
+                                    $session->storage,
+                                    $session->browser,
+                                    $session->start);
         }
         return $result;
     }
     static function cast($stdClass) {
         $storage = $stdClass->storage ? $stdClass->storage : new stdClass();
-        return new Session($stdClass->username, $stdClass->token, $storage);
+        return new Session($stdClass->username,
+                           $stdClass->token,
+                           $storage,
+                           $stdClass->browser,
+                           $stdClass->start);
     }
     static function new_session($username) {
         $token = sha1(array_sum(explode(' ', microtime())));
-        return new Session($username, $token, new stdClass());
+        return new Session($username, $token);
+
+        return $session;
     }
 }
 
 
 class Service {
-
     protected $config_file;
     protected $config;
     const password_hash = 'sha1';
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]+):(.*)/';
 
-    function __construct($config_file) {
+    function __construct($config_file, $path) {
+        $this->path = $path;
         $this->config_file = $config_file;
         if (file_exists($config_file)) {
             try {
@@ -80,10 +93,10 @@ class Service {
             } catch (Exception $e) {
                 $this->config = new stdClass();
             }
-            $full_path = getcwd() . "/" . $this->config_file;
+            $full_path = $path . "/" . $this->config_file;
             // it had no write permission when first created while testing
             if (!is_writable($full_path)) {
-                chmod($full_path, 0644);
+                chmod($full_path, 0664);
             }
         } else {
             $this->config = new stdClass();
@@ -103,7 +116,8 @@ class Service {
     }
     // -----------------------------------------------------------------
     function __destruct() {
-        $this->__write($this->config_file, json_encode($this->config));
+        $path = $this->path . "/" . $this->config_file;
+        $this->__write($path, json_encode($this->config));
     }
 
     // -----------------------------------------------------------------
@@ -197,8 +211,7 @@ class Service {
         }
         if ($match[2] == call_user_func($match[1], $password)) {
             $session = $this->new_session($username);
-            $session->browser = $_SERVER['HTTP_USER_AGENT'];
-            $session->start = date('r');
+            
             return $session->token;
         } else {
             throw new Exception("Password for user '$username' is invalid");
@@ -239,7 +252,8 @@ class Service {
         if (!$current) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        return array_filter($this->config->sessions, function($session) {
+        $sessions = &$this->config->sessions;
+        return array_filter($sessions, function($session) use($current) {
             return $session->username == $current->username;
         });
     }
@@ -296,7 +310,7 @@ class Service {
             throw new Exception("Access Denied: Invalid Token");
         }
         $settings = (array)$this->config->settings;
-        $settings['cwd'] = getcwd();
+        $settings['home'] = $this->path;
         return $settings;
     }
 
@@ -322,6 +336,7 @@ class Service {
         if (($idx = $this->get_user_index($this->get_username($token))) == -1) {
             throw new Exception("User '$username' don't exists");
         }
+        // TODO: this is probably not working
         $this->config->users[] = new User($username, $password);
         
         // remove session
@@ -516,12 +531,22 @@ class Service {
         return getcwd();
     }
     // -----------------------------------------------------------------
-    public function shell($token, $code) {
+    public function shell($token, $code, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $code = escapeshellarg(". .bashrc\n" . $code);
-        return $this->exec('/bin/bash -c ' . $code);
+        $marker = 'XXXX' . md5(time());
+        $pre = ". .bashrc\ncd $path\n";
+        $post = " 2>&1;echo -n \"$marker\";pwd";
+        $code = escapeshellarg($pre . $code . $post);
+        $result = $this->exec('/bin/bash -c ' . $code);
+        if ($result) {
+            $output = explode($marker, $result);
+            return array(
+                'output' => preg_replace("/\n$/", '', $output[0]),
+                'cwd' => $output[1]
+            );
+        }
     }
     // -----------------------------------------------------------------
     private function shell_exec($code) {

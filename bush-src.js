@@ -75,9 +75,10 @@ $(function() {
                 ].join('\n');
                 return banner;
             }
-            var cwd = '~';
+            var home;
+            var cwd;
             var config;
-          
+            var dir = {};
             var invalid_token = false;
             var terminal = $('body').terminal(function interpreter(command, term) {
                 if (!installed) {
@@ -112,8 +113,17 @@ $(function() {
                         term.push(function(command) {
                             var cmd = $.terminal.parseCommand(command.replace('$TOKEN', term.token()));
                             $.jrpc('', cmd.name, cmd.args, function(result) {
-                                if (result.error && result.error.message) {
-                                    term.error(result.error.message);
+                                if (result.error) {
+                                    if (result.error.error) {
+                                        var err = result.error.error;
+                                        var file = err.file.replace(config.home,
+                                                                    '');
+                                        term.error(err.message + ' in ' + file +
+                                                   ' at ' + err.at);
+                                        term.error(err.line);
+                                    } else if (result.error.message) {
+                                        term.error(result.error.message);
+                                    }
                                 } else {
                                     term.echo(JSON.stringify(result.result));
                                 }
@@ -209,9 +219,14 @@ $(function() {
                         break;
                     default:
                         term.pause();
-                        service.shell(term.token(), command)(function(result) {
-                            if (result) {
-                                term.echo(result);
+                        var token = term.token();
+                        service.shell(token, command, cwd)(function(result) {
+                            if (result.output) {
+                                term.echo(result.output);
+                            }
+                            if (cwd !== result.cwd) {
+                                cwd = result.cwd;
+                                // DIR
                             }
                             term.resume();
                         });
@@ -226,7 +241,16 @@ $(function() {
                     } else {
                         server = 'unknown';
                     }
-                    callback(unix_prompt($.terminal.active().login_name(), server, cwd));
+                    var path;
+                    if (config && cwd) {
+                        var home = $.terminal.escape_regex(config.home);
+                        path = cwd.replace(new RegExp('^' + home), '~');
+                    } else {
+                        path = cwd;
+                    }
+                    callback(unix_prompt($.terminal.active().login_name(),
+                                         server,
+                                         path));
                 } : '> ',
                 onBeforeLogin: function(term) {
                     term.echo(banner());
@@ -291,12 +315,14 @@ $(function() {
                         term.pause();
                         service.valid_token(token)(function(valid) {
                             if (!valid) {
-                                invalid_token = true; // inform onBeforeLogout not to logout from the server
+                                // inform onBeforeLogout to not logout
+                                invalid_token = true;
                                 term.logout();
                                 term.resume();
                             } else {
                                 service.get_settings(term.token())(function(result) {
                                     config = result;
+                                    cwd = config.home;
                                     term.resume();
                                     if (config.purgeOnUnload) {
                                         $(window).unload(function() {

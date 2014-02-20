@@ -9,7 +9,7 @@ if ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
         error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
         ini_set('display_errors', 'On');
     }
-    echo handle_json_rpc(new Service('config.json'));
+    echo handle_json_rpc(new Service('config.json', getcwd()));
     exit;
 }
 
