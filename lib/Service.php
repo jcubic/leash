@@ -27,7 +27,6 @@ class User {
     }
 }
 
-function nop() { } // fix indent in switch case
 
 class Session {
     public $storage;
@@ -43,7 +42,7 @@ class Session {
         $this->browser = $b ? $b : $_SERVER['HTTP_USER_AGENT'];
         $this->start = $d ? $d : date('r');
     }
-    function __get($name) {
+    function &__get($name) {
         return $this->storage->$name;
     }
     function __set($name, $value) {
@@ -72,18 +71,24 @@ class Session {
                            $stdClass->start);
     }
     static function new_session($username) {
-        $token = sha1(array_sum(explode(' ', microtime())));
-        return new Session($username, $token);
-
-        return $session;
+        return new Session($username, token());
     }
 }
-
+// random token
+function token() {
+    $time = array_sum(explode(' ', microtime()));
+    return sha1($time) . substr(md5($time), 4);
+}
+// hash function used for passwords
+function hsh($str) {
+    // You can change this function before installation
+    return str_rot13(sha1($str) . substr(md5($str), 0, 13));
+}
 
 class Service {
     protected $config_file;
     protected $config;
-    const password_hash = 'sha1';
+    const password_hash = 'hsh';
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]+):(.*)/';
 
     function __construct($config_file, $path) {
@@ -116,20 +121,21 @@ class Service {
             $this->config->users = array();
         }
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     function __destruct() {
         $path = $this->path . "/" . $this->config_file;
         $this->__write($path, json_encode($this->config));
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // UTILS
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function get_user($username) {
         $index = $this->get_user_index($username);
         return $index == -1 ? null : $this->config->users[$index];
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function get_user_index($username) {
         foreach($this->config->users as $i => $user) {
             if ($username == $user->username) {
@@ -139,14 +145,14 @@ class Service {
         return -1;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // SESSIONS
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function new_session($username) {
         return $this->config->sessions[] = Session::new_session($username);
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function delete_session($token) {
         //need index to unset and indexes may not be sequential
         foreach (array_keys($this->config->sessions) as $i) {
@@ -157,7 +163,7 @@ class Service {
         }
         return false;
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function get_session($token) {
         foreach ($this->config->sessions as $session) {
             if ($token == $session->token) {
@@ -167,13 +173,13 @@ class Service {
         }
         return null;
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function get_username($token) {
         $session = $this->get_session($token);
         return $session ? $session->username : null;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function __write($filename, $content) {
         $file = fopen($filename, 'w+');
         if (!$file) {
@@ -183,7 +189,7 @@ class Service {
         fclose($file);
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function installed() {
         if (empty($this->config->users)) {
             return false;
@@ -194,11 +200,11 @@ class Service {
         }
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function valid_token($token) {
         return $token ? $this->get_session($token) != null : false;
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     function login($username, $password) {
         $user = $this->get_user($username);
         if (!$user) {
@@ -213,14 +219,13 @@ class Service {
         }
         if ($match[2] == call_user_func($match[1], $password)) {
             $session = $this->new_session($username);
-            
             return $session->token;
         } else {
             throw new Exception("Password for user '$username' is invalid");
         }
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function session_set($token, $name, $value) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -229,7 +234,7 @@ class Service {
         $session->$name = $value;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function store_user_data($token, $name, $value) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -240,7 +245,7 @@ class Service {
         $this->config->users[$this->get_user_index()]->$name = $value;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function session_get($token, $name) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -248,7 +253,7 @@ class Service {
         $session = $this->get_session($token);
         return $session->$name;
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function user_sessions($token) {
         $current = $this->get_session($token);
         if (!$current) {
@@ -260,7 +265,7 @@ class Service {
         });
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // for client convient all functions have token - in this case it's ignored
     public function file($token, $filename) {
         if (!file_exists($filename)) {
@@ -269,7 +274,7 @@ class Service {
         return file_get_contents($filename);
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function write($token, $filename, $content) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -277,22 +282,22 @@ class Service {
         $this->__write($filename, $content);
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // root
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
 
     function get_config($token) {
         $this->validate_root($token);
         return $this->config;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function create_root_password($password) {
         $password = call_user_func(self::password_hash, $password);
         $this->config->users[] =
                 new User('root', self::password_hash . ':' . $password);
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // executed when config file don't exists
     public function configure($settings) {
         if ($this->installed()) {
@@ -310,7 +315,7 @@ class Service {
         }
         $this->create_root_password($password);
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function get_settings($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -320,7 +325,7 @@ class Service {
         return $settings;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function validate_root($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -330,13 +335,13 @@ class Service {
         }
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function add_user($token, $username, $password) {
         $this->validate_root($token);
         $this->config->users[] = new User($username, $password);
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function remove_user($token, $username, $password) {
         $this->validate_root($token);
         if (($idx = $this->get_user_index($this->get_username($token))) == -1) {
@@ -358,7 +363,7 @@ class Service {
             }
         }
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function list_users($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -367,20 +372,43 @@ class Service {
             return $user->username;
         }, $this->config->users);
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function function_exists($token, $function) {
         if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
         return function_exists($function);
     }
-
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    public function dir($token, $path) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+    }
+        if (is_dir($path)) {
+            $files = array();
+            $dirs = array();
+            foreach (scandir($path) as $file_dir) {
+                if (is_dir($path . "/" . $file_dir) && $file_dir != "." &&
+                    $file_dir != "..") {
+                    $dirs[] = $file_dir;
+                } else {
+                    $files[] = $file_dir;
+                }
+            }
+            return array(
+                'files' => $files,
+                'dirs' => $dirs
+            );
+        } else {
+            throw new Exception('$path is no directory');
+        }
+    }
+    // ------------------------------------------------------------------------
     public function change_password($token, $password) {
         
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function logout($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -388,36 +416,65 @@ class Service {
         $this->delete_session($token);
     }
 
+    // ------------------------------------------------------------------------
     private function mysql_create_connection($host, $username, $password, $db) {
         return $this->mysql_connection = new Database($host, $username, $password, $db);
     }
 
+    // ------------------------------------------------------------------------
     public function mysql_connect($token, $host, $username, $password, $db) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        // will throw exception if invalid
         $this->mysql_create_connection($host, $username, $password, $db);
         $session = $this->get_session($token);
-        $session->db_host = $host;
-        $session->db_user = $username;
-        $session->db_pass = $password;
-        $session->db_name = $db;
-    }
-
-    // -----------------------------------------------------------------
-    private function mysql_connection_from_session($session) {
-        if (!(isset($session->db_host) && isset($session->db_user) &&
-              isset($session->db_pass) && isset($session->db_name))) {
-            throw new Exception("You need to connect to database first" .
-                " so your database info will be stored in session");
+        $id = uniqid('res_');
+        if (!isset($session->mysql)) {
+            $session->mysql = new stdClass();
         }
-        return $this->mysql_create_connection($session->db_host,
-                                              $session->db_user,
-                                              $session->db_pass,
-                                              $session->db_name);
+        $mysql = &$session->mysql;
+        $mysql->$id = array(
+            'host' => $host,
+            'user' => $username,
+            'pass' => $password,
+            'name' => $db
+        );
+        return $id;
     }
 
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    private function mysql_connection_from_session($mysql) {
+        return $this->mysql_create_connection($mysql->host,
+                                              $mysql->user,
+                                              $mysql->pass,
+                                              $mysql->name);
+    }
+    // ------------------------------------------------------------------------
+    public function mysql_close($token, $res_id) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $session = $this->get_session($token);
+        if (!(isset($session->mysql->$res_id))) {
+            throw new Exception("Invalid resource id");
+        }
+        unset($session->mysql->$res_id);
+    }
+
+    // ------------------------------------------------------------------------
+    public function mysql_query($token, $res_id, $query) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $session = $this->get_session($token);
+        if (!(isset($session->mysql->$res_id))) {
+            throw new Exception("Invalid resource id");
+        }
+        $db = $this->mysql_connection_from_session($session->mysql->$res_id);
+        return $db->get_array($query);
+    }
+    // ------------------------------------------------------------------------
     function jargon_list() {
         $db = new SQLiteDatabase('jargon.db');
         $res = $db->query("SELECT term FROM terms");
@@ -429,7 +486,7 @@ class Service {
             return array();
         }
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function jargon_sqlite2($search_term) {
         $db = new SQLiteDatabase('jargon.db');
         $search_term = sqlite_escape_string($search_term);
@@ -452,7 +509,7 @@ class Service {
         }
         return $result;
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function jargon_sqlite3($search_term) {
         $db = new SQLite3('jargon3.db');
         $search_term = SQLite3::escapeString($search_term);
@@ -476,7 +533,7 @@ class Service {
         }
         return $result;
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     function jargon($search_term) {
         if (class_exists('SQLiteDatabase')) {
             return $this->jargon_sqlite2($search_term);
@@ -486,16 +543,7 @@ class Service {
             throw new Exception('SQLite not installed');
         }
     }
-    // -----------------------------------------------------------------
-    public function mysql($token, $query) {
-        if (!$this->valid_token($token)) {
-            throw new Exception("Access Denied: Invalid Token");
-        }
-        $session = $this->get_session($token);
-        $db = mysql_connection_from_session($token);
-        return $db->get_array($query);
-    }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function list_shells($token = null) {
         if (installed() && !valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -509,7 +557,7 @@ class Service {
             "cgi-bash"
         );
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function test_shell($token, $name) {
         if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -538,11 +586,11 @@ class Service {
                 break;
         }
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function cwd() {
         return getcwd();
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     public function shell($token, $code, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -560,27 +608,24 @@ class Service {
             );
         }
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function shell_exec($code) {
         return shell_exec($code);
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function exec($code) {
         exec($code, $result);
         return implode("\n", $result);
     }
-    // -----------------------------------------------------------------
+    // ------------------------------------------------------------------------
     private function system($code) {
         return system($code);
     }
+    // ------------------------------------------------------------------------
     private function cgi_python($code) {
     }
-    // -----------------------------------------------------------------
-    public function python($token, $code) {
-        if (!$this->valid_token($token)) {
-            throw new Exception("Access Denied: Invalid Token");
-        }
-    }
+    // ------------------------------------------------------------------------
+    // TEST code
     public function pass($text) {
         return $text;
     }

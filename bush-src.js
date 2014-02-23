@@ -124,8 +124,8 @@ $(function() {
             }
         },
         debug: function(json, type) {
-            var arrow = type == 'request' ? '->' : '<-';
-            console.log(arrow + ' ' + JSON.stringify(json));
+            //var arrow = type == 'request' ? '->' : '<-';
+            //console.log(arrow + ' ' + JSON.stringify(json));
         }
     })(function(service) {
         service.installed()(function(installed) {
@@ -188,6 +188,7 @@ $(function() {
                                 callback('xxx');
                             } else {
                                 callback(null);
+                                term.pop();
                             }
                         });
                         break;
@@ -277,11 +278,103 @@ $(function() {
                         }
                         break;
                     case 'sessions':
+                        not_implemented();
+                        break;
                     case 'sqlite':
+                        not_implemented();
+                        break;
+                    case 'mysql':
+                        (function() {
+                            var database, host, username, password;
+                            var parser = new optparse.OptionParser([
+                                ['-h', '--host HOST', 'Host to connect to'],
+                                ['-u', '--username USER', 'Database user'],
+                                ['-p', '--password PASSWORD', 'Database password']
+                            ]);
+                            // fix options
+                            var args = [];
+                            for (var i=0; i<cmd.args.length; ++i) {
+                                var m = cmd.args[i].match(/^(-[a-z])(.*)/);
+                                if (m) {
+                                    args.push(m[1]);
+                                    if (m[2]) {
+                                        args.push(m[2]);
+                                    } else if (m[1] == '-p') {
+                                        args.push('');
+                                    }
+                                } else {
+                                    args.push(cmd.args[i]);
+                                }
+                            }
+                            parser.on(0, function(opt) {
+                                database = opt;
+                            });
+                            parser.on('host', function(opt, value) {
+                                host = value;
+                            });
+                            parser.on('username', function(opt, value) {
+                                username = value;
+                            });
+                            parser.on('password', function(opt, value) {
+                                password = value;
+                            });
+                            parser.banner = 'Usage: mysql [Options] database';
+                            parser.parse(args);
+                            if (!(database && username)) {
+                                term.echo(parser);
+                                return;
+                            }
+                            host = host || 'localhost';
+                            function mysql() {
+                                term.pause();
+                                var db;
+                                function print(result) {
+                                    term.echo(result.map(function(row) {
+                                        return row.join(' | ');
+                                    }).join('\n'));
+                                    term.resume();
+                                }
+                                function mysql_query(query) {
+                                    term.pause();
+                                    service.mysql_query(term.token(), db, query)(print);
+                                }
+                                function mysql_close() {
+                                    service.mysql_close(term.token(), db)($.noop);
+                                }
+                                var prompt = '[[b;#55f;]mysql]> ';
+                                service.mysql_connect(term.token(),
+                                                      host,
+                                                      username,
+                                                      password,
+                                                      database)(function(result) {
+                                                          db = result;
+                                                          term.push(mysql_query, {
+                                                              prompt: prompt,
+                                                              onExit: mysql_close
+                                                          }).resume();
+                                                      });
+                            }
+                            if (!password) {
+                                term.history().disable();
+                                term.push(function(pass) {
+                                    password = pass;
+                                    term.pop().history().enable();
+                                    mysql();
+                                }, {
+                                    prompt: 'password: '
+                                }).set_mask(true);
+                            } else {
+                                mysql();
+                            }
+                        })();
+                        break;
                     case 'help':
+                        not_implemented();
+                        break;
                     case 'python':
                         if (cmd.args.length) {
                             // execute python as shell command
+                            // you can call python -v
                             shell();
                             return;
                         }
@@ -321,9 +414,6 @@ $(function() {
                                 }
                             });
                         });
-                        break;
-                    case 'mysql':
-                        not_implemented();
                         break;
                     case 'adduser':
                         (function() {
@@ -365,6 +455,9 @@ $(function() {
             }, {
                 greetings: installed ? null : banner(), // if installed there is onBeforeLogin
                 prompt: installed ? function(callback) {
+                    // -----------------------------------------------------------------
+                    // :: PROMPT
+                    // -----------------------------------------------------------------
                     var server;
                     if (config && config.server) {
                         server = config.server;
@@ -385,11 +478,18 @@ $(function() {
                 onBeforeLogin: function(term) {
                     term.echo(banner());
                 },
+                historyFilter: function(command) {
+                    return !command.match(/^ /);
+                },
                 outputLimit: 200,
                 tabcompletion: true,
                 onInit: function(term) {
+                    // -----------------------------------------------------------------
+                    // :: ONINIT
+                    // -----------------------------------------------------------------
                     term.on('click', '.jargon', function() {
-                        var command = 'jargon ' + $(this).data('text').replace(/\s/g, ' ');
+                        var term = $(this).data('text').replace(/\s/g, ' ');
+                        var command = 'jargon ' + term;
                         term.exec(command);
                     }).on('click', '.exec', function() {
                         term.exec($(this).data('text'));
@@ -410,7 +510,8 @@ $(function() {
                                 prompt: "name: "
                             }
                         ];
-                        term.echo("You are running Bush for the first time. You need to configure it\n");
+                        term.echo("You are running Bush for the first time. You need "+
+                                  "to configure it\n");
                         // don't store user configuration
                         term.history().disable();
                         (function install(step, finish) {
@@ -435,10 +536,14 @@ $(function() {
                         })(0, function() {
                             term.pause();
                             service.configure(settings)(function() {
-                                term.resume().echo("Your instalation is complete now you can refresh the page and login");
+                                term.resume().echo("Your instalation is complete now y"+
+                                                   "ou can refresh the page and login");
                             });
                         });
                     }; // !instaled
+                    // -----------------------------------------------------------------
+                    // :: CONFIG
+                    // -----------------------------------------------------------------
                     var token = term.token();
                     // check if token is valid
                     if (token) { // NOTE: this is also call after login
@@ -452,10 +557,13 @@ $(function() {
                                 term.logout();
                                 term.resume();
                             } else {
-                                service.get_settings(term.token())(function(result) {
+                                service.get_settings(token)(function(result) {
                                     config = result;
                                     cwd = config.home;
-                                    term.resume();
+                                    service.dir(token, cwd)(function(result) {
+                                        dir = result;
+                                        term.resume();
+                                    });
                                     if (config.purgeOnUnload) {
                                         $(window).unload(function() {
                                             term.purge();
@@ -496,14 +604,15 @@ $(function() {
                         //invalid json - ignore
                     } finally {
                         if (commands) {
-                            try {
                                 $.each(commands, function(i, command) {
-                                    terminal.exec(command, command.match(/^ /));
+                                    try {
+                                        terminal.exec(command);
+                                    } catch(e) {
+                                        var cmd = $.terminal.escape_brackets(command);
+                                        var msg = "Error while exec with command " + cmd;
+                                        terminal.error(msg).error(e.stack);
+                                    }
                                 });
-                            } catch(e) {
-                                terminal.error("Error while exec with command " +
-                                               $.terminal.escape_brackets(command));
-                            }
                         }
                     }
                 }
