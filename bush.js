@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Thu, 20 Feb 2014 16:51:48 +0000
+ *  Date: Sun, 23 Feb 2014 14:34:02 +0000
  */
 
 var bush = {
@@ -32,6 +32,68 @@ $(function() {
             return '[[;' + color + ';]' + str + ']';
         };
     });
+    function python(terminal, url, success) {
+        function ajax_error(xhr, status) {
+            var msg = $.terminal.escape_brackets('[AJAX] ' + status +
+                                                 ' server response\n' +
+                                                 xhr.responseText);
+            terminal.error(msg).resume();
+        }
+        function json_error(error) {
+            if (typeof error == 'string') {
+                terminal.error(error);
+            } else {
+                if (error.message) {
+                    terminal.echo(error.message);
+                }
+                if (error.error.traceback) {
+                    terminal.echo(error.error.traceback);
+                }
+            }
+        }
+        function rpc_py(method, params, echo) {
+            if (params === undefined) {
+                params = [];
+            }
+            terminal.pause();
+            $.jrpc(url, method, params, function(data) {
+                if (data.error) {
+                    json_error(data.error);
+                } else if (data.result) {
+                    if (echo === undefined || echo) {
+                        terminal.echo(data.result.replace(/\n$/, ''));
+                    }
+                }
+                terminal.resume();
+            }, ajax_error);
+        }
+        terminal.pause();
+        var session_id;
+        $.jrpc(url, 'start', [], function(data) {
+            if (data.error) {
+                json_error(data.error);
+                terminal.resume();
+            } else if (data.result) {
+                session_id = data.result;
+                $.jrpc(url, 'info', [], function(data) {
+                    if (data.error) {
+                        json_error(data.error);
+                    } else {
+                        terminal.echo(data.result);
+                    }
+                    success({
+                        evaluate: function(code) {
+                            rpc_py('evaluate', [session_id, code]);
+                        },
+                        destroy: function() {
+                            rpc_py('destroy', [session_id]);
+                        }
+                    });
+                    terminal.resume();
+                });
+            }
+        }, ajax_error);
+    }
     function unix_prompt(user, server, path) {
         var name = colors.green(user + '&#64;' + server);
         var end = colors.grey(user === 'root' ? '# ' : '$ ');
@@ -57,12 +119,19 @@ $(function() {
             if (login_callback) {
                 login_callback(null, true);
             }
+        },
+        debug: function(json, type) {
+            var arrow = type == 'request' ? '->' : '<-';
+            console.log(arrow + ' ' + JSON.stringify(json));
         }
     })(function(service) {
         service.installed()(function(installed) {
             // display version only if inside versioned file
             function banner() {
-                var version = !bush.version.match(/\{{2}VERSION\}{2}/) ? ' v. ' + bush.version : '';
+                var version = '';
+                if (!bush.version.match(/\{{2}VERSION\}{2}/)) {
+                    version = ' v. ' + bush.version;
+                }
                 var banner = [
                     ' _               _',
                     '| |__  _   _ ___| |__',
@@ -80,7 +149,7 @@ $(function() {
             var config;
             var dir = {};
             var invalid_token = false;
-            var terminal = $('body').terminal(function interpreter(command, term) {
+            var terminal = $('#shell').terminal(function interpreter(command, term) {
                 if (!installed) {
                     term.error("Invalid command, you need to refresh the page");
                 } else {
@@ -90,10 +159,19 @@ $(function() {
                     var cmd = $.terminal.parseCommand(command);
                     switch(cmd.name) {
                     case 'su':
-                        term.login(term.settings.login, function() {
-                            term.push(function(command) {
-                                term.echo('[[i;;]' + command + ']');
-                            }, {prompt: '$ '});
+                        term.push(function(command) {
+                            term.echo('[[u;#fff;]' + command + ']');
+                        }, {
+                            prompt: '$ '
+                            //onExit: function() {
+                            //    term.logout();
+                            //}
+                        }).login(function(user, pass, callback) {
+                            if (user == 'demo' && pass == 'demo') {
+                                callback('xxx');
+                            } else {
+                                callback(null);
+                            }
                         });
                         break;
                     case 'todo':
@@ -112,6 +190,7 @@ $(function() {
                     case 'rpc':
                         term.push(function(command) {
                             var cmd = $.terminal.parseCommand(command.replace('$TOKEN', term.token()));
+                            term.pause();
                             $.jrpc('', cmd.name, cmd.args, function(result) {
                                 if (result.error) {
                                     if (result.error.error) {
@@ -127,6 +206,7 @@ $(function() {
                                 } else {
                                     term.echo(JSON.stringify(result.result));
                                 }
+                                term.resume();
                             }, function(xhr, status) {
                                 term.error($.terminal.escape_brackets('[AJAX]: ') + status);
                             });
@@ -134,6 +214,8 @@ $(function() {
                             name: 'rpc',
                             prompt: 'rpc> ',
                             completion: Object.keys(service)
+                        }).login(function(user, pass, callback) {
+                            service.rpc_test_login(user, pass)(callback);
                         });
                         break;
                     case 'history':
@@ -181,6 +263,43 @@ $(function() {
                     case 'sqlite':
                     case 'help':
                     case 'python':
+                        var url = 'cgi-bin/python.py?token=' + term.token();
+                        python(term, url, function(py) {
+                            var python_code = '';
+                            var help_msg = "Type help() for interactive help, or " +
+                                "help(object) for help about object.";
+                            term.push(function(command) {
+                                if (command.match(/help/)) {
+                                    if (command.match(/^help *$/)) {
+                                        term.echo(help_msg);
+                                    } else {
+                                        var rgx = /help\((.*)\)/;
+                                        py.evaluate(command.replace(rgx,
+                                                                    'print $1.__doc__'));
+                                    }
+                                } else if (command.match(/: *$/)) {
+                                    python_code += command + "\n";
+                                    term.set_prompt('... ');
+                                } else if (python_code) {
+                                    if (command == '') {
+                                        term.set_prompt('>>> ');
+                                        py.evaluate(python_code);
+                                        python_code = '';
+                                    } else {
+                                        python_code += command + "\n";
+                                    }
+                                } else {
+                                    py.evaluate(command);
+                                }
+                            }, {
+                                name: 'python',
+                                prompt: '>>> ',
+                                onExit: function() {
+                                    py.destroy();
+                                }
+                            });
+                        });
+                        break;
                     case 'mysql':
                         not_implemented();
                         break;
@@ -312,7 +431,9 @@ $(function() {
                     var token = term.token();
                     // check if token is valid
                     if (token) { // NOTE: this is also call after login
+
                         term.pause();
+
                         service.valid_token(token)(function(valid) {
                             if (!valid) {
                                 // inform onBeforeLogout to not logout
@@ -350,7 +471,8 @@ $(function() {
                     service.login(user, password)(function(token) {
                         callback(token);
                     });
-                } : false
+                } : false,
+                name: 'bush'
             }).css({
                 overflow: 'auto'
             });
@@ -361,15 +483,16 @@ $(function() {
                         commands = $.parseJSON(location.hash.replace(/^#/, ''));
                     } catch (e) {
                         //invalid json - ignore
-                    }
-                    if (commands) {
-                        try {
-                            $.each(commands, function(i, command) {
-                                terminal.exec(command, command.match(/^ /));
-                            });
-                        } catch(e) {
-                            terminal.error("Error while exec with command " +
-                                           $.terminal.escape_brackets(command));
+                    } finally {
+                        if (commands) {
+                            try {
+                                $.each(commands, function(i, command) {
+                                    terminal.exec(command, command.match(/^ /));
+                                });
+                            } catch(e) {
+                                terminal.error("Error while exec with command " +
+                                               $.terminal.escape_brackets(command));
+                            }
                         }
                     }
                 }

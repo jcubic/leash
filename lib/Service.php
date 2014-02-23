@@ -27,6 +27,8 @@ class User {
     }
 }
 
+function nop() { } // fix indent in switch case
+
 class Session {
     public $storage;
     public $token;
@@ -297,12 +299,16 @@ class Service {
             throw new Exception("You can't call this function, root already installed");
         }
         $settings = (array)$settings;
-        $this->create_root_password($settings['password']);
+        $password = $settings['password'];
         unset($settings['password']);
         $this->config->settings = array();
         foreach ($settings as $key => $val) {
+            if ($key == "home") {
+                throw new Exception("You can't store this name");
+            }
             $this->config->settings[$key] = $val;
         }
+        $this->create_root_password($password);
     }
     // -----------------------------------------------------------------
     public function get_settings($token) {
@@ -505,25 +511,31 @@ class Service {
     }
     // -----------------------------------------------------------------
     public function test_shell($token, $name) {
-        if (installed() && !valid_token($token)) {
+        if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
         switch ($name) {
             case 'exec':
+                return function_exists($name);
+                break;
             case 'shell_exec':
+                return function_exists($name);
+                break;
             case 'system':
                 return function_exists($name);
-            case 'cgi-python':
+                break;
+            case 'cgi_python':
                 $path = "/cgi-bin/cmd.py";
                 break;
-            case 'cgi-perl':
+            case 'cgi_perl':
                 $path = "/cgi-bin/cmd.py";
                 break;
-            case 'cgi-bash':
+            case 'cgi_bash':
                 $path = "/cgi-bin/cmd";
                 break;
             default:
                 throw new Exception("Invalid shell type");
+                break;
         }
     }
     // -----------------------------------------------------------------
@@ -537,9 +549,9 @@ class Service {
         }
         $marker = 'XXXX' . md5(time());
         $pre = ". .bashrc\ncd $path\n";
-        $post = " 2>&1;echo -n \"$marker\";pwd";
+        $post = ";echo -n \"$marker\";pwd";
         $code = escapeshellarg($pre . $code . $post);
-        $result = $this->exec('/bin/bash -c ' . $code);
+        $result = $this->exec('/bin/bash -c ' . $code . ' 2>&1');
         if ($result) {
             $output = explode($marker, $result);
             return array(
@@ -561,10 +573,22 @@ class Service {
     private function system($code) {
         return system($code);
     }
+    private function cgi_python($code) {
+    }
     // -----------------------------------------------------------------
     public function python($token, $code) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
+        }
+    }
+    public function pass($text) {
+        return $text;
+    }
+    public function rpc_test_login($user, $pass) {
+        if ($user == "foo" && $pass == "bar") {
+            return md5(time());
+        } else {
+            return null;
         }
     }
 }
