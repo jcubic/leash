@@ -35,22 +35,21 @@ class Interpreter(object):
         global modules
         try:
             session_file = '../session_%s.py' % session_id
-            fake_stdout = StringIO()
-            __stdout = sys.stdout
             if code.strip() == "license":
                 return "Type license() to see the full license text"
             # these in python do the same as a function but they are not show up
             # in scripts
             if re.match("^(copyright|credits)$", code.strip()):
                 code = code + "()"
+            __stdout = sys.stdout
+            sys.stdout = StringIO() # fake stdout
             env = {}
-            sys.stdout = fake_stdout
             exec(open(session_file), env)
             #don's show output from privous session
-            fake_stdout.seek(0)
-            fake_stdout.truncate()
-            ret = eval(code, env)
-            result = fake_stdout.getvalue()
+            sys.stdout.seek(0)
+            sys.stdout.truncate()
+            print eval(code, env)
+            result = sys.stdout.getvalue()
             sys.stdout = __stdout
             return result
         except:
@@ -65,9 +64,10 @@ class Interpreter(object):
                 stack = buff.getvalue().replace('"<string>"', '"<JSON-RPC>"').split('\n')
                 return '\n'.join([stack[0]] + stack[3:])
             else:
+                result = sys.stdout.getvalue()
                 sys.stdout = __stdout
                 open(session_file, 'a+').write('\n%s' % code)
-                return fake_stdout.getvalue()
+                return result
 
     def destroy(self, session_id):
         os.remove('../session_%s.py' % session_id)
@@ -84,9 +84,11 @@ if __name__ == '__main__':
         error("You need to provide valid token")
     else:
         token = query['token'][0]
-        if open('../config.json').read().find(token) != -1:
-            json.handle_cgi(Interpreter())
-        else:
-            error("You need to provide valid token")
+        config = json.parse(open('../config.json').read())
+        for session in config['sessions']:
+            if session['token'] == token:
+                json.handle_cgi(Interpreter())
+                exit()
+        error("You need to provide valid token")
 
 
