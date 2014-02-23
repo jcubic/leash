@@ -75,6 +75,9 @@ $(function() {
                 terminal.resume();
             } else if (data.result) {
                 session_id = data.result;
+                terminal.echo('[[b;#F8B612;]Warring: each time you execute a command' +
+                              ', python will execute all your previous commands, so ' +
+                              'watch out on commands that can be exeucted only once]');
                 $.jrpc(url, 'info', [], function(data) {
                     if (data.error) {
                         json_error(data.error);
@@ -157,6 +160,20 @@ $(function() {
                         term.echo("Yet to be implemented");
                     }
                     var cmd = $.terminal.parseCommand(command);
+                    function shell() {
+                        term.pause();
+                        var token = term.token();
+                        service.shell(token, command, cwd)(function(result) {
+                            if (result.output) {
+                                term.echo(result.output);
+                            }
+                            if (cwd !== result.cwd) {
+                                cwd = result.cwd;
+                                // DIR
+                            }
+                            term.resume();
+                        });
+                    }
                     switch(cmd.name) {
                     case 'su':
                         term.push(function(command) {
@@ -263,6 +280,11 @@ $(function() {
                     case 'sqlite':
                     case 'help':
                     case 'python':
+                        if (cmd.args.length) {
+                            // execute python as shell command
+                            shell();
+                            return;
+                        }
                         var url = 'cgi-bin/python.py?token=' + term.token();
                         python(term, url, function(py) {
                             var python_code = '';
@@ -337,18 +359,7 @@ $(function() {
                         not_implemented();
                         break;
                     default:
-                        term.pause();
-                        var token = term.token();
-                        service.shell(token, command, cwd)(function(result) {
-                            if (result.output) {
-                                term.echo(result.output);
-                            }
-                            if (cwd !== result.cwd) {
-                                cwd = result.cwd;
-                                // DIR
-                            }
-                            term.resume();
-                        });
+                        shell();
                     }
                 }
             }, {

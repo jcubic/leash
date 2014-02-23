@@ -23,7 +23,7 @@ def uniq_id():
 class Interpreter(object):
     def start(self):
         session_id = uniq_id()
-        open('../session_%s.py' % session_id, 'w')
+        open('../tmp/session_%s.py' % session_id, 'w')
         return session_id
 
     def info(self):
@@ -34,7 +34,7 @@ class Interpreter(object):
     def evaluate(self, session_id, code):
         global modules
         try:
-            session_file = '../session_%s.py' % session_id
+            session_file = '../tmp/session_%s.py' % session_id
             if code.strip() == "license":
                 return "Type license() to see the full license text"
             # these in python do the same as a function but they are not show up
@@ -70,7 +70,7 @@ class Interpreter(object):
                 return result
 
     def destroy(self, session_id):
-        os.remove('../session_%s.py' % session_id)
+        os.remove('../tmp/session_%s.py' % session_id)
 
 def error(message):
     print "Content-Type: application/json"
@@ -84,11 +84,14 @@ if __name__ == '__main__':
         error("You need to provide valid token")
     else:
         token = query['token'][0]
-        config = json.parse(open('../config.json').read())
-        for session in config['sessions']:
-            if session['token'] == token:
-                json.handle_cgi(Interpreter())
-                exit()
+        # token is sha1 sum
+        if re.match("^[0-9a-f]{40}$", token):
+            # share token from php
+            config = json.parse(open('../config.json').read())
+            for session in config['sessions']:
+                if session['token'] == token:
+                    json.handle_cgi(Interpreter())
+                    exit()
         error("You need to provide valid token")
 
 
