@@ -10,3 +10,6 @@
 [submodule "lib/jquery-hashchange"]
 	path = lib/jquery-hashchange
 	url = https://github.com/cowboy/jquery-hashchange.git
+[submodule "lib/optparse"]
+	path = lib/optparse
+	url = https://github.com/jfd/optparse-js.git
