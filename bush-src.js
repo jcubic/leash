@@ -202,8 +202,14 @@ $(function() {
                             'less as command and as last command',
                             '[[;#fff;]cat] without argument',
                             'pick the shell',
+                            'timer 1s command',
                             '#["guess", "guess", "play: xxxx"]'
                         ].join('\n'));
+                        break;
+                    case 'timer':
+                        break;
+                    case 'reload':
+                        location.reload();
                         break;
                     case 'rpc':
                         term.push(function(command) {
@@ -240,9 +246,7 @@ $(function() {
                         term.echo("Should show history");
                         break;
                     case 'purge':
-                        service.logout(term.token())(function() {
-                            term.purge().logout();
-                        });
+                        term.logout().purge();
                         break;
                     case 'js':
                         term.push(function(command, term) {

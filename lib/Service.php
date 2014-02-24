@@ -80,16 +80,16 @@ function token() {
     return sha1($time) . substr(md5($time), 4);
 }
 // hash function used for passwords
-function hsh($str) {
+function h($str) {
     // You can change this function before installation
-    return str_rot13(sha1($str) . substr(md5($str), 0, 13));
+    return sha1(str_rot13($str) . $str) . substr(md5($str), 0, 24);
 }
 
 class Service {
     protected $config_file;
     protected $config;
-    const password_hash = 'hsh';
-    const password_regex = '/([A-Za-z_][A-Za-z0-9_]+):(.*)/';
+    const password_hash = 'h';
+    const password_regex = '/([A-Za-z_][A-Za-z0-9_]*):(.*)/';
 
     function __construct($config_file, $path) {
         $this->path = $path;
@@ -413,7 +413,7 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $this->delete_session($token);
+        return $this->delete_session($token);
     }
 
     // ------------------------------------------------------------------------
