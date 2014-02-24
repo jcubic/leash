@@ -261,6 +261,7 @@ $(function() {
                                 }
                             }
                         }, {prompt: '[[;#D72424;]js]> ', name: 'js'});
+                        break;
                     case 'jargon':
                         if (cmd.args.length == 0) {
                             var msg = 'This is the Jargon File, a comprehensive'+
