@@ -1,24 +1,25 @@
 #!/usr/bin/python
+#  This file is part of Bush (Browser Unix Shell)
+#  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
 #
-# Try Python RPC Interpreter
-# Licensed under GNU GPL Version 3 license
-# Copyright (c) 2011 Jakub Jankiewicz <http://jcubic.pl>
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re, sys, types
 import json
 from StringIO import StringIO
 
-
-def uniq_id():
-    try:
-        from hashlib import md5
-    except ImportError:
-        import md5 as _md5
-        md5 = _md5.new
-    from time import time
-    return md5(str(time())).hexdigest()
-
+from utils import uniq_id, valid_token
 
 class Interpreter(object):
     def start(self):
@@ -72,26 +73,13 @@ class Interpreter(object):
     def destroy(self, session_id):
         os.remove('../tmp/session_%s.py' % session_id)
 
-def error(message):
-    print "Content-Type: application/json"
-    print
-    print json.serialize({"error": message})
 
 if __name__ == '__main__':
-    from cgi import parse_qs
-    query = parse_qs(os.environ['QUERY_STRING'])
-    if not query.has_key('token'):
-        error("You need to provide valid token")
+    if valid_token():
+        json.handle_cgi(Interpreter())
     else:
-        token = query['token'][0]
-        # at least md5 hash
-        if re.match("^[0-9a-f]{32,}$", token):
-            # share token from php
-            config = json.parse(open('../config.json').read())
-            for session in config['sessions']:
-                if session['token'] == token:
-                    json.handle_cgi(Interpreter())
-                    exit()
-        error("You need to provide valid token")
+        print "Content-Type: application/json"
+        print
+        print json.serialize({"error": message})
 
 

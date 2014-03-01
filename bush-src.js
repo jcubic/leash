@@ -145,6 +145,7 @@ $(function() {
             //console.log(arrow + ' ' + JSON.stringify(json));
         }
     })(function(service) {
+        window.service = service; // allow access from js interpreter
         service.installed()(function(installed) {
             function banner() {
                 var version = '';
@@ -169,7 +170,7 @@ $(function() {
             var config;
             var dir = {};
             var invalid_token = false;
-            var terminal = $('#shell').terminal(function interpreter(command, term) {
+            window.terminal = $('#shell').terminal(function interpreter(command, term) {
                 if (!installed) {
                     term.error("Invalid command, you need to refresh the page");
                 } else {
@@ -255,9 +256,11 @@ $(function() {
                             name: 'rpc',
                             prompt: 'rpc> ',
                             completion: Object.keys(service)
-                        }).login(function(user, pass, callback) {
-                            service.rpc_test_login(user, pass)(callback);
                         });
+                        // testing login
+                        /*.login(function(user, pass, callback) {
+                            service.rpc_test_login(user, pass)(callback);
+                        });*/
                         break;
                     case 'history':
                         term.echo(term.history().data().join('\n'));

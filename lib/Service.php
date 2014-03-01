@@ -74,12 +74,30 @@ class Session {
         return new Session($username, token());
     }
 }
-// random token
+// ----------------------------------------------------------------------------
+// :: Return root of the url (with http and no port number) to call another
+// :: script on the server using curl
+// ----------------------------------------------------------------------------
+function root() {
+    $host = $_SERVER['HTTP_HOST'];
+    $root = "http://" . $_SERVER["SERVER_NAME"];
+    if ($_SERVER["REQUEST_URI"][strlen($_SERVER["REQUEST_URI"])-1] == "/") {
+        $root .= $_SERVER["REQUEST_URI"];
+    } else {
+        $root .= pre_replace("/\/[^\/]+$/", "/", $_SERVER["REQUEST_URI"]);
+    }
+    return $root;
+}
+// ----------------------------------------------------------------------------
+// :: random token
+// ----------------------------------------------------------------------------
 function token() {
     $time = array_sum(explode(' ', microtime()));
     return sha1($time) . substr(md5($time), 4);
 }
-// hash function used for passwords
+// ----------------------------------------------------------------------------
+// :: hash function used for passwords
+// ----------------------------------------------------------------------------
 function h($str) {
     // You can change this function before installation
     return sha1(str_rot13($str) . $str) . substr(md5($str), 0, 24);
@@ -88,7 +106,7 @@ function h($str) {
 class Service {
     protected $config_file;
     protected $config;
-    const password_hash = 'h';
+    const password_hash = 'h'; // function use for password on installation
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]*):(.*)/';
 
     function __construct($config_file, $path) {
@@ -121,7 +139,6 @@ class Service {
             $this->config->users = array();
         }
     }
-    // ------------------------------------------------------------------------
     // ------------------------------------------------------------------------
     function __destruct() {
         $path = $this->path . "/" . $this->config_file;
@@ -543,6 +560,32 @@ class Service {
             throw new Exception('SQLite not installed');
         }
     }
+    private function curl($url) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        if (isset($_SERVER['HTTP_USER_AGENT'])) {
+            $agent = $_SERVER['HTTP_USER_AGENT'];
+        } else {
+            // defaut FireFox 15 from agent switcher (google chrome extension)
+            $agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120427 '.
+                'Firefox/15.0a1';
+        }
+        curl_setopt($ch, CURLOPT_USERAGENT, $agent);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        return $ch;
+    }
+    // ------------------------------------------------------------------------
+    public function get($url) {
+        return curl_exec($this->curl($url));
+    }
+    // ------------------------------------------------------------------------
+    public function post($url, $data) {
+        $ch = $this->curl($url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        return curl_exec($ch);
+    }
     // ------------------------------------------------------------------------
     public function list_shells($token = null) {
         if (installed() && !valid_token($token)) {
@@ -551,10 +594,8 @@ class Service {
         return array(
             "exec",
             "shell_exec",
-            "system",
-            "cgi-python",
-            "cgi-perl",
-            "cgi-bash"
+            "cgi_python",
+            "cgi_perl"
         );
     }
     // ------------------------------------------------------------------------
@@ -569,17 +610,11 @@ class Service {
             case 'shell_exec':
                 return function_exists($name);
                 break;
-            case 'system':
-                return function_exists($name);
-                break;
             case 'cgi_python':
                 $path = "/cgi-bin/cmd.py";
                 break;
             case 'cgi_perl':
                 $path = "/cgi-bin/cmd.py";
-                break;
-            case 'cgi_bash':
-                $path = "/cgi-bin/cmd";
                 break;
             default:
                 throw new Exception("Invalid shell type");
@@ -595,34 +630,43 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        // TODO: move FUN to config
+        $FUN = 'shell_exec';
         $marker = 'XXXX' . md5(time());
         $pre = ". .bashrc\ncd $path\n";
         $post = ";echo -n \"$marker\";pwd";
         $code = escapeshellarg($pre . $code . $post);
-        $result = $this->exec('/bin/bash -c ' . $code . ' 2>&1');
+        $result = $this->$FUN('/bin/bash -c ' . $code . ' 2>&1', $token);
         if ($result) {
             $output = explode($marker, $result);
             return array(
                 'output' => preg_replace("/\n$/", '', $output[0]),
-                'cwd' => $output[1]
+                'cwd' => preg_replace("/\n$/", '', $output[1])
             );
         }
     }
     // ------------------------------------------------------------------------
-    private function shell_exec($code) {
+    // all functions need the same signature as cgi_python
+    private function shell_exec($code, $token) {
         return shell_exec($code);
     }
     // ------------------------------------------------------------------------
-    private function exec($code) {
+    private function exec($code, $token) {
         exec($code, $result);
         return implode("\n", $result);
     }
     // ------------------------------------------------------------------------
-    private function system($code) {
-        return system($code);
+    private function cgi_perl($code, $token) {
+        
     }
     // ------------------------------------------------------------------------
-    private function cgi_python($code) {
+    private function cgi_python($code, $token) {
+        $url = root() . "cgi-bin/cmd.py?token=" . $token;
+        $response = json_decode($this->post($url, $code));
+        if (isset($response->error)) {
+            throw new Exception($response->error);
+        }
+        return $response->result;
     }
     // ------------------------------------------------------------------------
     // TEST code

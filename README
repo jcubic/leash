@@ -9,15 +9,15 @@ Browser Unix Shell
 This is web application that will give you access to the shell, you will not
 need root priviliges, ssh or telnet. You only need one of the following:
 
-* Hosting with php
 * php exec function
-* php system function
 * php shell_exec function
 * Enabled CGI with python or perl
 
 Shell Limitations:
 
 * you will not be able to execute interactive commands like `php -a`
+* you can't create a function and run it in next command (because each
+  command is run as separated process)
 
 Features:
 

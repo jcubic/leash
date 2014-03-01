@@ -2,3 +2,4 @@
 .*
 config.json
 tmp/.*
+cgi-bin/*.pyc
