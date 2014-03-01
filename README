@@ -7,27 +7,38 @@
 Browser Unix Shell
 
 This is web application that will give you access to the shell, you will not
-need root priviliges, ssh or telnet. You only need one of the following:
+need root priviliges, ssh or telnet only php based hosting. You only need
+one of the following:
 
 * php exec function
 * php shell_exec function
 * Enabled CGI with python or perl
 
-Shell Limitations:
+----------------------------------------------------------------------------
+:: Shell Limitations
+----------------------------------------------------------------------------
 
 * you will not be able to execute interactive commands like `php -a`
 * you can't create a function and run it in next command (because each
   command is run as separated process)
 
-Features:
+----------------------------------------------------------------------------
+:: Features
+----------------------------------------------------------------------------
 
-* mysql command that will execute
+* mysql command
+* sqlite command (not yet)
 * python interpreter
 * javascript interpreter
 * jargon command (will display definitions from jargon file)
-* micro editor (based on nano/pico)
+* micro editor (based on nano/pico) [editor in progress]
+* vi editor (using jsvi) (not yet)
+* tab completion (not yet)
+* File Drag & Drop upload (using HTML5) (not yet)
 
-Features not yet supported (but will):
-* sqlite command
-* vi editor (using jsvi)
-* Drag & Drop of files (using HTML5)
+----------------------------------------------------------------------------
+:: License
+----------------------------------------------------------------------------
+
+Copyright (C) 2014 Jakub Jankiewicz
+Licensed under GNU GPL Version 3 license
