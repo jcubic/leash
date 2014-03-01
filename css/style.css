@@ -1,0 +1,25 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: black;
+}
+.terminal {
+  font-weight: bold;
+}
+#micro {
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  border: none;
+}
+#micro, #jsvi {
+  display: none;
+}
+.exec, .jargon {
+  cursor: pointer;
+}
+.exec:hover, .jargon:hover {
+  text-decoration: underline;
+}

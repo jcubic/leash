@@ -1,18 +1,17 @@
- _               _
-| |__  _   _ ___| |__
-| '_ \| | | / __| '_ \
-| |_) | |_| \__ \ | | |
-|_.__/ \__,_|___/_| |_|
-
-Browser Unix Shell
+ _                   _          _ _
+| |__  _ __ ___  ___| |__   ___| | |
+| '_ \| '__/ _ \/ __| '_ \ / _ \ | |
+| |_) | | | (_) \__ \ | | |  __/ | |
+|_.__/|_|  \___/|___/_| |_|\___|_|_|
+Browser Shell
 
 This is web application that will give you access to the shell, you will not
 need root priviliges, ssh or telnet only php based hosting. You only need
 one of the following:
 
-* php exec function
-* php shell_exec function
-* Enabled CGI with python or perl
+* php exec function enabled
+* php shell_exec function enabled
+* Enabled CGI with python or perl on the server
 
 ----------------------------------------------------------------------------
 :: Shell Limitations

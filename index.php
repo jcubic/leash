@@ -18,52 +18,32 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>bush</title>
+    <title>broshell</title>
     <meta name="Description" content=""/>
     <link rel="shortcut icon" href="favicon.ico"/>
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <link href="../terminal/css/jquery.terminal.css" rel="stylesheet"/>
+    <link href="lib/terminal/css/jquery.terminal.css" rel="stylesheet"/>
     <link href="css/style.css" rel="stylesheet"/>
     <link href="lib/micro/css/jquery.micro.css" rel="stylesheet"/>
     <style>
-body {
-    margin: 0;
-    padding: 0;
-    background-color: black;
-}
-.terminal {
-    font-weight: bold;
-}
-#micro {
-    width: 100%;
-    position: absolute;
-    display: none;
-    top: 0;
-    left: 0;
-    z-index: 100;
-    border: none;
-}
-.exec, .jargon {
-    cursor: pointer;
-}
-.exec:hover, .jargon:hover {
-    text-decoration: underline;
-}
+/* some styles before I move them to style.css */
     </style>
     <script src="lib/jquery-1.11.0.min.js"></script>
     <script src="lib/json-rpc/json-rpc.js"></script>
+    <!-- for devel I use ../ since I work on those tools in pararel -->
     <script src="../terminal/js/jquery.terminal-src.js"></script>
     <script src="lib/terminal/js/jquery.mousewheel-min.js"></script>
     <script src="lib/browser.js"></script>
     <script src="lib/optparse/lib/optparse.js"></script>
     <script src="lib/jquery-hashchange/jquery.ba-hashchange.min.js"></script>
     <script src="../micro/js/jquery.micro-src.js"></script>
-    <script src="bush<?= __DEVEL__ ? "-src" : ".min" ?>.js"></script>
+    <script src="broshell<?= __DEVEL__ ? "-src" : ".min" ?>.js"></script>
 </head>
 <body>
     <div id="shell"></div>
     <div id="micro"></div>
+    <div id="jsvi"></div>
 </body>
 </html>

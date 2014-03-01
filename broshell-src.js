@@ -1,5 +1,5 @@
 /**@license
- *  This file is part of Bush (Browser Unix Shell)
+ *  This file is part of Broshell (Browser Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
  *  Date: {{DATE}}
  */
 
-var bush = {
+var broshell = {
     version: '{{VERSION}}'
 };
 var init = false;
@@ -150,16 +150,16 @@ $(function() {
             function banner() {
                 var version = '';
                 // display version only if inside versioned file
-                if (!bush.version.match(/\{{2}VERSION\}{2}/)) {
-                    version = ' v. ' + bush.version;
+                if (!broshell.version.match(/\{{2}VERSION\}{2}/)) {
+                    version = ' v. ' + broshell.version;
                 }
                 var banner = [
-                    ' _               _',
-                    '| |__  _   _ ___| |__',
-                    '| \'_ \\| | | / __| \'_ \\' ,
-                    '| |_) | |_| \\__ \\ | | |',
-                    '|_.__/ \\__,_|___/_| |_|',
-                    '[[b;#fff;]Browser Unix Shell' + version + ']',
+                    ' _                   _          _ _ ',
+                    '| |__  _ __ ___  ___| |__   ___| | |',
+                    '| \'_ \\| \'__/ _ \\/ __| \'_ \\ / _ \\ | |',
+                    '| |_) | | | (_) \\__ \\ | | |  __/ | |',
+                    '|_.__/|_|  \\___/|___/_| |_|\\___|_|_|',
+                    '[[b;#fff;]Browser Shell' + version + ']',
                     'Today is: ' + (new Date()).toUTCString(),
                     ''
                 ].join('\n');

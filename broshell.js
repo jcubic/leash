@@ -1,5 +1,5 @@
 /**@license
- *  This file is part of Bush (Browser Unix Shell)
+ *  This file is part of Broshell (Browser Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -15,13 +15,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Mon, 24 Feb 2014 00:27:47 +0000
+ *  Date: Sat, 01 Mar 2014 19:41:50 +0000
  */
 
-var bush = {
+var broshell = {
     version: '0.1'
 };
-
+var init = false;
 $(function() {
     var colors = $.omap({
         blue:  '#55f',
@@ -32,6 +32,17 @@ $(function() {
             return '[[;' + color + ';]' + str + ']';
         };
     });
+    // fill text with char to have width of size
+    function fill(str, size, chr) {
+        if (size > str.length) {
+            return fill(chr+str, size, chr);
+        } else {
+            return str;
+        }
+    }
+    // -------------------------------------------------------------------------
+    // :: PYTHON INTERPRETER RPC HANDLER
+    // -------------------------------------------------------------------------
     function python(terminal, url, success) {
         function ajax_error(xhr, status) {
             var msg = $.terminal.escape_brackets('[AJAX] ' + status +
@@ -97,11 +108,17 @@ $(function() {
             }
         }, ajax_error);
     }
+    // -------------------------------------------------------------------------
+    // :: UNIX COLOR PROMPT
+    // -------------------------------------------------------------------------
     function unix_prompt(user, server, path) {
         var name = colors.green(user + '&#64;' + server);
         var end = colors.grey(user === 'root' ? '# ' : '$ ');
         return name + colors.grey(':') + colors.blue(path) + end;
     }
+    // -------------------------------------------------------------------------
+    // :: INIT RPC
+    // -------------------------------------------------------------------------
     var login_callback;
     rpc({
         url: '',
@@ -124,24 +141,25 @@ $(function() {
             }
         },
         debug: function(json, type) {
-            //var arrow = type == 'request' ? '->' : '<-';
+            var arrow = type == 'request' ? '->' : '<-';
             //console.log(arrow + ' ' + JSON.stringify(json));
         }
     })(function(service) {
+        window.service = service; // allow access from js interpreter
         service.installed()(function(installed) {
-            // display version only if inside versioned file
             function banner() {
                 var version = '';
-                if (!bush.version.match(/\{{2}VERSION\}{2}/)) {
-                    version = ' v. ' + bush.version;
+                // display version only if inside versioned file
+                if (!broshell.version.match(/\{{2}VERSION\}{2}/)) {
+                    version = ' v. ' + broshell.version;
                 }
                 var banner = [
-                    ' _               _',
-                    '| |__  _   _ ___| |__',
-                    '| \'_ \\| | | / __| \'_ \\' ,
-                    '| |_) | |_| \\__ \\ | | |',
-                    '|_.__/ \\__,_|___/_| |_|',
-                    '[[b;#fff;]Browser Unix Shell' + version + ']',
+                    ' _                   _          _ _ ',
+                    '| |__  _ __ ___  ___| |__   ___| | |',
+                    '| \'_ \\| \'__/ _ \\/ __| \'_ \\ / _ \\ | |',
+                    '| |_) | | | (_) \\__ \\ | | |  __/ | |',
+                    '|_.__/|_|  \\___/|___/_| |_|\\___|_|_|',
+                    '[[b;#fff;]Browser Shell' + version + ']',
                     'Today is: ' + (new Date()).toUTCString(),
                     ''
                 ].join('\n');
@@ -152,7 +170,7 @@ $(function() {
             var config;
             var dir = {};
             var invalid_token = false;
-            var terminal = $('#shell').terminal(function interpreter(command, term) {
+            window.terminal = $('#shell').terminal(function interpreter(command, term) {
                 if (!installed) {
                     term.error("Invalid command, you need to refresh the page");
                 } else {
@@ -238,12 +256,14 @@ $(function() {
                             name: 'rpc',
                             prompt: 'rpc> ',
                             completion: Object.keys(service)
-                        }).login(function(user, pass, callback) {
-                            service.rpc_test_login(user, pass)(callback);
                         });
+                        // testing login
+                        /*.login(function(user, pass, callback) {
+                            service.rpc_test_login(user, pass)(callback);
+                        });*/
                         break;
                     case 'history':
-                        term.echo("Should show history");
+                        term.echo(term.history().data().join('\n'));
                         break;
                     case 'purge':
                         term.logout().purge();
@@ -261,8 +281,9 @@ $(function() {
                                 }
                             }
                         }, {prompt: '[[;#D72424;]js]> ', name: 'js'});
+                        break;
                     case 'jargon':
-                        if (cmd.args.length == 0) {
+                        if (!cmd.args.length) {
                             var msg = 'This is the Jargon File, a comprehensive'+
                                 ' compendium of hacker slang illuminating many '+
                                 'aspects of hackish tradition, folklore, and hu'+
@@ -270,13 +291,17 @@ $(function() {
                             term.echo(msg);
                         } else {
                             term.pause();
-                            service.jargon(cmd.args.join(' '))(function(res) {
-                                term.echo($.map(res, function(term) {
-                                    var text = '[[b;#fff;]' + term.term + ']';
-                                    if (term.abbr) {
-                                        text += ' (' + term.abbr.join(', ') + ')';
+                            // NOTE: when paste using mouse middle rpc jargon function
+                            //       don't return result
+                            var word = cmd.args.join(' ').replace(/\s+/g, ' ');
+                            // TODO: echo function that will resize text based on words
+                            service.jargon(word)(function(result) {
+                                term.echo($.map(result, function(entry) {
+                                    var text = '[[b;#fff;]' + entry.term + ']';
+                                    if (entry.abbr) {
+                                        text += ' (' + entry.abbr.join(', ') + ')';
                                     }
-                                    return text + '\n' + term.def + '\n';
+                                    return text + '\n' + entry.def + '\n';
                                 }).join('\n').replace(/\n$/, '')).resume();
                             });
                         }
@@ -373,7 +398,6 @@ $(function() {
                         })();
                         break;
                     case 'help':
-                        not_implemented();
                         break;
                     case 'python':
                         if (cmd.args.length) {
@@ -457,7 +481,8 @@ $(function() {
                     }
                 }
             }, {
-                greetings: installed ? null : banner(), // if installed there is onBeforeLogin
+                // if installed there is onBeforeLogin
+                greetings: installed ? null : banner(),
                 prompt: installed ? function(callback) {
                     // -----------------------------------------------------------------
                     // :: PROMPT
@@ -492,11 +517,30 @@ $(function() {
                     // :: ONINIT
                     // -----------------------------------------------------------------
                     term.on('click', '.jargon', function() {
-                        var term = $(this).data('text').replace(/\s/g, ' ');
-                        var command = 'jargon ' + term;
-                        term.exec(command);
+                        term.exec('jargon ' + $(this).data('text').replace(/\s/g, ' '));
                     }).on('click', '.exec', function() {
                         term.exec($(this).data('text'));
+                    }).on('click', '.exception a', function() {
+                        var url = $(this).attr('href');
+                        var re = /(.*):([0-9]+):([0-9]+)$/;
+                        m = url.match(re);
+                        if (m) {
+                            // Display code of the file if line numbers are present
+                            $.get(m[1], function(response) {
+                                var prefix = location.href.replace(/[^\/]+$/, '');
+                                var file = m[1].replace(prefix, '');
+                                term.echo('[[b;white;]' + file + ']');
+                                var code = response.split('\n');
+                                var n = +m[2]-1;
+                                term.echo(code.slice(n-2, n+3).map(function(line, i) {
+                                    if (i == 2) {
+                                        line = '[[;#f00;]' + line + ']';
+                                    }
+                                    return '[' + (n+i) + ']: ' + line;
+                                }).join('\n'));
+                            }, 'text');
+                            return false;
+                        }
                     });
                     if (!installed) {
                         var settings = {};
@@ -600,31 +644,26 @@ $(function() {
                 overflow: 'auto'
             });
             function exec_hash() {
-                if (location.hash != '') {
+                if (location.hash) {
                     var commands;
                     try {
                         commands = $.parseJSON(location.hash.replace(/^#/, ''));
+                        $.each(commands, function(i, command) {
+                            try {
+                                terminal.exec(command);
+                            } catch(e) {
+                                var cmd = $.terminal.escape_brackets(command);
+                                var msg = "Error while exec with command " + cmd;
+                                terminal.error(msg).error(e.stack);
+                            }
+                        });
                     } catch (e) {
                         //invalid json - ignore
-                    } finally {
-                        if (commands) {
-                                $.each(commands, function(i, command) {
-                                    try {
-                                        terminal.exec(command);
-                                    } catch(e) {
-                                        var cmd = $.terminal.escape_brackets(command);
-                                        var msg = "Error while exec with command " + cmd;
-                                        terminal.error(msg).error(e.stack);
-                                    }
-                                });
-                        }
                     }
                 }
             }
-            exec_hash();
-            $(window).hashchange(exec_hash);
             var $win = $(window);
-            $win.resize(function() {
+            $win.hashchange(exec_hash).hashchange().resize(function() {
                 var height = $win.height();
                 terminal.css('height', height-20);
                 $('#micro').height(height);

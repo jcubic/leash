@@ -1,4 +1,4 @@
-#  This file is part of Bush (Browser Unix Shell)
+#  This file is part of Broshell (Browser Shell)
 #  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -19,13 +19,13 @@ JSCOMPRESS=uglifyjs
 SED=sed
 CP=cp
 
-ALL: bush.js bush.min.js
+ALL: broshell.js broshell.min.js
 
-bush.js: bush-src.js .$(VERSION) Makefile
-	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" -e "s/{{DATE}}/`date -uR`/g" bush-src.js > bush.js
+broshell.js: broshell-src.js .$(VERSION) Makefile
+	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" -e "s/{{DATE}}/`date -uR`/g" broshell-src.js > broshell.js
 
-bush.min.js: bush.js
-	$(JSCOMPRESS) -o bush.min.js bush.js
+broshell.min.js: broshell.js
+	$(JSCOMPRESS) -o broshell.min.js broshell.js
 
 .$(VERSION):
 	touch .$(VERSION)
