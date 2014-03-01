@@ -54,11 +54,10 @@ body {
     </style>
     <script src="lib/jquery-1.11.0.min.js"></script>
     <script src="lib/json-rpc/json-rpc.js"></script>
-    <script src="lib/terminal/js/jquery.terminal-min.js"></script>
+    <script src="../terminal/js/jquery.terminal-src.js"></script>
     <script src="lib/terminal/js/jquery.mousewheel-min.js"></script>
     <script src="lib/browser.js"></script>
     <script src="lib/optparse/lib/optparse.js"></script>
-    <script src="lib/jquery-hashchange/jquery.ba-hashchange.min.js"></script>
     <script src="lib/jquery-hashchange/jquery.ba-hashchange.min.js"></script>
     <script src="../micro/js/jquery.micro-src.js"></script>
     <script src="bush<?= __DEVEL__ ? "-src" : ".min" ?>.js"></script>

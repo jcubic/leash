@@ -1,9 +1,33 @@
- _               _     
-| |__  _   _ ___| |__  
-| '_ \| | | / __| '_ \ 
+ _               _
+| |__  _   _ ___| |__
+| '_ \| | | / __| '_ \
 | |_) | |_| \__ \ | | |
 |_.__/ \__,_|___/_| |_|
 
 Browser Unix Shell
 
+This is web application that will give you access to the shell, you will not
+need root priviliges, ssh or telnet. You only need one of the following:
 
+* Hosting with php
+* php exec function
+* php system function
+* php shell_exec function
+* Enabled CGI with python or perl
+
+Shell Limitations:
+
+* you will not be able to execute interactive commands like `php -a`
+
+Features:
+
+* mysql command that will execute
+* python interpreter
+* javascript interpreter
+* jargon command (will display definitions from jargon file)
+* micro editor (based on nano/pico)
+
+Features not yet supported (but will):
+* sqlite command
+* vi editor (using jsvi)
+* Drag & Drop of files (using HTML5)
