@@ -18,7 +18,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>broshell</title>
+    <title>Leash</title>
     <meta name="Description" content=""/>
     <link rel="shortcut icon" href="favicon.ico"/>
     <!--[if IE]>
@@ -39,7 +39,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <script src="lib/optparse/lib/optparse.js"></script>
     <script src="lib/jquery-hashchange/jquery.ba-hashchange.min.js"></script>
     <script src="../micro/js/jquery.micro-src.js"></script>
-    <script src="broshell<?= __DEVEL__ ? "-src" : ".min" ?>.js"></script>
+    <script src="leash<?= __DEVEL__ ? "-src" : ".min" ?>.js"></script>
 </head>
 <body>
     <div id="shell"></div>

@@ -1,5 +1,5 @@
 /**@license
- *  This file is part of Broshell (Browser Shell)
+ *  This file is part of Leash (Browser Shell)
  *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
  *  Date: {{DATE}}
  */
 
-var broshell = {
+var leash = {
     version: '{{VERSION}}'
 };
 var init = false;
@@ -150,18 +150,17 @@ $(function() {
             function banner() {
                 var version = '';
                 // display version only if inside versioned file
-                if (!broshell.version.match(/\{{2}VERSION\}{2}/)) {
-                    version = ' v. ' + broshell.version;
+                if (!leash.version.match(/\{{2}VERSION\}{2}/)) {
+                    version = ' v. ' + leash.version;
                 }
                 var banner = [
-                    ' _                   _          _ _ ',
-                    '| |__  _ __ ___  ___| |__   ___| | |',
-                    '| \'_ \\| \'__/ _ \\/ __| \'_ \\ / _ \\ | |',
-                    '| |_) | | | (_) \\__ \\ | | |  __/ | |',
-                    '|_.__/|_|  \\___/|___/_| |_|\\___|_|_|',
-                    '[[b;#fff;]Browser Shell' + version + ']',
-                    'Today is: ' + (new Date()).toUTCString(),
-                    ''
+                  '   __   _______   ______ __',
+                  '  / /  / __/ _ | / __/ // /',
+                  ' / /__/ _// __ |_\\ \\/ _  / ',
+                  '/____/___/_/ |_/___/_//_/  ',
+                  '[[b;#fff;]Browser Shell' + version + ']',
+                  'Today is: ' + (new Date()).toUTCString(),
+                  ''
                 ].join('\n');
                 return banner;
             }
