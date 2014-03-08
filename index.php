@@ -32,7 +32,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     </style>
     <script src="lib/jquery-1.11.0.min.js"></script>
     <script src="lib/json-rpc.js"></script>
-    <script src="lib/jquery.terminal-src.js"></script>
+    <script src="lib/jquery.terminal-min.js"></script>
     <script src="lib/jquery.mousewheel-min.js"></script>
     <script src="lib/browser.js"></script>
     <script src="lib/optparse.js"></script>
