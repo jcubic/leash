@@ -307,13 +307,6 @@ class Service {
         $this->validate_root($token);
         return $this->config;
     }
-
-    // ------------------------------------------------------------------------
-    private function create_root_password($password) {
-        $password = call_user_func(self::password_hash, $password);
-        $this->config->users[] =
-                new User('root', self::password_hash . ':' . $password);
-    }
     // ------------------------------------------------------------------------
     // executed when config file don't exists
     public function configure($settings) {
@@ -321,13 +314,21 @@ class Service {
             throw new Exception("You can't call this function, root already installed");
         }
         $settings = (array)$settings;
+
+        // don't save these in settings
+        $root_password = $settings['root_password'];
         $password = $settings['password'];
+        $username = $settings['username'];
+        unset($settings['username']);
+        unset($settings['root_password']);
         unset($settings['password']);
+
         $this->config->settings = array();
         foreach ($settings as $key => $val) {
             $this->config->settings[$key] = $val;
         }
-        $this->create_root_password($password);
+        $this->new_user('root', $root_password);
+        $this->new_user($username, $password);
     }
     // ------------------------------------------------------------------------
     public function get_settings($token) {
@@ -341,7 +342,7 @@ class Service {
         }
         $settings['path'] = $this->shell($token, 'echo $PATH', '/')['output'];
         $paths = explode(":", $settings['path']);
-        $settings['executables'] = $this->executables($token, $paths);
+        $settings['executables'] = $this->executables($paths);
         return $settings;
     }
 
@@ -354,13 +355,20 @@ class Service {
             throw new Exception("Only root can create new account");
         }
     }
-
+    // ------------------------------------------------------------------------
+    private function hash($password) {
+        $hash = call_user_func(self::password_hash, $password);
+        return self::password_hash . ':' . $hash;
+    }
+    // ------------------------------------------------------------------------
+    private function new_user($username, $password) {
+        $this->config->users[] = new User($username, $this->hash($password));
+    }
     // ------------------------------------------------------------------------
     public function add_user($token, $username, $password) {
         $this->validate_root($token);
-        $this->config->users[] = new User($username, $password);
+        $this->new_user($username, $password);
     }
-
     // ------------------------------------------------------------------------
     public function remove_user($token, $username, $password) {
         $this->validate_root($token);
@@ -428,8 +436,8 @@ class Service {
             throw new Exception('$path is no directory');
         }
     }
-    public function executables($token, $paths = array()) {
-        // shell will validate token
+    // ------------------------------------------------------------------------
+    private function executables($paths = array()) {
         $execs = array();
         foreach ($paths as $path) {
             foreach (scandir($path) as $item) {
@@ -442,10 +450,22 @@ class Service {
         return $execs;
     }
     // ------------------------------------------------------------------------
+    // :: Remove all user sessions
+    // ------------------------------------------------------------------------
+    public function purge($token) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        foreach (array_keys($this->config->sessions) as $i) {
+            if ($token == $this->config->sessions[$i]->token) {
+                unset($this->config->sessions[$i]);
+            }
+        }
+    }
+    // ------------------------------------------------------------------------
     public function change_password($token, $password) {
         
     }
-
     // ------------------------------------------------------------------------
     public function logout($token) {
         if (!$this->valid_token($token)) {
@@ -499,7 +519,6 @@ class Service {
         }
         unset($session->mysql->$res_id);
     }
-
     // ------------------------------------------------------------------------
     public function mysql_query($token, $res_id, $query) {
         if (!$this->valid_token($token)) {
@@ -581,6 +600,7 @@ class Service {
             throw new Exception('SQLite not installed');
         }
     }
+    // ------------------------------------------------------------------------
     private function curl($url) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
@@ -600,16 +620,26 @@ class Service {
     public function get($url) {
         return curl_exec($this->curl($url));
     }
+    public function test() {
+        $ch = $this->curl("http://localhost/");
+        curl_exec($ch);
+        return curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    }
     // ------------------------------------------------------------------------
     public function post($url, $data) {
         $ch = $this->curl($url);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        return curl_exec($ch);
+        $result = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($code != 200) {
+            throw new Exception("URL: $url give error $code");
+        }
+        return $result;
     }
     // ------------------------------------------------------------------------
     public function list_shells($token = null) {
-        if (installed() && !valid_token($token)) {
+        if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
         return array(
@@ -624,18 +654,36 @@ class Service {
         if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        $test = "echo -n x";
+        $response = "x";
         switch ($name) {
             case 'exec':
-                return function_exists($name);
+                if (function_exists($name)) {
+                    return $this->exec($token, $test) == $response;
+                } else {
+                    return false;
+                }
                 break;
             case 'shell_exec':
-                return function_exists($name);
+                if (function_exists($name)) {
+                    return $this->shell_exec($token, $test) == $response;
+                } else {
+                    return false;
+                }
                 break;
             case 'cgi_python':
-                $path = "/cgi-bin/cmd.py";
+                try {
+                    return $this->cgi_python($token, $test) == $response;
+                } catch (Exception $e) {
+                    return false;
+                }
                 break;
             case 'cgi_perl':
-                $path = "/cgi-bin/cmd.py";
+                try {
+                    return $this->cgi_perl($token, $test) == $response;
+                } catch (Exception $e) {
+                    return false;
+                }
                 break;
             default:
                 throw new Exception("Invalid shell type");
@@ -651,13 +699,12 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        // TODO: move FUN to config
-        $FUN = 'shell_exec';
+        $shell_fn = $this->config->settings->shell;
         $marker = 'XXXX' . md5(time());
         $pre = ". .bashrc\ncd $path\n";
         $post = ";echo -n \"$marker\";pwd";
         $code = escapeshellarg($pre . $code . $post);
-        $result = $this->$FUN('/bin/bash -c ' . $code . ' 2>&1', $token);
+        $result = $this->$shell_fn($token, '/bin/bash -c ' . $code . ' 2>&1');
         if ($result) {
             $output = explode($marker, $result);
             return array(
@@ -667,27 +714,31 @@ class Service {
         }
     }
     // ------------------------------------------------------------------------
-    // all functions need the same signature as cgi_python
-    private function shell_exec($code, $token) {
+    // all functions need the same signature as cgi_python/cgi_perl
+    private function shell_exec($token, $code) {
         return shell_exec($code);
     }
     // ------------------------------------------------------------------------
-    private function exec($code, $token) {
+    private function exec($token, $code) {
         exec($code, $result);
         return implode("\n", $result);
     }
     // ------------------------------------------------------------------------
-    private function cgi_perl($code, $token) {
+    private function cgi_perl($token, $code) {
         
     }
     // ------------------------------------------------------------------------
-    private function cgi_python($code, $token) {
+    public function cgi_python($token, $code) {
         $url = root() . "cgi-bin/cmd.py?token=" . $token;
         $response = json_decode($this->post($url, $code));
-        if (isset($response->error)) {
-            throw new Exception($response->error);
+        if ($response) {
+            if (isset($response->error)) {
+                throw new Exception($response->error);
+            }
+            if (isset($response->result)) {
+                return $response->result;
+            }
         }
-        return $response->result;
     }
     // ------------------------------------------------------------------------
     // TEST code

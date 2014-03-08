@@ -187,9 +187,9 @@ $(function() {
                         return fixed_commend;
                     }
                     var cmd = $.terminal.parseCommand(command);
+                    var token = term.token();
                     function shell() {
                         var re = /\| *less *$/;
-                        var token = term.token();
                         term.pause();
                         if (command.match(re)) {
                             command = command.replace(re, '');
@@ -307,22 +307,19 @@ $(function() {
                     }
                     switch(cmd.name) {
                     case 'echo':
-                        console.log(cmd.args[0]);
+                        console.log(cmd.args);
                         break;
                     case 'su':
                         term.push(function(command) {
                             term.echo('[[u;#fff;]' + command + ']');
                         }, {
-                            prompt: '$ '
-                            //onExit: function() {
-                            //    term.logout();
-                            //}
-                        }).login(function(user, pass, callback) {
-                            if (user == 'demo' && pass == 'demo') {
-                                callback('xxx');
-                            } else {
-                                callback(null);
-                                term.pop();
+                            prompt: '$ ',
+                            login: function(user, pass, callback) {
+                                if (user == 'demo' && pass == 'demo') {
+                                    callback('xxx');
+                                } else {
+                                    callback(null);
+                                }
                             }
                         });
                         break;
@@ -347,19 +344,17 @@ $(function() {
                         break;
                     case 'man':
                         term.pause();
-                        service.shell(term.token(), command, '/')(function(ret) {
+                        service.shell(token, command, '/')(function(ret) {
                             less(ret.output);
                             term.resume();
                         });
                         break;
                     case 'less':
                         term.pause();
-                        service.shell(term.token(),
-                                      'cat ' + cmd.args[0],
-                                      cwd)(function(ret) {
-                                          less(ret.output);
-                                          term.resume();
-                                      });
+                        service.shell(token, 'cat ' + cmd.args[0], cwd)(function(ret) {
+                            less(ret.output);
+                            term.resume();
+                        });
                         break;
                     case 'rpc':
                         term.push(function(command) {
@@ -381,8 +376,12 @@ $(function() {
                                     term.echo(JSON.stringify(result.result));
                                 }
                                 term.resume();
-                            }, function(xhr, status) {
+                            }, function(xhr, status, text) {
                                 term.error($.terminal.escape_brackets('[AJAX]: ') + status);
+                                term.resume();
+                                if (status == "Invalid JSON") {
+                                    term.error(xhr.responseText);
+                                }
                             });
                         }, {
                             name: 'rpc',
@@ -556,10 +555,10 @@ $(function() {
                                 }
                                 function mysql_query(query) {
                                     term.pause();
-                                    service.mysql_query(term.token(), db, query)(print);
+                                    service.mysql_query(token, db, query)(print);
                                 }
                                 function mysql_close() {
-                                    service.mysql_close(term.token(), db)($.noop);
+                                    service.mysql_close(token, db)($.noop);
                                 }
                                 var prompt = '[[b;#55f;]mysql]> ';
                                 function push(tables) {
@@ -573,7 +572,7 @@ $(function() {
                                     }).resume();
                                 }
                                 service.mysql_connect(
-                                    term.token(),
+                                    token,
                                     host,
                                     username,
                                     password,
@@ -581,7 +580,7 @@ $(function() {
                                         db = result;
                                         // fetch tables for tab completion
                                         service.mysql_query(
-                                            term.token(),
+                                            token,
                                             db,
                                             'show tables')(push);
                                 });
@@ -605,11 +604,11 @@ $(function() {
                     case 'python':
                         if (cmd.args.length) {
                             // execute python as shell command
-                            // you can call python -v
+                            // you can call `python --version`
                             shell();
                             return;
                         }
-                        var url = 'cgi-bin/python.py?token=' + term.token();
+                        var url = 'cgi-bin/python.py?token=' + token;
                         python(term, url, function(py) {
                             var python_code = '';
                             var help_msg = "Type help() for interactive help, or " +
@@ -659,7 +658,7 @@ $(function() {
                                 } else {
                                     password = command;
                                     term.set_mask(false).pop();
-                                    service.add_user(term.token(), user, password)(function() {
+                                    service.add_user(token, user, password)(function() {
                                         history.enable();
                                     });
                                 }
@@ -671,15 +670,23 @@ $(function() {
                             height: $(window).height()
                         }).show();
                         if (cmd.args.length >= 1) {
-                            service.file(term.token(), cmd.args[0])(function(file) {
+                            // cat is better beacause you will be able to open file in
+                            // local directory
+                            service.shell(token, 'cat ' + cmd.args[0], cwd)(function(ret) {
+                                micro.micro('set', ret.output);
+                            });
+                            /*
+                            service.file(token, cmd.args[0])(function(file) {
                                 micro.micro('set', file);
                             });
+                            */
                         }
                         break;
                     case 'vi':
                         not_implemented();
                         break;
                     default:
+                        // everything else send to the shell
                         shell();
                     }
                 }
@@ -756,26 +763,34 @@ $(function() {
                         // new settings set here
                         var questions = [
                             {
-                                name: "username",
-                                text: "Type your username",
-                            },
-                            {
-                                text: "Type your root password",
+                                name: "root_password",
+                                prompt: "root password: ",
                                 mask: true
                             },
                             {
                                 name: "server",
                                 text: "Type your server name",
+                            },
+                            {
+                                name: "username",
+                                text: "Your normal username"
+                            },
+                            {
+                                name: "password",
+                                mask: true
                             }
                         ];
-                        term.echo("You are running Leash for the first time. You need "+
-                                  "to configure it\n");
+                        term.echo("[[;#C78100;]You are running Leash for the first time."+
+                                  " You need to configure it]\n");
                         // don't store user configuration
                         term.history().disable();
                         (function install(step, finish) {
                             var question = questions[step];
                             if (question) {
-                                term.echo(question.text).push(function(command) {
+                                if (question.text) {
+                                    term.echo('[[b;#fff;]' + question.text + ']');
+                                }
+                                term.push(function(command) {
                                     term.pop();
                                     if (question.mask) {
                                         term.set_mask(false);
@@ -783,7 +798,7 @@ $(function() {
                                     settings[question.name] = command;
                                     install(step+1, finish);
                                 }, {
-                                    prompt: question.name + " "
+                                    prompt: question.prompt || question.name + ": "
                                 });
                                 if (question.mask) {
                                     term.set_mask(true);
@@ -793,9 +808,42 @@ $(function() {
                             }
                         })(0, function() {
                             term.pause();
-                            service.configure(settings)(function() {
-                                term.resume().echo("Your instalation is complete now y"+
-                                                   "ou can refresh the page and login");
+                            var colors = $.terminal.ansi_colors.bold;
+                            // recursive call after ajax
+                            function test_shells(shells, continuation) {
+                                if (shells.length) {
+                                    var sh = shells[0];
+                                    var rest = shells.slice(1);
+                                    var text = "Test Shell '" + sh + "' ";
+                                    service.test_shell(token, sh)(function(valid) {
+                                        if (valid) {
+                                            text += '[[[b;' + colors.green +';]PASS]]';
+                                        } else {
+                                            text += '[[[b;' + colors.red + ';]FAIL]]';
+                                        }
+                                        term.echo(text);
+                                        if (valid) {
+                                            term.echo("Using shell " + sh);
+                                            settings['shell'] = sh;
+                                            continuation();
+                                        } else {
+                                            test_shells(rest, continuation);
+                                        }
+                                    });
+                                } else {
+                                    term.error("Not valid shell found");
+                                    term.error("You will not able to use Leash fully");
+                                }
+                            }
+                            term.echo("Detect Shell");
+                            service.list_shells(token)(function(shells) {
+                                test_shells(shells, function() {
+                                    service.configure(settings)(function() {
+                                        term.resume();
+                                        term.echo("Your instalation is complete now you"+
+                                                  "can refresh the page and login");
+                                    });
+                                });
                             });
                         });
                     } // !instaled
