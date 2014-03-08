@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Sat, 08 Mar 2014 15:50:57 +0000
+ *  Date: Sat, 08 Mar 2014 17:07:19 +0000
  */
 
 var leash = {
@@ -201,7 +201,8 @@ $(function() {
                         } else {
                             service.shell(token, command, cwd)(function(result) {
                                 if (result.output) {
-                                    term.echo(result.output);
+                                    var re = /\n(\x1b\[m)?$/;
+                                    term.echo(result.output.replace(re, ''));
                                 }
                                 if (cwd !== result.cwd) {
                                     cwd = result.cwd;
@@ -258,14 +259,14 @@ $(function() {
                                                     print();
                                                 }
                                             } else if (e.which === 40) { //down
-                                                if (pos < lines.length-1) {
+                                                if (pos <= lines.length-rows) {
                                                     ++pos;
                                                     print();
                                                 }
                                             } else if (e.which === 34) { // Page up
                                                 pos += rows;
-                                                if (pos > lines.length-1-rows) {
-                                                    pos = lines.length-1-rows;
+                                                if (pos > lines.length-rows+1) {
+                                                    pos = lines.length-rows+1;
                                                 }
                                                 print();
                                             } else if (e.which === 33) { // page down
@@ -904,6 +905,7 @@ $(function() {
                         // we don't call resume because it's called in onInit
                         // if we call it here if you execute login/password and command
                         // it will be executed before leash get config from the server
+                        login_callback = null; // we are fine now
                         callback(token);
                     });
                 } : false,

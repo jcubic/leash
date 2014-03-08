@@ -340,7 +340,8 @@ class Service {
         if (!isset($settings['home'])) {
             $settings['home'] = $this->path;
         }
-        $settings['path'] = $this->shell($token, 'echo $PATH', '/')['output'];
+        $path = $this->shell($token, 'echo -n $PATH', '/');
+        $settings['path'] = $path['output'];
         $paths = explode(":", $settings['path']);
         $settings['executables'] = $this->executables($paths);
         return $settings;
@@ -377,7 +378,6 @@ class Service {
         }
         // TODO: this is probably not working
         $this->config->users[] = new User($username, $password);
-        
         // remove session
         foreach($this->config->tokens as $token => $token_username) {
             if ($username == $token_username) {
@@ -620,11 +620,6 @@ class Service {
     public function get($url) {
         return curl_exec($this->curl($url));
     }
-    public function test() {
-        $ch = $this->curl("http://localhost/");
-        curl_exec($ch);
-        return curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    }
     // ------------------------------------------------------------------------
     public function post($url, $data) {
         $ch = $this->curl($url);
@@ -708,7 +703,7 @@ class Service {
         if ($result) {
             $output = explode($marker, $result);
             return array(
-                'output' => preg_replace("/\n$/", '', $output[0]),
+                'output' => $output[0],
                 'cwd' => preg_replace("/\n$/", '', $output[1])
             );
         }
