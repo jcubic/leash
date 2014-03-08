@@ -86,9 +86,10 @@ $(function() {
                 terminal.resume();
             } else if (data.result) {
                 session_id = data.result;
-                terminal.echo('[[b;#F8B612;]Warring: each time you execute a command' +
-                              ', python will execute all your previous commands, so ' +
-                              'watch out on commands that can be exeucted only once]');
+                terminal.echo('[[b;#F8B612;]Warring: each time you execute a c'+
+                              'ommand, python will execute all your previous c'+
+                              'ommands, so watch out on commands that can be e'+
+                              'xecuted only once]');
                 $.jrpc(url, 'info', [], function(data) {
                     if (data.error) {
                         json_error(data.error);
@@ -125,7 +126,8 @@ $(function() {
         error: function(error) {
             var message;
             if (error.error) {
-                message = error.error.message + '\n[' + error.error.at + '] ' + error.error.line;
+                message = error.error.message + '\n[' + error.error.at + '] ' +
+                    error.error.line;
             } else {
                 message = error.message || error;
             }
@@ -169,7 +171,7 @@ $(function() {
             var dir = {};
             var resize = [];
             var invalid_token = false;
-            window.terminal = $('#shell').terminal(function interpreter(command, term) {
+            terminal = $('#shell').terminal(function interpreter(command, term) {
                 if (!installed) {
                     term.error("Invalid command, you need to refresh the page");
                 } else {
@@ -242,7 +244,12 @@ $(function() {
                         }
                         resize.push(refresh_view);
                         refresh_view();
-                        var prompt = lines.length > rows ? ':' : '[[;;;inverted](END)]';
+                        var prompt;
+                        if (lines.length > rows) {
+                            prompt = ':';
+                        } else {
+                            prompt = '[[;;;inverted](END)]';
+                        }
                         term.push($.noop, {
                             keydown: function(e) {
                                 if (term.get_prompt() !== '/') {
@@ -263,13 +270,15 @@ $(function() {
                                                     ++pos;
                                                     print();
                                                 }
-                                            } else if (e.which === 34) { // Page up
+                                            } else if (e.which === 34) {
+                                                // Page up
                                                 pos += rows;
                                                 if (pos > lines.length-rows+1) {
                                                     pos = lines.length-rows+1;
                                                 }
                                                 print();
-                                            } else if (e.which === 33) { // page down
+                                            } else if (e.which === 33) {
+                                                //Page Down
                                                 pos -= rows;
                                                 if (pos < 0) {
                                                     pos = 0;
@@ -281,7 +290,8 @@ $(function() {
                                     return false;
                                 } else {
                                     var command = term.get_command();
-                                    if (e.which === 8 && command === '') { // backspace
+                                    if (e.which === 8 && command === '') {
+                                        // backspace
                                         term.set_prompt(prompt);
                                     } else if (e.which == 13) { // enter
                                         // basic search find only first
@@ -331,7 +341,6 @@ $(function() {
                             'drag and drop upload',
                             'filesystem API',
                             'Option to block access when 3 fail attempts (create file on disk and check if it exist)',
-                            'less as command and as last command',
                             '[[;#fff;]cat] without argument',
                             'pick the shell',
                             'timer 1s command',
@@ -378,7 +387,7 @@ $(function() {
                                 }
                                 term.resume();
                             }, function(xhr, status, text) {
-                                term.error($.terminal.escape_brackets('[AJAX]: ') + status);
+                                term.error('[AJAX]: ' + status);
                                 term.resume();
                                 if (status == "Invalid JSON") {
                                     term.error(xhr.responseText);
