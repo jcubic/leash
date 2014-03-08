@@ -17,6 +17,8 @@
 #non interactive shell don't expand aliases
 shopt -s expand_aliases
 
+# man output formatting
+export MAN_KEEP_FORMATTING=1
 export PATH=$PATH:/usr/games
 
 export TERM="ansi" #force colors for dircolors

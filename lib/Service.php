@@ -325,9 +325,6 @@ class Service {
         unset($settings['password']);
         $this->config->settings = array();
         foreach ($settings as $key => $val) {
-            if ($key == "home") {
-                throw new Exception("You can't store this name");
-            }
             $this->config->settings[$key] = $val;
         }
         $this->create_root_password($password);
@@ -338,7 +335,13 @@ class Service {
             throw new Exception("Access Denied: Invalid Token");
         }
         $settings = (array)$this->config->settings;
-        $settings['home'] = $this->path;
+        // allow to overwrite HOME if user want to have different directory
+        if (!isset($settings['home'])) {
+            $settings['home'] = $this->path;
+        }
+        $settings['path'] = $this->shell($token, 'echo $PATH', '/')['output'];
+        $paths = explode(":", $settings['path']);
+        $settings['executables'] = $this->executables($token, $paths);
         return $settings;
     }
 
@@ -400,25 +403,43 @@ class Service {
     public function dir($token, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
-    }
+        }
         if (is_dir($path)) {
             $files = array();
             $dirs = array();
+            $execs = array();
             foreach (scandir($path) as $file_dir) {
-                if (is_dir($path . "/" . $file_dir) && $file_dir != "." &&
-                    $file_dir != "..") {
+                $full_path = $path . "/" . $file_dir;
+                if (is_dir($full_path) && $file_dir != "." && $file_dir != "..") {
                     $dirs[] = $file_dir;
                 } else {
                     $files[] = $file_dir;
+                    if (is_executable($full_path)) {
+                        $execs[] = $file_dir;
+                    }
                 }
             }
             return array(
                 'files' => $files,
-                'dirs' => $dirs
+                'dirs' => $dirs,
+                'execs' => $execs
             );
         } else {
             throw new Exception('$path is no directory');
         }
+    }
+    public function executables($token, $paths = array()) {
+        // shell will validate token
+        $execs = array();
+        foreach ($paths as $path) {
+            foreach (scandir($path) as $item) {
+                $full_path = $path . "/" . $item;
+                if (!is_dir($full_path) && is_executable($full_path)) {
+                    $execs[] = $item;
+                }
+            }
+        }
+        return $execs;
     }
     // ------------------------------------------------------------------------
     public function change_password($token, $password) {

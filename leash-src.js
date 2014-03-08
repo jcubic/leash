@@ -1,6 +1,6 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (c) 2014  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -156,9 +156,8 @@ $(function() {
                 var banner = [
                   '   __   _______   ______ __',
                   '  / /  / __/ _ | / __/ // /',
-                  ' / /__/ _// __ |_\\ \\/ _  / ',
-                  '/____/___/_/ |_/___/_//_/  ',
-                  '[[b;#fff;]Browser Shell' + version + ']',
+                  ' / /__/ _// __ |_\\ \\/ _  /',
+                  '/____/___/_/ |_/___/_//_/  ' + version,
                   'Today is: ' + (new Date()).toUTCString(),
                   ''
                 ].join('\n');
@@ -168,6 +167,7 @@ $(function() {
             var cwd;
             var config;
             var dir = {};
+            var resize = [];
             var invalid_token = false;
             window.terminal = $('#shell').terminal(function interpreter(command, term) {
                 if (!installed) {
@@ -176,22 +176,139 @@ $(function() {
                     function not_implemented() {
                         term.echo("Yet to be implemented");
                     }
+                    var env = {
+                        'TOKEN': term.token()
+                    };
+                    function expand_env_vars(command) {
+                        var fixed_commend = command;
+                        $.each(env, function(k, v) {
+                            fixed_commend = fixed_commend.replace('$' + k, v);
+                        });
+                        return fixed_commend;
+                    }
                     var cmd = $.terminal.parseCommand(command);
                     function shell() {
-                        term.pause();
+                        var re = /\| *less *$/;
                         var token = term.token();
-                        service.shell(token, command, cwd)(function(result) {
-                            if (result.output) {
-                                term.echo(result.output);
+                        term.pause();
+                        if (command.match(re)) {
+                            command = command.replace(re, '');
+                            service.shell(token, command, cwd)(function(result) {
+                                // even if empty
+                                less(result.output);
+                                term.resume();
+                            });
+                        } else {
+                            service.shell(token, command, cwd)(function(result) {
+                                if (result.output) {
+                                    term.echo(result.output);
+                                }
+                                if (cwd !== result.cwd) {
+                                    cwd = result.cwd;
+                                    service.dir(token, cwd)(function(result) {
+                                        dir = result;
+                                        term.resume();
+                                    });
+                                } else {
+                                    term.resume();
+                                }
+                            });
+                        }
+                    }
+                    function less(string) {
+                        var export_data = term.export_view();
+                        var cols, rows;
+                        var pos = 0;
+                        //string = $.terminal.escape_brackets(string);
+                        var lines = string.split('\n');
+                        function print() {
+                            term.clear();
+                            term.echo(lines.slice(pos, pos+rows-1).join('\n'));
+                        }
+                        function refresh_view() {
+                            cols = term.cols();
+                            rows = term.rows();
+                            print();
+                        }
+                        function quit() {
+                            term.pop().import_view(export_data);
+                            for (var i=resize.length; i--;) {
+                                if (resize[i] == refresh_view) {
+                                    resize.splice(i, 1);
+                                    break;
+                                }
                             }
-                            if (cwd !== result.cwd) {
-                                cwd = result.cwd;
-                                // DIR
-                            }
-                            term.resume();
+                        }
+                        resize.push(refresh_view);
+                        refresh_view();
+                        var prompt = lines.length > rows ? ':' : '[[;;;inverted](END)]';
+                        term.push($.noop, {
+                            keydown: function(e) {
+                                if (term.get_prompt() !== '/') {
+                                    if (e.which == 191) {
+                                        term.set_prompt('/');
+                                    } else if (e.which == 81) { //Q
+                                        quit();
+                                    } else {
+                                        // scroll
+                                        if (lines.length > rows) {
+                                            if (e.which === 38) { //up
+                                                if (pos > 0) {
+                                                    --pos;
+                                                    print();
+                                                }
+                                            } else if (e.which === 40) { //down
+                                                if (pos < lines.length-1) {
+                                                    ++pos;
+                                                    print();
+                                                }
+                                            } else if (e.which === 34) { // Page up
+                                                pos += rows;
+                                                if (pos > lines.length-1-rows) {
+                                                    pos = lines.length-1-rows;
+                                                }
+                                                print();
+                                            } else if (e.which === 33) { // page down
+                                                pos -= rows;
+                                                if (pos < 0) {
+                                                    pos = 0;
+                                                }
+                                                print();
+                                            }
+                                        }
+                                    }
+                                    return false;
+                                } else {
+                                    var command = term.get_command();
+                                    if (e.which === 8 && command === '') { // backspace
+                                        term.set_prompt(prompt);
+                                    } else if (e.which == 13) { // enter
+                                        // basic search find only first
+                                        // instance and don't mark the result
+                                        if (command.length > 0) {
+                                            var regex = new RegExp(command);
+                                            for (var i=0; i<lines.length; ++i) {
+                                                if (regex.test(lines[i])) {
+                                                    pos = i;
+                                                    print();
+                                                    term.set_command('');
+                                                    break;
+                                                }
+                                            }
+                                            term.set_command('');
+                                            term.set_prompt(prompt);
+                                        }
+                                        return false;
+                                    }
+                                }
+                            },
+                            prompt: prompt
                         });
                     }
                     switch(cmd.name) {
+                    case 'echo':
+                        console.log(cmd.args[0]);
+                        break;
                     case 'su':
                         term.push(function(command) {
                             term.echo('[[u;#fff;]' + command + ']');
@@ -228,9 +345,25 @@ $(function() {
                     case 'reload':
                         location.reload();
                         break;
+                    case 'man':
+                        term.pause();
+                        service.shell(term.token(), command, '/')(function(ret) {
+                            less(ret.output);
+                            term.resume();
+                        });
+                        break;
+                    case 'less':
+                        term.pause();
+                        service.shell(term.token(),
+                                      'cat ' + cmd.args[0],
+                                      cwd)(function(ret) {
+                                          less(ret.output);
+                                          term.resume();
+                                      });
+                        break;
                     case 'rpc':
                         term.push(function(command) {
-                            var cmd = $.terminal.parseCommand(command.replace('$TOKEN', term.token()));
+                            var cmd = $.terminal.parseCommand(expand_env_vars(command));
                             term.pause();
                             $.jrpc('', cmd.name, cmd.args, function(result) {
                                 if (result.error) {
@@ -256,10 +389,6 @@ $(function() {
                             prompt: 'rpc> ',
                             completion: Object.keys(service)
                         });
-                        // testing login
-                        /*.login(function(user, pass, callback) {
-                            service.rpc_test_login(user, pass)(callback);
-                        });*/
                         break;
                     case 'history':
                         term.echo(term.history().data().join('\n'));
@@ -313,6 +442,69 @@ $(function() {
                         break;
                     case 'mysql':
                         (function() {
+                            // mysql keywords from
+                            // http://dev.mysql.com/doc/refman/5.1/en/reserved-words.html
+                            var uppercase = [
+                                'ACCESSIBLE', 'ADD', 'ALL', 'ALTER', 'ANALYZE',
+                                'AND', 'AS', 'ASC', 'ASENSITIVE', 'BEFORE',
+                                'BETWEEN', 'BIGINT', 'BINARY', 'BLOB', 'BOTH',
+                                'BY', 'CALL', 'CASCADE', 'CASE', 'CHANGE',
+                                'CHAR', 'CHARACTER', 'CHECK', 'COLLATE',
+                                'COLUMN', 'CONDITION', 'CONSTRAINT', 'CONTINUE',
+                                'CONVERT', 'CREATE', 'CROSS', 'CURRENT_DATE',
+                                'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+                                'CURRENT_USER', 'CURSOR', 'DATABASE',
+                                'DATABASES', 'DAY_HOUR', 'DAY_MICROSECOND',
+                                'DAY_MINUTE', 'DAY_SECOND', 'DEC', 'DECIMAL',
+                                'DECLARE', 'DEFAULT', 'DELAYED', 'DELETE',
+                                'DESC', 'DESCRIBE', 'DETERMINISTIC', 'DISTINCT',
+                                'DISTINCTROW', 'DIV', 'DOUBLE', 'DROP', 'DUAL',
+                                'EACH', 'ELSE', 'ELSEIF', 'ENCLOSED', 'ESCAPED',
+                                'EXISTS', 'EXIT', 'EXPLAIN', 'FALSE', 'FETCH',
+                                'FLOAT', 'FLOAT4', 'FLOAT8', 'FOR', 'FORCE',
+                                'FOREIGN', 'FROM', 'FULLTEXT', 'GRANT', 'GROUP',
+                                'HAVING', 'HIGH_PRIORITY', 'HOUR_MICROSECOND',
+                                'HOUR_MINUTE', 'HOUR_SECOND', 'IF', 'IGNORE',
+                                'IN', 'INDEX', 'INFILE', 'INNER', 'INOUT',
+                                'INSENSITIVE', 'INSERT', 'INT', 'INT1', 'INT2',
+                                'INT3', 'INT4', 'INT8', 'INTEGER', 'INTERVAL',
+                                'INTO', 'IS', 'ITERATE', 'JOIN', 'KEY', 'KEYS',
+                                'KILL', 'LEADING', 'LEAVE', 'LEFT', 'LIKE',
+                                'LIMIT', 'LINEAR', 'LINES', 'LOAD', 'LOCALTIME',
+                                'LOCALTIMESTAMP', 'LOCK', 'LONG', 'LONGBLOB',
+                                'LONGTEXT', 'LOOP', 'LOW_PRIORITY',
+                                'MASTER_SSL_VERIFY_SERVER_CERT', 'MATCH',
+                                'MEDIUMBLOB', 'MEDIUMINT', 'MEDIUMTEXT',
+                                'MIDDLEINT', 'MINUTE_MICROSECOND',
+                                'MINUTE_SECOND', 'MOD', 'MODIFIES', 'NATURAL',
+                                'NOT', 'NO_WRITE_TO_BINLOG', 'NULL', 'NUMERIC',
+                                'ON', 'OPTIMIZE', 'OPTION', 'OPTIONALLY', 'OR',
+                                'ORDER', 'OUT', 'OUTER', 'OUTFILE', 'PRECISION',
+                                'PRIMARY', 'PROCEDURE', 'PURGE', 'RANGE',
+                                'READ', 'READS', 'READ_WRITE', 'REAL',
+                                'REFERENCES', 'REGEXP', 'RELEASE', 'RENAME',
+                                'REPEAT', 'REPLACE', 'REQUIRE', 'RESTRICT',
+                                'RETURN', 'REVOKE', 'RIGHT', 'RLIKE', 'SCHEMA',
+                                'SCHEMAS', 'SECOND_MICROSECOND', 'SELECT',
+                                'SENSITIVE', 'SEPARATOR', 'SET', 'SHOW',
+                                'SMALLINT', 'SPATIAL', 'SPECIFIC', 'SQL',
+                                'SQLEXCEPTION', 'SQLSTATE', 'SQLWARNING',
+                                'SQL_BIG_RESULT', 'SQL_CALC_FOUND_ROWS',
+                                'SQL_SMALL_RESULT', 'SSL', 'STARTING',
+                                'STRAIGHT_JOIN', 'TABLE', 'TERMINATED', 'THEN',
+                                'TINYBLOB', 'TINYINT', 'TINYTEXT', 'TO',
+                                'TRAILING', 'TRIGGER', 'TRUE', 'UNDO', 'UNION',
+                                'UNIQUE', 'UNLOCK', 'UNSIGNED', 'UPDATE',
+                                'USAGE', 'USE', 'USING', 'UTC_DATE', 'UTC_TIME',
+                                'UTC_TIMESTAMP', 'VALUES', 'VARBINARY',
+                                'VARCHAR', 'VARCHARACTER', 'VARYING', 'WHEN',
+                                'WHERE', 'WHILE', 'WITH', 'WRITE', 'XOR',
+                                'YEAR_MONTH', 'ZEROFILL'];
+                            var keywords = [];
+                            $.each(uppercase, function(_, keyword) {
+                                keywords.push(keyword);
+                                keywords.push(keyword.toLowerCase());
+                            });
                             var database, host, username, password;
                             var parser = new optparse.OptionParser([
                                 ['-h', '--host HOST', 'Host to connect to'],
@@ -370,17 +562,29 @@ $(function() {
                                     service.mysql_close(term.token(), db)($.noop);
                                 }
                                 var prompt = '[[b;#55f;]mysql]> ';
-                                service.mysql_connect(term.token(),
-                                                      host,
-                                                      username,
-                                                      password,
-                                                      database)(function(result) {
-                                                          db = result;
-                                                          term.push(mysql_query, {
-                                                              prompt: prompt,
-                                                              onExit: mysql_close
-                                                          }).resume();
-                                                      });
+                                function push(tables) {
+                                    tables = $.map(tables, function(row) {
+                                        return row[0];
+                                    });
+                                    term.push(mysql_query, {
+                                        prompt: prompt,
+                                        onExit: mysql_close,
+                                        completion: keywords.concat(tables)
+                                    }).resume();
+                                }
+                                service.mysql_connect(
+                                    term.token(),
+                                    host,
+                                    username,
+                                    password,
+                                    database)(function(result) {
+                                        db = result;
+                                        // fetch tables for tab completion
+                                        service.mysql_query(
+                                            term.token(),
+                                            db,
+                                            'show tables')(push);
+                                });
                             }
                             if (!password) {
                                 term.history().disable();
@@ -499,9 +703,8 @@ $(function() {
                     } else {
                         path = cwd;
                     }
-                    callback(unix_prompt($.terminal.active().login_name(),
-                                         server,
-                                         path));
+                    var login = $.terminal.active().login_name();
+                    callback(unix_prompt(login, server, path));
                 } : '> ',
                 onBeforeLogin: function(term) {
                     term.echo(banner());
@@ -509,8 +712,14 @@ $(function() {
                 historyFilter: function(command) {
                     return !command.match(/^ /);
                 },
-                outputLimit: 200,
-                tabcompletion: true,
+                outputLimit: 500,
+                onResize: function(term) {
+                    for (var i=resize.length;i--;) {
+                        if (typeof resize[i] == 'function') {
+                            resize[i](term);
+                        }
+                    }
+                },
                 onInit: function(term) {
                     // -----------------------------------------------------------------
                     // :: ONINIT
@@ -522,6 +731,7 @@ $(function() {
                     }).on('click', '.exception a', function() {
                         var url = $(this).attr('href');
                         var re = /(.*):([0-9]+):([0-9]+)$/;
+                        // google chrome have line and column after filename
                         m = url.match(re);
                         if (m) {
                             // Display code of the file if line numbers are present
@@ -546,18 +756,19 @@ $(function() {
                         // new settings set here
                         var questions = [
                             {
-                                name: "password",
+                                name: "username",
+                                text: "Type your username",
+                            },
+                            {
                                 text: "Type your root password",
-                                prompt: "password: ",
                                 mask: true
                             },
                             {
                                 name: "server",
                                 text: "Type your server name",
-                                prompt: "name: "
                             }
                         ];
-                        term.echo("You are running Bush for the first time. You need "+
+                        term.echo("You are running Leash for the first time. You need "+
                                   "to configure it\n");
                         // don't store user configuration
                         term.history().disable();
@@ -572,7 +783,7 @@ $(function() {
                                     settings[question.name] = command;
                                     install(step+1, finish);
                                 }, {
-                                    prompt: question.prompt
+                                    prompt: question.name + " "
                                 });
                                 if (question.mask) {
                                     term.set_mask(true);
@@ -587,16 +798,15 @@ $(function() {
                                                    "ou can refresh the page and login");
                             });
                         });
-                    }; // !instaled
+                    } // !instaled
                     // -----------------------------------------------------------------
                     // :: CONFIG
                     // -----------------------------------------------------------------
                     var token = term.token();
                     // check if token is valid
                     if (token) { // NOTE: this is also call after login
-
-                        term.pause();
-
+                        // we need pause so terminal don't resume in initialize function
+                        term.pause(); // also pause should always be called before ajax
                         service.valid_token(token)(function(valid) {
                             if (!valid) {
                                 // inform onBeforeLogout to not logout
@@ -604,6 +814,8 @@ $(function() {
                                 term.logout();
                                 term.resume();
                             } else {
+                                // TODO: serice need to be call in pararell
+                                // instead of function use promises
                                 service.get_settings(token)(function(result) {
                                     config = result;
                                     cwd = config.home;
@@ -622,23 +834,32 @@ $(function() {
                     }
                 },
                 completion: function(term, string, callback) {
+                    // TODO: use `dir` for completion
                     callback(['help']);
                 },
                 onBeforeLogout: function(term) {
                     if (!invalid_token) {
                         service.logout(term.token())(function() {
-                            // nothing to do here
+                            // nothing to do here, logout will remove the token
                         });
                     }
                 },
                 login: installed ? function(user, password, callback) {
-                    // store login callback to call with null on ajax error
+                    // store login callback to call with null on ajax error. Maybe rpc
+                    // should have a way to append error callback so we will be able
+                    // to append it here and remove on login success
                     login_callback = callback;
+                    // we need to pause because prompt was flickering
+                    // and pause should be always called before ajax call
+                    this.pause();
                     service.login(user, password)(function(token) {
+                        // we don't call resume because it's called in onInit
+                        // if we call it here if you execute login/password and command
+                        // it will be executed before leash get config from the server
                         callback(token);
                     });
                 } : false,
-                name: 'bush'
+                name: 'leash'
             }).css({
                 overflow: 'auto'
             });
@@ -664,9 +885,10 @@ $(function() {
             var $win = $(window);
             $win.hashchange(exec_hash).hashchange().resize(function() {
                 var height = $win.height();
-                terminal.css('height', height-20);
+                terminal.height(height-20)
                 $('#micro').height(height);
             }).resize();
+            terminal.resize();
         });
     });
 });

@@ -21,6 +21,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <title>Leash</title>
     <meta name="Description" content=""/>
     <link rel="shortcut icon" href="favicon.ico"/>
+    <?php if ($x == 10) { ?>
+      <p></p>
+    <?php } ?>
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
