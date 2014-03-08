@@ -4,7 +4,7 @@ define('__DEVEL__', true);
 
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
-    require('lib/json-rpc/json-rpc.php');
+    require('lib/json-rpc.php');
     require('lib/Service.php');
     if (__DEVEL__) {
         error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
@@ -21,27 +21,24 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <title>Leash</title>
     <meta name="Description" content=""/>
     <link rel="shortcut icon" href="favicon.ico"/>
-    <?php if ($x == 10) { ?>
-      <p></p>
-    <?php } ?>
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <link href="lib/terminal/css/jquery.terminal.css" rel="stylesheet"/>
+    <link href="css/jquery.terminal.css" rel="stylesheet"/>
     <link href="css/style.css" rel="stylesheet"/>
-    <link href="lib/micro/css/jquery.micro.css" rel="stylesheet"/>
+    <link href="css/jquery.micro.css" rel="stylesheet"/>
     <style>
 /* some styles before I move them to style.css */
     </style>
     <script src="lib/jquery-1.11.0.min.js"></script>
-    <script src="lib/json-rpc/json-rpc.js"></script>
-    <script src="lib/terminal/js/jquery.terminal-src.js"></script>
-    <script src="lib/terminal/js/jquery.mousewheel-min.js"></script>
+    <script src="lib/json-rpc.js"></script>
+    <script src="lib/jquery.terminal-src.js"></script>
+    <script src="lib/jquery.mousewheel-min.js"></script>
     <script src="lib/browser.js"></script>
-    <script src="lib/optparse/lib/optparse.js"></script>
-    <script src="lib/jquery-hashchange/jquery.ba-hashchange.min.js"></script>
-    <script src="lib/micro/js/jquery.micro-src.js"></script>
-    <script src="leash<?= __DEVEL__ ? "-src" : ".min" ?>.js"></script>
+    <script src="lib/optparse.js"></script>
+    <script src="lib/jquery.ba-hashchange.min.js"></script>
+    <script src="lib/jquery.micro-min.js"></script>
+    <script src="leash.min.js"></script>
 </head>
 <body>
     <div id="shell"></div>

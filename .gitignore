@@ -3,5 +3,5 @@
 .\#*
 \#*\#
 config.json
-tmp/.*
+tmp/*
 cgi-bin/*.pyc
