@@ -529,7 +529,13 @@ class Service {
             throw new Exception("Invalid resource id");
         }
         $db = $this->mysql_connection_from_session($session->mysql->$res_id);
-        return $db->get_array($query);
+        $query = trim($query);
+        if (preg_match("/^(delete|insert|create)/i", $query)) {
+            $db->query($query); // will throw exception on false
+            return $db->affected_rows();
+        } else {
+            return $db->get_array($query);
+        }
     }
     // ------------------------------------------------------------------------
     function jargon_list() {

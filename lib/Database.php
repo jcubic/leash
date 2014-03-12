@@ -44,9 +44,15 @@ class Database {
         }
         return $ret;
     }
+    function affected_rows() {
+        return $this->conn->affected_rows;
+    }
     function get_array($query) {
         $result = array();
         $ret = $this->query($query);
+        if (gettype($ret) == 'boolean') {
+            return $ret;
+        }
         if ($ret->num_rows == 0) {
             return $result;
         }

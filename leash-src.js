@@ -126,8 +126,9 @@ $(function() {
         error: function(error) {
             var message;
             if (error.error) {
-                message = error.error.message + '\n[' + error.error.at + '] ' +
-                    error.error.line;
+                error = error.error;
+                message = error.message + ' in ' + error.file +
+                    '\n[' + error.at + '] ' + error.line;
             } else {
                 message = error.message || error;
             }
@@ -344,6 +345,7 @@ $(function() {
                             '[[;#fff;]cat] without argument',
                             'pick the shell',
                             'timer 1s command',
+                            'edit history',
                             '#["guess", "guess", "play: xxxx"]'
                         ].join('\n'));
                         break;
@@ -558,9 +560,16 @@ $(function() {
                                 term.pause();
                                 var db;
                                 function print(result) {
-                                    term.echo(result.map(function(row) {
-                                        return row.join(' | ');
-                                    }).join('\n'));
+                                    switch ($.type(result)) {
+                                    case 'array':
+                                        term.echo(result.map(function(row) {
+                                            return row.join(' | ');
+                                        }).join('\n'));
+                                        break;
+                                    case 'number':
+                                        term.echo('Query OK, ' + result +
+                                                  ' row affected');
+                                    }
                                     term.resume();
                                 }
                                 function mysql_query(query) {
