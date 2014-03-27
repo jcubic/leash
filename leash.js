@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Wed, 12 Mar 2014 00:45:16 +0000
+ *  Date: Fri, 21 Mar 2014 14:22:06 +0000
  */
 
 var leash = {
@@ -712,6 +712,7 @@ $(function() {
             }, {
                 // if installed there is onBeforeLogin
                 greetings: installed ? null : banner(),
+                maskChar: '',
                 prompt: installed ? function(callback) {
                     // -----------------------------------------------------------------
                     // :: PROMPT

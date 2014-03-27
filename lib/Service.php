@@ -131,7 +131,7 @@ class Service {
         } else {
             $this->config->sessions = array_map(function($session) {
                 return Session::cast($session);
-            }, array_filter($this->config->sessions, function($session) {
+            }, array_filter($this->config->sessions, function($session){
                 return isset($session->token) && isset($session->username);
             }));
         }
@@ -342,8 +342,7 @@ class Service {
         }
         $path = $this->shell($token, 'echo -n $PATH', '/');
         $settings['path'] = $path['output'];
-        $paths = explode(":", $settings['path']);
-        $settings['executables'] = $this->executables($paths);
+        $settings['executables'] = $this->executables($token, '/');
         return $settings;
     }
 
@@ -437,17 +436,12 @@ class Service {
         }
     }
     // ------------------------------------------------------------------------
-    private function executables($paths = array()) {
-        $execs = array();
-        foreach ($paths as $path) {
-            foreach (scandir($path) as $item) {
-                $full_path = $path . "/" . $item;
-                if (!is_dir($full_path) && is_executable($full_path)) {
-                    $execs[] = $item;
-                }
-            }
-        }
-        return $execs;
+    public function executables($token, $path) {
+        $result = $this->shell($token, "compgen -A function -abck | sort | uniq", $path);
+        $commands = explode("\n", trim($result['output']));
+        return array_filter($commands, function($command) {
+            return strlen($command) > 1; // filter out . : [
+        });
     }
     // ------------------------------------------------------------------------
     // :: Remove all user sessions
@@ -707,7 +701,8 @@ class Service {
         $code = escapeshellarg($pre . $code . $post);
         $result = $this->$shell_fn($token, '/bin/bash -c ' . $code . ' 2>&1');
         if ($result) {
-            $output = explode($marker, $result);
+            // work wth `set` that return BASH_EXECUTION_STRING
+            $output = preg_split('/(?<!")'.$marker.'(?!")/', $result);
             return array(
                 'output' => $output[0],
                 'cwd' => preg_replace("/\n$/", '', $output[1])

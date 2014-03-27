@@ -712,6 +712,7 @@ $(function() {
             }, {
                 // if installed there is onBeforeLogin
                 greetings: installed ? null : banner(),
+                maskChar: '',
                 prompt: installed ? function(callback) {
                     // -----------------------------------------------------------------
                     // :: PROMPT

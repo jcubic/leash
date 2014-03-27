@@ -32,13 +32,21 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     </style>
     <script src="lib/jquery-1.11.0.min.js"></script>
     <script src="lib/json-rpc.js"></script>
+    <?php if (__DEVEL__) { ?>
+      <script src="../terminal/js/jquery.terminal-src.js"></script>
+    <?php } else { ?>
     <script src="lib/jquery.terminal-min.js"></script>
+    <?php } ?>
     <script src="lib/jquery.mousewheel-min.js"></script>
     <script src="lib/browser.js"></script>
     <script src="lib/optparse.js"></script>
     <script src="lib/jquery.ba-hashchange.min.js"></script>
     <script src="lib/jquery.micro-min.js"></script>
+    <?php if (__DEVEL__) { ?>
+      <script src="leash-src.js"></script>
+    <?php } else { ?>
     <script src="leash.min.js"></script>
+    <?php } ?>
 </head>
 <body>
     <div id="shell"></div>
