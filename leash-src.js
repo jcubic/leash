@@ -292,12 +292,13 @@ var leash = (function() {
                       '   __   _______   ______ __',
                       '  / /  / __/ _ | / __/ // /',
                       ' / /__/ _// __ |_\\ \\/ _  /',
-                      '/____/___/_/ |_/___/_//_/  ' + version,
-                      //'Today is: ' + (new Date()).toUTCString(),
-                      build,
-                      ''
-                    ].join('\n');
-                    return banner;
+                      '/____/___/_/ |_/___/_//_/  ' + version];
+                    //'Today is: ' + (new Date()).toUTCString(),
+                    if (build) {
+                        banner.push(build);
+                    }
+                    banner.push('');
+                    return banner.join('\n');
                 },
                 service: service,
                 init: function(term) {

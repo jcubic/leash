@@ -1,6 +1,6 @@
 <?php
 
-define('__DEVEL__', true);
+define('__DEVEL__', false);
 
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
@@ -32,7 +32,11 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     </style>
     <script src="lib/jquery-1.11.0.min.js"></script>
     <script src="lib/json-rpc.js"></script>
+    <?php if (__DEVEL__) { ?>
     <script src="lib/jquery.terminal-src.js"></script>
+    <?php } else { ?>
+    <script src="lib/jquery.terminal-min.js"></script>
+    <?php } ?>
     <script src="lib/jquery.mousewheel-min.js"></script>
     <script src="lib/browser.js"></script>
     <script src="lib/optparse.js"></script>
