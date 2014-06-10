@@ -609,6 +609,14 @@ var leash = (function() {
                     copyright: function(cmd, token, term) {
                         term.echo(copyright);
                     },
+                    less: function(cmd, token, term) {
+                        var shell_cmd = 'cat ' + cmd.args[0];
+                        term.pause();
+                        service.shell(token, shell_cmd, cwd)(function(ret) {
+                            term.resume();
+                            leash.less(ret.output, term);
+                        });
+                    },
                     todo: function(cmd, token, term) {
                         term.echo([
                             'record terminal keystroke with animation and allow to playback',
