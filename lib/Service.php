@@ -302,7 +302,6 @@ class Service {
     // ------------------------------------------------------------------------
     // root
     // ------------------------------------------------------------------------
-
     function get_config($token) {
         $this->validate_root($token);
         return $this->config;
@@ -407,10 +406,47 @@ class Service {
         return function_exists($function);
     }
     // ------------------------------------------------------------------------
+    // TODO: Use Shell to get the content of the directory
     public function dir($token, $path) {
+        /* shell method test for valid token
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        */
+        // using shell since php can restric to read files from specific directories
+        $EXEC = 'X';
+        $DIR = 'D';
+        $FILE = 'F';
+        // depend on GNU version of find (not tested on different versions)
+        $cmd = "find . -mindepth 1 -maxdepth 1 \\( -type f -executable -printf ".
+            "'$EXEC%p\\0' \\)  -o -type d -printf '$DIR%p\\0' -o \\( -type l -x".
+            "type d -printf '$DIR%p\\0' \\) -o -not -type d -printf '$FILE%p\\0'";
+        $result = $this->shell($token, $cmd, $path);
+        //return $result;
+        $files = array();
+        $dirs = array();
+        $execs = array();
+        foreach (explode("\x0", $result['output']) as $item) {
+            if ($item != "") {
+                $mnemonic = substr($item, 0, 1);
+                $item = substr($item, 3); // remove `<MENEMONIC>./'
+                switch ($mnemonic) {
+                    case $EXEC:
+                        $execs[] = $item; // executables are also files
+                    case $FILE:
+                        $files[] = $item;
+                        break;
+                    case $DIR:
+                        $dirs[] = $item;
+                }
+            }
+        }
+        return array(
+            'files' => $files,
+            'dirs' => $dirs,
+            'execs' => $execs
+        );
+        /*
         if (is_dir($path)) {
             $files = array();
             $dirs = array();
@@ -434,14 +470,16 @@ class Service {
         } else {
             throw new Exception('$path is no directory');
         }
+        */
     }
     // ------------------------------------------------------------------------
     public function executables($token, $path) {
         $result = $this->shell($token, "compgen -A function -abck | sort | uniq", $path);
         $commands = explode("\n", trim($result['output']));
-        return array_filter($commands, function($command) {
+        // array_filter return object with number as keys
+        return array_values(array_filter($commands, function($command) {
             return strlen($command) > 1; // filter out . : [
-        });
+        }));
     }
     // ------------------------------------------------------------------------
     // :: Remove all user sessions
@@ -690,23 +728,40 @@ class Service {
         return getcwd();
     }
     // ------------------------------------------------------------------------
-    public function shell($token, $code, $path) {
+    public function shell($token, $command, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
         $shell_fn = $this->config->settings->shell;
-        $marker = 'XXXX' . md5(time());
-        $pre = ". .bashrc\ncd $path\n";
-        $post = ";echo -n \"$marker\";pwd";
-        $code = escapeshellarg($pre . $code . $post);
-        $result = $this->$shell_fn($token, '/bin/bash -c ' . $code . ' 2>&1');
-        if ($result) {
-            // work wth `set` that return BASH_EXECUTION_STRING
-            $output = preg_split('/(?<!")'.$marker.'(?!")/', $result);
+        if (preg_match("/&\s*$/", $command)) {
+            $command = preg_replace("/&\s*$/", ' >/dev/null & echo $!', $command);
+            $result = $this->$shell_fn($token, '/bin/bash -c ' . escapeshellarg($command));
             return array(
-                'output' => $output[0],
-                'cwd' => preg_replace("/\n$/", '', $output[1])
+                'output' => '[1] ' . $result,
+                'cwd' => $path
             );
+        } else {
+            $marker = 'XXXX' . md5(time());
+            $pre = ". .bashrc\ncd $path\n";
+            $post = ";echo -n \"$marker\";pwd";
+            $command = escapeshellarg($pre . $command . $post);
+            //return '/bin/bash -c ' . $command . ' 2>&1';
+            $result = $this->$shell_fn($token, '/bin/bash -c ' . $command . ' 2>&1');
+            if ($result) {
+                // work wth `set` that return BASH_EXECUTION_STRING
+                $output = preg_split('/'.$marker.'(?!")/', $result);
+                if (count($output) == 2) {
+                    $cwd = preg_replace("/\n$/", '', $output[1]);
+                } else {
+                    $cwd = $path;
+                }
+                return array(
+                    'output' => $output[0],
+                    'cwd' => $cwd
+                );
+            } else {
+                throw new Error("Internal error, shell function give no result");
+            }
         }
     }
     // ------------------------------------------------------------------------
