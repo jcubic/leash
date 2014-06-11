@@ -1,6 +1,6 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (c) 2014  Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (c) 2013-2014 Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ var leash = (function() {
         };
     });
     var copyright = [
-        'Copyright (c) 2014  Jakub Jankiewicz <http://jcubic.pl>',
+        'Copyright (c) 2013-2014 Jakub Jankiewicz <http://jcubic.pl>',
         '',
         'This program is free software: you can redistribute it and/or modify',
         'it under the terms of the GNU General Public License as published by',
