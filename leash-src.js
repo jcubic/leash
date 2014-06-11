@@ -200,9 +200,6 @@ var leash = (function() {
         return name + colors.grey(':') + colors.blue(path) + end;
     }
     return function(url) {
-        if (!$.terminal || !$.fn.terminal) {
-            throw new Error('You need to include jQuery terminal to use leash');
-        }
         var d = new $.Deferred();
         // callback to set invalid token on auth when there was an error
         var login_callback;
@@ -233,10 +230,6 @@ var leash = (function() {
                 //console.log(arrow + ' ' + JSON.stringify(json));
             }
         })(function(service) {
-            window.service = service;
-            window.config = function() {
-                return config;
-            };
             // -----------------------------------------------------------------
             // :: LEASH
             // -----------------------------------------------------------------
@@ -618,6 +611,15 @@ var leash = (function() {
                             leash.less(ret.output, term);
                         });
                     },
+                    record: function(cmd, token, term) {
+                        if (cmd.args[0] == 'start') {
+                            term.history_state(true);
+                        } else if (cmd.args[0] == 'stop') {
+                            term.history_state(false);
+                        } else {
+                            term.echo('usage:\n\trecord [stop|start]');
+                        }
+                    },
                     todo: function(cmd, token, term) {
                         term.echo([
                             'record terminal keystroke with animation and allow to playback',
@@ -956,7 +958,7 @@ var leash = (function() {
                             login_callback = null; // we are fine now
                             callback(token);
                         });
-                    }
+                    };
                 } else {
                     leash.prompt = '> ';
                     leash.login = false;
@@ -968,3 +970,59 @@ var leash = (function() {
         return d.promise();
     };
 })();
+
+(function($) {
+    $.fn.leash = function(options) {
+        if (!$.terminal || !$.fn.terminal) {
+            throw new Error('You need to include jQuery terminal to use leash');
+        }
+        if (this.data('leash')) {
+            return this.data('leash');
+        }
+        var d = $.Deferred();
+        var len = this.size();
+        var result = [];
+        this.each(function(i) {
+            var self = $(this);
+            leash().then(function(leash) {
+                self.data('leash', leash);
+                var defaults = {
+                    onInit: leash.init,
+                    maskChar: '',
+                    completion: leash.completion,
+                    linksNoReferer: true,
+                    execHash: true,
+                    historyFilter: /^[^\s]/,
+                    /*
+                    onResize: function(term) {
+                        term.trigger('resize');
+                    },
+                    */
+                    onBeforeLogout: function(term) {
+                        var token = term.token();
+                        // if token is invalid it will be set to undefined and
+                        // this will not be triggered
+                        if (token) {
+                            leash.service.logout()(function() {
+                                // nothing to do here, logout will remove
+                                // the token
+                            });
+                        }
+                    },
+                    prompt: leash.prompt,
+                    login: leash.login,
+                    name: 'leash',
+                    outputLimit: 500,
+                    greetings: leash.greetings
+                };
+                self.terminal(leash.interpreter,
+                              $.extend(defaults, options || {}));
+                result.push(leash);
+                if (len-1 == i) {
+                    d.resolve.apply(d, result);
+                }
+            });
+        });
+        return d.promise();
+    };
+})(jQuery);

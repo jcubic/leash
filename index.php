@@ -53,44 +53,18 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <div id="micro"></div>
     <div id="jsvi"></div>
     <script>
+
 $(function() {
-    leash().then(function(leash) {
-        terminal = $('#shell').terminal(leash.interpreter, {
-            onInit: leash.init,
-            maskChar: '',
-            completion: leash.completion,
-            linksNoReferer: true,
-            historyFilter: /^[^\s]/,
-            /*
-            onResize: function(term) {
-                term.trigger('resize');
-            },
-            */
-            onBeforeLogout: function(term) {
-                var token = term.token();
-                // if token is invalid it will be set to undefined and this
-                // will not be triggered
-                if (token) {
-                    leash.service.logout()(function() {
-                        // nothing to do here, logout will remove the token
-                    });
-                }
-            },
-            prompt: leash.prompt,
-            login: leash.login,
-            name: 'leash',
-            outputLimit: 500,
-            greetings: leash.greetings
-        }).css({
-            overflow: 'auto'
-        });
+    $('#shell').css({
+        overflow: 'auto'
+    }).leash().then(function(leash) {
+        var terminal = $('#shell').terminal().resize();
         var $win = $(window);
         $win.resize(function() {
             var height = $win.height();
             terminal.innerHeight(height);
             $('#micro').height(height);
         }).resize();
-        terminal.resize();
     });
 });
     </script>
