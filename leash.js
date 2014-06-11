@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Wed, 11 Jun 2014 12:54:02 +0000
+ *  Date: Wed, 11 Jun 2014 14:57:42 +0000
  */
 
 var leash = (function() {
@@ -269,8 +269,8 @@ var leash = (function() {
                 }
             }
             var leash = {
-                version: '0.1',
-                date: 'Wed, 11 Jun 2014 12:54:02 +0000',
+                version: '0.2',
+                date: 'Wed, 11 Jun 2014 14:57:42 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
