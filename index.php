@@ -58,13 +58,16 @@ $(function() {
     $('#shell').css({
         overflow: 'auto'
     }).leash().then(function(leash) {
-        var terminal = $('#shell').terminal().resize();
+        // terminal is created after async call so we need to get terminal
+        // instance in a promise otherwise it will be created here.
+        var terminal = $('#shell').terminal();
         var $win = $(window);
         $win.resize(function() {
             var height = $win.height();
             terminal.innerHeight(height);
             $('#micro').height(height);
         }).resize();
+        terminal.resize();
     });
 });
     </script>
