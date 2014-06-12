@@ -1,7 +1,7 @@
    __   _______   ______ __
   / /  / __/ _ | / __/ // /
  / /__/ _// __ |_\ \/ _  /
-/____/___/_/ |_/___/_//_/ v. 0.1
+/____/___/_/ |_/___/_//_/ v. 0.2
 
 ----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ one of the following:
 * jargon command (will display definitions from jargon file)
 * micro editor (based on nano/pico) [editor in progress]
 * vi editor (using jsvi) (not yet)
-* tab completion (not yet)
+* tab completion
 * File Drag & Drop upload (using HTML5) (not yet)
 
 ----------------------------------------------------------------------------
