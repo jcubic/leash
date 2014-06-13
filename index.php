@@ -42,6 +42,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <script src="lib/optparse.js"></script>
     <script src="lib/jquery.ba-hashchange.min.js"></script>
     <script src="lib/jquery.micro-min.js"></script>
+    <script src="lib/sysend.js"></script>
     <?php if (__DEVEL__) { ?>
       <script src="leash-src.js"></script>
     <?php } else { ?>

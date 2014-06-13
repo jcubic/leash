@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Wed, 11 Jun 2014 14:57:42 +0000
+ *  Date: Fri, 13 Jun 2014 21:23:44 +0000
  */
 
 var leash = (function() {
@@ -270,7 +270,7 @@ var leash = (function() {
             }
             var leash = {
                 version: '0.2',
-                date: 'Wed, 11 Jun 2014 14:57:42 +0000',
+                date: 'Fri, 13 Jun 2014 21:23:44 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -323,7 +323,7 @@ var leash = (function() {
                             leash.shell(command, token, term);
                         }
                     }
-                    
+
                 },
                 install: function(term) {
                     var settings = {};
@@ -423,7 +423,7 @@ var leash = (function() {
                         // we need pause so terminal don't resume in initialize
                         // function, also pause should always be called before
                         // ajax
-                        term.pause(); 
+                        term.pause();
                         service.valid_token(token)(function(valid) {
                             if (!valid) {
                                 // inform onBeforeLogout to not logout from
@@ -598,7 +598,7 @@ var leash = (function() {
                 },
                 commands: {
                     help: function() {
-                        
+
                     },
                     copyright: function(cmd, token, term) {
                         term.echo(copyright);
@@ -800,7 +800,7 @@ var leash = (function() {
                         } else {
                             mysql();
                         }
-                        
+
                     },
                     js: function(cmd, token, term) {
                         term.push(function(command, term) {
@@ -920,6 +920,7 @@ var leash = (function() {
             service.installed()(function(installed) {
                 leash.installed = installed;
                 if (installed) {
+                    var username;
                     leash.greetings = leash.banner();
                     leash.prompt = function(callback) {
                         var server;
@@ -935,8 +936,12 @@ var leash = (function() {
                         } else {
                             path = cwd;
                         }
-                        var login = $.terminal.active().login_name();
-                        callback(unix_prompt(login, server, path));
+                        username = username || $.terminal.active().login_name();
+                        callback(unix_prompt(username, server, path));
+                    };
+                    // for use with autologin
+                    leash.set_login = function(user) {
+                        username = user;
                     };
                     leash.login = function(user, password, callback) {
                         // TODO:
@@ -946,7 +951,7 @@ var leash = (function() {
                         // login success
                         // Solution: use promises in rpc
                         login_callback = callback;
-                        
+
                         // we need to pause because prompt was flickering
                         // and pause should be always called before ajax call
                         this.pause();
@@ -956,6 +961,13 @@ var leash = (function() {
                             // login/password and command it will be executed
                             //  before leash get config from the server
                             login_callback = null; // we are fine now
+                            username = user; // for use in prompt
+                            if (token && typeof sysend != 'undefined') {
+                                sysend.broadcast('leash.login', {
+                                    user: user,
+                                    token: token
+                                });
+                            }
                             callback(token);
                         });
                     };
@@ -1003,7 +1015,10 @@ var leash = (function() {
                         // if token is invalid it will be set to undefined and
                         // this will not be triggered
                         if (token) {
-                            leash.service.logout()(function() {
+                            leash.service.logout(token)(function() {
+                                if (typeof sysend != 'undefined') {
+                                    sysend.broadcast('leash.logout');
+                                }
                                 // nothing to do here, logout will remove
                                 // the token
                             });
@@ -1015,8 +1030,21 @@ var leash = (function() {
                     outputLimit: 500,
                     greetings: leash.greetings
                 };
-                self.terminal(leash.interpreter,
-                              $.extend(defaults, options || {}));
+                var terminal = self.terminal(leash.interpreter,
+                                             $.extend(defaults, options || {}));
+                if (typeof sysend != 'undefined') {
+                    sysend.on('leash.logout', function() {
+                        // it look empty without echo prompt
+                        leash.prompt(function(string) {
+                            terminal.echo(string);
+                        });
+                        terminal.logout();
+                    });
+                    sysend.on('leash.login', function(data) {
+                        terminal.autologin(data.user, data.token);
+                        leash.set_login(data.user);
+                    });
+                }
                 result.push(leash);
                 if (len-1 == i) {
                     d.resolve.apply(d, result);
