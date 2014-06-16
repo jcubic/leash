@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Fri, 13 Jun 2014 21:23:44 +0000
+ *  Date: Mon, 16 Jun 2014 08:01:10 +0000
  */
 
 var leash = (function() {
@@ -270,7 +270,7 @@ var leash = (function() {
             }
             var leash = {
                 version: '0.2',
-                date: 'Fri, 13 Jun 2014 21:23:44 +0000',
+                date: 'Mon, 16 Jun 2014 08:01:10 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -316,7 +316,7 @@ var leash = (function() {
                     } else {
                         var token = term.token();
                         env.TOKEN = token;
-                        var cmd = $.terminal.parseCommand(command);
+                        var cmd = $.terminal.parse_command(command);
                         if (leash.commands[cmd.name]) {
                             leash.commands[cmd.name](cmd, token, term);
                         } else {
@@ -588,7 +588,7 @@ var leash = (function() {
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));
                     } else {
-                        var cmd = $.terminal.parseCommand(command);
+                        var cmd = $.terminal.parse_command(command);
                         if (cmd.name == 'cd') {
                             callback(dir.dirs || []);
                         } else {
@@ -636,7 +636,7 @@ var leash = (function() {
                     },
                     rpc: function(cmd, token, term) {
                         term.push(function(command) {
-                            var cmd = $.terminal.parseCommand(expand_env_vars(command));
+                            var cmd = $.terminal.parse_command(expand_env_vars(command));
                             term.pause();
                             $.jrpc('', cmd.name, cmd.args, function(result) {
                                 if (result.error) {
@@ -673,7 +673,7 @@ var leash = (function() {
                                 'e compendium of hacker slang illuminating man'+
                                 'y aspects of hackish tradition, folklore, and'+
                                 ' humor.\n\nusage: jargon [QUERY]';
-                            term.echo(msg);
+                            term.echo(msg, {keepWords: true});
                         } else {
                             term.pause();
                             // NOTE: when paste using mouse middle rpc jargon
@@ -688,7 +688,9 @@ var leash = (function() {
                                         text += ' ('+entry.abbr.join(', ')+')';
                                     }
                                     return text + '\n' + entry.def + '\n';
-                                }).join('\n').replace(/\n$/, '')).resume();
+                                }).join('\n').replace(/\n$/, ''), {
+                                    keepWords: true
+                                }).resume();
                             });
                         }
                     },

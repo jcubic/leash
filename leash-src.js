@@ -316,7 +316,7 @@ var leash = (function() {
                     } else {
                         var token = term.token();
                         env.TOKEN = token;
-                        var cmd = $.terminal.parseCommand(command);
+                        var cmd = $.terminal.parse_command(command);
                         if (leash.commands[cmd.name]) {
                             leash.commands[cmd.name](cmd, token, term);
                         } else {
@@ -588,7 +588,7 @@ var leash = (function() {
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));
                     } else {
-                        var cmd = $.terminal.parseCommand(command);
+                        var cmd = $.terminal.parse_command(command);
                         if (cmd.name == 'cd') {
                             callback(dir.dirs || []);
                         } else {
@@ -636,7 +636,7 @@ var leash = (function() {
                     },
                     rpc: function(cmd, token, term) {
                         term.push(function(command) {
-                            var cmd = $.terminal.parseCommand(expand_env_vars(command));
+                            var cmd = $.terminal.parse_command(expand_env_vars(command));
                             term.pause();
                             $.jrpc('', cmd.name, cmd.args, function(result) {
                                 if (result.error) {
@@ -673,7 +673,7 @@ var leash = (function() {
                                 'e compendium of hacker slang illuminating man'+
                                 'y aspects of hackish tradition, folklore, and'+
                                 ' humor.\n\nusage: jargon [QUERY]';
-                            term.echo(msg);
+                            term.echo(msg, {keepWords: true});
                         } else {
                             term.pause();
                             // NOTE: when paste using mouse middle rpc jargon
@@ -688,7 +688,9 @@ var leash = (function() {
                                         text += ' ('+entry.abbr.join(', ')+')';
                                     }
                                     return text + '\n' + entry.def + '\n';
-                                }).join('\n').replace(/\n$/, '')).resume();
+                                }).join('\n').replace(/\n$/, ''), {
+                                    keepWords: true
+                                }).resume();
                             });
                         }
                     },
