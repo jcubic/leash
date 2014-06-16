@@ -245,29 +245,7 @@ var leash = (function() {
                 });
                 return fixed_command;
             }
-            // Display line code in the file if line numbers are present
-            function print_line(url, term) {
-                var re = /(.*):([0-9]+):([0-9]+)$/;
-                // google chrome have line and column after filename
-                m = url.match(re);
-                if (m) {
-                    // TODO: do we need to call pause/resume or return promise?
-                    $.get(m[1], function(response) {
-                        var prefix = location.href.replace(/[^\/]+$/, '');
-                        var file = m[1].replace(prefix, '');
-                        term.echo('[[b;white;]' + file + ']');
-                        var code = response.split('\n');
-                        var n = +m[2]-1;
-                        term.echo(code.slice(n-2, n+3).map(function(line, i) {
-                            if (i == 2) {
-                                line = '[[;#f00;]' + line + ']';
-                            }
-                            return '[' + (n+i) + ']: ' + line;
-                        }).join('\n'));
-                    }, 'text');
-                    return false;
-                }
-            }
+            
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
@@ -299,9 +277,6 @@ var leash = (function() {
                         term.exec('jargon ' + $(this).data('text').replace(/\s/g, ' '));
                     }).on('click', '.exec', function() {
                         term.exec($(this).data('text'));
-                    }).on('click', '.exception a', function() {
-                        print_line($(this).attr('href'), term);
-                        return false;
                     });
                     if (!leash.installed) {
                         leash.install(term);
