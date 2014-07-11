@@ -328,6 +328,9 @@ class Service {
         }
         $this->new_user('root', $root_password);
         $this->new_user($username, $password);
+        if (!file_exists('init.js')) {
+            copy('init.js.src', 'init.js');
+        }
     }
     // ------------------------------------------------------------------------
     public function get_settings($token) {
@@ -397,6 +400,10 @@ class Service {
         return array_map(function($user) {
             return $user->username;
         }, $this->config->users);
+    }
+    // ------------------------------------------------------------------------
+    public function file_exists($path) {
+        return file_exists($path);
     }
     // ------------------------------------------------------------------------
     public function function_exists($token, $function) {

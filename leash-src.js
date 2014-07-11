@@ -234,7 +234,6 @@ var leash = (function() {
             // :: LEASH
             // -----------------------------------------------------------------
             var home;
-            var cwd;
             var config;
             var dir = {};
             var env = {};
@@ -357,7 +356,7 @@ var leash = (function() {
                                 var sh = shells[0];
                                 var rest = shells.slice(1);
                                 var text = "Test Shell '" + sh + "' ";
-                                service.test_shell(token, sh)(function(valid) {
+                                service.test_shell(null, sh)(function(err, valid) {
                                     if (valid) {
                                         text += '[[[b;'+colors.green+';]PASS]]';
                                     } else {
@@ -379,9 +378,9 @@ var leash = (function() {
                             }
                         }
                         term.echo("Detect Shell");
-                        service.list_shells(token)(function(shells) {
+                        service.list_shells(null)(function(err, shells) {
                             test_shells(shells, function() {
-                                service.configure(settings)(function() {
+                                service.configure(settings)(function(err) {
                                     term.resume();
                                     term.echo("Your instalation is complete no"+
                                               "w you can refresh the page and "+
@@ -399,7 +398,7 @@ var leash = (function() {
                         // function, also pause should always be called before
                         // ajax
                         term.pause();
-                        service.valid_token(token)(function(valid) {
+                        service.valid_token(token)(function(err, valid) {
                             if (!valid) {
                                 // inform onBeforeLogout to not logout from
                                 // service
@@ -409,10 +408,10 @@ var leash = (function() {
                             } else {
                                 // TODO: serice need to be call in pararell
                                 // instead of function use promises
-                                service.get_settings(token)(function(result) {
+                                service.get_settings(token)(function(err, result) {
                                     config = result;
-                                    cwd = config.home;
-                                    service.dir(token, cwd)(function(result) {
+                                    leash.cwd = config.home;
+                                    service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
                                         term.resume();
                                     });
@@ -431,20 +430,20 @@ var leash = (function() {
                     term.pause();
                     if (command.match(re)) {
                         command = command.replace(re, '');
-                        service.shell(token, command, cwd)(function(res) {
+                        service.shell(token, command, leash.cwd)(function(err, res) {
                             // even if empty
                             leash.less(res.output, term);
                             term.resume();
                         });
                     } else {
-                        service.shell(token, command, cwd)(function(res) {
+                        service.shell(token, command, leash.cwd)(function(err, res) {
                             if (res.output) {
                                 var re = /\n(\x1b\[m)?$/;
                                 term.echo(res.output.replace(re, ''));
                             }
-                            if (cwd !== res.cwd) {
-                                cwd = res.cwd;
-                                service.dir(token, cwd)(function(result) {
+                            if (leash.cwd !== res.cwd) {
+                                leash.cwd = res.cwd;
+                                service.dir(token, leash.cwd)(function(err, result) {
                                     dir = result;
                                     term.resume();
                                 });
@@ -581,7 +580,7 @@ var leash = (function() {
                     less: function(cmd, token, term) {
                         var shell_cmd = 'cat ' + cmd.args[0];
                         term.pause();
-                        service.shell(token, shell_cmd, cwd)(function(ret) {
+                        service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
                             term.resume();
                             leash.less(ret.output, term);
                         });
@@ -656,7 +655,7 @@ var leash = (function() {
                             var word = cmd.args.join(' ').replace(/\s+/g, ' ');
                             // TODO: echo function that will resize text based
                             //       on words
-                            service.jargon(word)(function(result) {
+                            service.jargon(word)(function(err, result) {
                                 term.echo($.map(result, function(entry) {
                                     var text = '[[b;#fff;]' + entry.term + ']';
                                     if (entry.abbr) {
@@ -671,7 +670,7 @@ var leash = (function() {
                     },
                     man: function(cmd, token, term) {
                         term.pause();
-                        service.shell(token, cmd.command, '/')(function(ret) {
+                        service.shell(token, cmd.command, '/')(function(err, ret) {
                             leash.less(ret.output, term);
                             term.resume();
                         });
@@ -720,7 +719,7 @@ var leash = (function() {
                         function mysql() {
                             term.pause();
                             var db;
-                            function print(result) {
+                            function print(err, result) {
                                 switch ($.type(result)) {
                                 case 'array':
                                     term.echo(result.map(function(row) {
@@ -741,7 +740,7 @@ var leash = (function() {
                                 service.mysql_close(token, db)($.noop);
                             }
                             var prompt = '[[b;#55f;]mysql]> ';
-                            function push(tables) {
+                            function push(err, tables) {
                                 tables = $.map(tables, function(row) {
                                     return row[0];
                                 });
@@ -756,7 +755,7 @@ var leash = (function() {
                                 host,
                                 username,
                                 password,
-                                database)(function(result) {
+                                database)(function(err, result) {
                                     db = result;
                                     // fetch tables for tab completion
                                     service.mysql_query(
@@ -873,28 +872,10 @@ var leash = (function() {
                                 });
                             }
                         }, {prompt: 'name: '});
-                    },
-                    micro: function(cmd, token, term) {
-                        var micro = $('#micro').micro({
-                            height: $(window).height()
-                        }).show();
-                        if (cmd.args.length >= 1) {
-                            // cat is better beacause you will be able to open
-                            // file in local directory
-                            var shell_cmd = 'cat ' + cmd.args[0];
-                            service.shell(token, shell_cmd, cwd)(function(ret) {
-                                micro.micro('set', ret.output);
-                            });
-                            /*
-                            service.file(token, cmd.args[0])(function(file) {
-                                micro.micro('set', file);
-                            });
-                            */
-                        }
                     }
                 } // commands
             }; // leash
-            service.installed()(function(installed) {
+            service.installed()(function(err, installed) {
                 leash.installed = installed;
                 if (installed) {
                     var username;
@@ -907,11 +888,12 @@ var leash = (function() {
                             server = 'unknown';
                         }
                         var path;
-                        if (config && cwd) {
+                        if (config && leash.cwd) {
                             var home = $.terminal.escape_regex(config.home);
-                            path = cwd.replace(new RegExp('^' + home), '~');
+                            var re = new RegExp('^' + home);
+                            path = leash.cwd.replace(re, '~');
                         } else {
-                            path = cwd;
+                            path = leash.cwd;
                         }
                         username = username || $.terminal.active().login_name();
                         callback(unix_prompt(username, server, path));
@@ -932,13 +914,14 @@ var leash = (function() {
                         // we need to pause because prompt was flickering
                         // and pause should be always called before ajax call
                         this.pause();
-                        service.login(user, password)(function(token) {
+                        service.login(user, password)(function(err, token) {
                             // we don't call resume because it's called in
                             // onInit if we call it here if you execute
                             // login/password and command it will be executed
                             //  before leash get config from the server
                             login_callback = null; // we are fine now
                             username = user; // for use in prompt
+                            leash.token = token;
                             if (token && typeof sysend != 'undefined') {
                                 sysend.broadcast('leash.login', {
                                     user: user,
@@ -973,11 +956,12 @@ var leash = (function() {
         var result = [];
         this.each(function(i) {
             var self = $(this);
-            leash().then(function(leash) {
-                self.data('leash', leash);
+            var leash_promise = leash();
+            self.data('leash', leash_promise);
+            leash_promise.then(function(leash) {
                 var defaults = {
                     onInit: leash.init,
-                    maskChar: '',
+                    //maskChar: '',
                     completion: leash.completion,
                     linksNoReferer: true,
                     execHash: true,
