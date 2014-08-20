@@ -73,9 +73,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             });
         });
     </script>
-    <?php if (file_exists('init.js')) { ?>
-    <script src="init.js"></script>
-    <?php } ?>
     <?php
     $dir = 'lib/apps/';
     if (is_dir($dir)) {
@@ -88,8 +85,10 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             closedir($dh);
         }
     }
-    
     ?>
+    <?php if (file_exists('init.js')) { ?>
+    <script src="init.js"></script>
+    <?php } ?>
 </head>
 <body>
     <div id="shell"></div>

@@ -293,7 +293,7 @@ var leash = (function() {
                         var cmd = $.terminal.parse_command(command);
                         if (leash.commands[cmd.name]) {
                             leash.commands[cmd.name](cmd, token, term);
-                        } else {
+                        } else if (command !== '') {
                             leash.shell(command, token, term);
                         }
                     }
@@ -993,6 +993,7 @@ var leash = (function() {
                 };
                 var terminal = self.terminal(leash.interpreter,
                                              $.extend(defaults, options || {}));
+                leash.terminal = terminal;
                 if (typeof sysend != 'undefined') {
                     sysend.on('leash.logout', function() {
                         // it look empty without echo prompt
