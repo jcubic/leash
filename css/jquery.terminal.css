@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Date: Thu, 10 Jul 2014 11:49:26 +0000
+ * Date: Wed, 20 Aug 2014 09:31:14 +0000
  */
 .terminal .terminal-output .format, .cmd .format,
 .cmd .prompt, .cmd .prompt div, .terminal .terminal-output div div{
@@ -32,49 +32,44 @@
 }
 .cmd .mask, .cmd .clipboard {
     position: absolute;
+    display: block;
     bottom: 0;
     height: 16px;
     left: -10px;
 }
-/* fix double style of selecting text in terminal */
-.terminal-output span, .cmd span {
-    -webkit-touch-callout: initial;
-    -webkit-user-select: initial;
-    -khtml-user-select: initial;
-    -moz-user-select: initial;
-    -ms-user-select: initial;
-    user-select: initial;
+
+.terminal h1, .terminal h2, .terminal h3, .terminal h4, .terminal h5, .terminal h6, .terminal pre, .cmd {
+    margin: 0;
 }
-.terminal, .terminal-output, .terminal-output div {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+.terminal h1, .terminal h2, .terminal h3, .terminal h4, .terminal h5, .terminal h6 {
+    line-height: 1.2em;
 }
-/* the only way I found to hide textarea on Android */
+/*
 .cmd .mask {
     width: 10px;
+    height: 11px;
     background: black;
     z-index: 100;
 }
+*/
 .cmd .clipboard {
-    /*
-       clip: rect(0,0,0,0);
-    */
+    /* this seems to work after all on Android */
+    left: -99999px;
+    clip: rect(1px,1px,1px,1px);
     /* on desktop textarea appear when paste */
     /*
     opacity: 0.01;
     filter: alpha(opacity = 0.01);
     filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0.01);
     */
-    width: 2px; /* textarea need to have width or it will not work on Android */
+    width: 10px; /* textarea need to have width or it will not work on Android */
+    height: 10px;
     padding: 0;
     resize: none;
     border: none;
+    z-index: 0;
+    overflow: hidden;
     outline: none;
-    background: black; /* work only for desktop so we need to create a mask */
 }
 .terminal .error {
     color: #f00;
@@ -82,61 +77,68 @@
 .terminal {
     padding: 10px;
     position: relative;
-    overflow: hidden;
+    /*overflow: hidden;*/
+    overflow: auto;
 }
 .cmd {
     padding: 0;
-    margin: 0;
     height: 1.3em;
     position: relative;
     /*margin-top: 3px; */
 }
+.terminal .inverted, .cmd .inverted, .cmd .cursor.blink {
+    background-color: #aaa;
+    color: #000;
+}
 .cmd .cursor.blink {
-    -webkit-animation: blink 1s infinite steps(1, start);
-       -moz-animation: blink 1s infinite steps(1, start);
-        -ms-animation: blink 1s infinite steps(1, start);
-            animation: blink 1s infinite steps(1, start);
+    -webkit-animation: terminal-blink 1s infinite steps(1, start);
+       -moz-animation: terminal-blink 1s infinite steps(1, start);
+        -ms-animation: terminal-blink 1s infinite steps(1, start);
+            animation: terminal-blink 1s infinite steps(1, start);
 }
-@keyframes blink {
+@-webkit-keyframes terminal-blink {
   0%, 100% {
-        background-color: #000;
-        color: #aaa;
+      background-color: #000;
+      color: #aaa;
   }
   50% {
-        background-color: #bbb; /* not #aaa because it's seems there is Google Chrome bug */
-        color: #000;
+      background-color: #bbb;
+      color: #000;
   }
 }
-@-webkit-keyframes blink {
+
+@-ms-keyframes terminal-blink {
   0%, 100% {
-        background-color: #000;
-        color: #aaa;
+      background-color: #000;
+      color: #aaa;
   }
   50% {
-        background-color: #bbb;
-        color: #000;
+      background-color: #bbb;
+      color: #000;
   }
 }
-@-ms-keyframes blink {
+
+@-moz-keyframes terminal-blink {
   0%, 100% {
-        background-color: #000;
-        color: #aaa;
+      background-color: #000;
+      color: #aaa;
   }
   50% {
-        background-color: #bbb;
-        color: #000;
+      background-color: #bbb;
+      color: #000;
   }
 }
-@-moz-keyframes blink {
+@keyframes terminal-blink {
   0%, 100% {
-        background-color: #000;
-        color: #aaa;
+      background-color: #000;
+      color: #aaa;
   }
   50% {
-        background-color: #bbb;
-        color: #000;
+      background-color: #bbb; /* not #aaa because it's seems there is Google Chrome bug */
+      color: #000;
   }
 }
+
 .terminal .terminal-output div div, .cmd .prompt {
     display: block;
     line-height: 14px;
@@ -164,16 +166,71 @@
     float: left;
     /*display: inline-block; */
 }
-.terminal .inverted, .cmd .inverted, .cmd .cursor.blink {
-    background-color: #aaa;
-    color: #000;
+/* fix double style of selecting text in terminal */
+.terminal-output span, .cmd span, .terminal td, .terminal pre,
+.terminal h1, .terminal h2, .terminal h3, .terminal h4, .terminal h5, .terminal h6 {
+    -webkit-touch-callout: initial;
+    -webkit-user-select: initial;
+    -khtml-user-select: initial;
+    -moz-user-select: initial;
+    -ms-user-select: initial;
+    user-select: initial;
 }
+.terminal, .terminal-output, .terminal-output div {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+/* firefox hack */
+@-moz-document url-prefix() {
+    .terminal, .terminal-output, .terminal-output div {
+        -webkit-touch-callout: initial;
+        -webkit-user-select: initial;
+        -khtml-user-select: initial;
+        -moz-user-select: initial;
+        -ms-user-select: initial;
+        user-select: initial;
+    }
+}
+.terminal table {
+    border-collapse: collapse;
+}
+.terminal td {
+    border: 1px solid #aaa;
+}
+.terminal h1::-moz-selection,
+.terminal h2::-moz-selection,
+.terminal h3::-moz-selection,
+.terminal h4::-moz-selection,
+.terminal h5::-moz-selection,
+.terminal h6::-moz-selection,
+.terminal pre::-moz-selection,
+.terminal td::-moz-selection,
 .terminal .terminal-output div div::-moz-selection,
 .terminal .terminal-output div span::-moz-selection,
 .terminal .terminal-output div div a::-moz-selection {
     background-color: #aaa;
     color: #000;
 }
+/* this don't work in Chrome
+.terminal tr td::-moz-selection {
+    border-color: #000;
+}
+.terminal tr td::selection {
+    border-color: #000;
+}
+*/
+.terminal h1::selection,
+.terminal h2::selection,
+.terminal h3::selection,
+.terminal h4::selection,
+.terminal h5::selection,
+.terminal h6::selection,
+.terminal pre::selection,
+.terminal td::selection,
 .terminal .terminal-output div div::selection,
 .terminal .terminal-output div div a::selection,
 .terminal .terminal-output div span::selection,
