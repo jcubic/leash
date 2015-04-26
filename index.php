@@ -27,7 +27,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <link href="css/jquery.terminal-src.css" rel="stylesheet"/>
+    <link href="css/jquery.terminal.css" rel="stylesheet"/>
     <link href="css/style.css" rel="stylesheet"/>
     <link href="css/jquery.micro.css" rel="stylesheet"/>
     <style>
