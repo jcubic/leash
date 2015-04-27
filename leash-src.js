@@ -206,6 +206,7 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
+                console.log('err');
                 var message;
                 if (error.error) {
                     error = error.error;
@@ -756,12 +757,21 @@ var leash = (function() {
                                 username,
                                 password,
                                 database)(function(err, result) {
-                                    db = result;
-                                    // fetch tables for tab completion
-                                    service.mysql_query(
-                                        token,
-                                        db,
-                                        'show tables')(push);
+                                    if (err) {
+                                        if (err.error) {
+                                            term.error(err.error.message);
+                                        } else {
+                                            term.error(err.message);
+                                        }
+                                        term.resume();
+                                    } else {
+                                        db = result;
+                                        // fetch tables for tab completion
+                                        service.mysql_query(
+                                            token,
+                                            db,
+                                            'show tables')(push);
+                                    }
                             });
                         }
                         if (!password) {
@@ -772,7 +782,7 @@ var leash = (function() {
                                 mysql();
                             }, {
                                 prompt: 'password: '
-                            }).set_mask(true);
+                            }).set_mask('');
                         } else {
                             mysql();
                         }

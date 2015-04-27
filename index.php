@@ -48,7 +48,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     </div>
   </div>
   <div id="shell" style="display:none"></div>
-  <script src="lib/jquery-1.11.0.min.js"></script>
+  <script src="lib/jquery-1.11.2.js"></script>
   <script src="lib/json-rpc.js"></script>
   <?php if (__DEVEL__) { ?>
     <script src="lib/jquery.terminal-src.js"></script>
