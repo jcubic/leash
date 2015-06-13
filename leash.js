@@ -1,6 +1,6 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (c) 2013-2014 Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (c) 2013-2015 Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Mon, 27 Apr 2015 09:06:50 +0000
+ *  Date: Sat, 13 Jun 2015 09:12:36 +0000
  */
 
 var leash = (function() {
@@ -248,7 +248,7 @@ var leash = (function() {
             
             var leash = {
                 version: '0.2',
-                date: 'Mon, 27 Apr 2015 09:06:50 +0000',
+                date: 'Sat, 13 Jun 2015 09:12:36 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -721,15 +721,19 @@ var leash = (function() {
                             term.pause();
                             var db;
                             function print(err, result) {
-                                switch ($.type(result)) {
-                                case 'array':
-                                    term.echo(result.map(function(row) {
-                                        return row.join(' | ');
-                                    }).join('\n'));
-                                    break;
-                                case 'number':
-                                    term.echo('Query OK, ' + result +
-                                              ' row affected');
+                                if (err) {
+                                    term.error(err.message);
+                                } else {
+                                    switch ($.type(result)) {
+                                    case 'array':
+                                        term.echo(result.map(function(row) {
+                                            return row.join(' | ');
+                                        }).join('\n'));
+                                        break;
+                                    case 'number':
+                                        term.echo('Query OK, ' + result +
+                                                  ' row affected');
+                                    }
                                 }
                                 term.resume();
                             }

@@ -1,6 +1,6 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (c) 2013-2014 Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (c) 2013-2015 Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -721,15 +721,19 @@ var leash = (function() {
                             term.pause();
                             var db;
                             function print(err, result) {
-                                switch ($.type(result)) {
-                                case 'array':
-                                    term.echo(result.map(function(row) {
-                                        return row.join(' | ');
-                                    }).join('\n'));
-                                    break;
-                                case 'number':
-                                    term.echo('Query OK, ' + result +
-                                              ' row affected');
+                                if (err) {
+                                    term.error(err.message);
+                                } else {
+                                    switch ($.type(result)) {
+                                    case 'array':
+                                        term.echo(result.map(function(row) {
+                                            return row.join(' | ');
+                                        }).join('\n'));
+                                        break;
+                                    case 'number':
+                                        term.echo('Query OK, ' + result +
+                                                  ' row affected');
+                                    }
                                 }
                                 term.resume();
                             }
