@@ -206,7 +206,6 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
-                console.log('err');
                 var message;
                 if (error.error) {
                     error = error.error;
