@@ -2,6 +2,9 @@
 
 define('__DEVEL__', true);
 
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+ini_set('display_errors', 'On');
+
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
     require('lib/json-rpc.php');
@@ -28,48 +31,79 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <link href="css/style.css" rel="stylesheet"/>
     <link href="css/jquery.micro.css" rel="stylesheet"/>
     <style>
-/* some styles before I move them to style.css */
+     /* some styles before I move them to style.css */
     </style>
-    <script src="lib/jquery-1.11.0.min.js"></script>
-    <script src="lib/json-rpc.js"></script>
-    <?php if (__DEVEL__) { ?>
-    <script src="lib/jquery.terminal-src.js"></script>
-    <?php } else { ?>
-    <script src="lib/jquery.terminal-min.js"></script>
-    <?php } ?>
-    <script src="lib/jquery.mousewheel-min.js"></script>
-    <script src="lib/browser.js"></script>
-    <script src="lib/optparse.js"></script>
-    <script src="lib/jquery.ba-hashchange.min.js"></script>
-    <script src="lib/jquery.micro-min.js"></script>
-    <?php if (__DEVEL__) { ?>
-      <script src="leash-src.js"></script>
-    <?php } else { ?>
-    <script src="leash.min.js"></script>
-    <?php } ?>
 </head>
 <body>
-    <div id="shell"></div>
-    <div id="micro"></div>
-    <div id="jsvi"></div>
-    <script>
+  <div id="splash">
+    <div>
+      <pre>
+   __   _______   ______ __
+  / /  / __/ _ | / __/ // /
+ / /__/ _// __ |_\ \/ _  /
+/____/___/_/ |_/___/_//_/
 
-$(function() {
-    $('#shell').css({
-        overflow: 'auto'
-    }).leash().then(function(leash) {
-        // terminal is created after async call so we need to get terminal
-        // instance in a promise otherwise it will be created here.
-        var terminal = $('#shell').terminal();
-        var $win = $(window);
-        $win.resize(function() {
-            var height = $win.height();
-            terminal.innerHeight(height);
-            $('#micro').height(height);
-        }).resize();
-        terminal.resize();
-    });
-});
-    </script>
+       <span>[ LOADING ]</span>
+      </pre>
+    </div>
+  </div>
+  <div id="shell" style="display:none"></div>
+  <script src="lib/jquery-1.11.2.js"></script>
+  <script src="lib/json-rpc.js"></script>
+  <?php if (__DEVEL__) { ?>
+    <script src="lib/jquery.terminal-src.js"></script>
+  <?php } else { ?>
+    <script src="lib/jquery.terminal-min.js"></script>
+  <?php } ?>
+  <script src="lib/unix_formatting.js"></script>
+  <script src="lib/jquery.mousewheel-min.js"></script>
+  <script src="lib/browser.js"></script>
+  <script src="lib/optparse.js"></script>
+  <script src="lib/jquery.ba-hashchange.min.js"></script>
+  <script src="lib/jquery.micro-min.js"></script>
+  <script src="lib/sysend.js"></script>
+  <?php if (__DEVEL__) { ?>
+    <script src="leash-src.js"></script>
+  <?php } else { ?>
+    <script src="leash.min.js"></script>
+  <?php } ?>
+  <script>
+   var d = $.Deferred();
+   $.leash = d.promise();
+   $(function() {
+       $('#shell').css({
+           overflow: 'auto'
+       }).leash().then(function(leash) {
+           $('#splash').hide();
+           d.resolve(leash);
+           // terminal is created after async call so we need to get terminal
+           // instance in a promise otherwise it will be created here.
+           var terminal = $('#shell').show().terminal();
+           var $win = $(window);
+           $win.resize(function() {
+               var height = $win.height();
+               terminal.innerHeight(height);
+               $('#micro').height(height);
+           }).resize();
+           terminal.resize();
+       });
+   });
+  </script>
+  <?php
+  $dir = 'lib/apps/';
+  if (is_dir($dir)) {
+      if ($dh = opendir($dir)) {
+          while (($file = readdir($dh)) !== false) {
+              if (is_dir($dir . $file) && file_exists($dir . $file . '/init.js')) {
+                  echo '    <script src="' . $dir. $file . '/init.js"></script>';
+              }
+          }
+          closedir($dh);
+      }
+  }
+  ?>
+  <?php if (file_exists('init.js')) { ?>
+    <script src="init.js"></script>
+  <?php } ?>
 </body>
 </html>

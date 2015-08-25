@@ -23,3 +23,53 @@ body {
 .exec:hover, .jargon:hover {
   text-decoration: underline;
 }
+body, html, #splash, #splash div { height: 100%; }
+#splash pre {
+    color: #aaa;
+    display: table-cell;
+    vertical-align: middle;
+
+    font-weight: bold;
+}
+#splash div {
+    margin: 0 auto;
+    display: table;
+}
+#splash span {
+    -webkit-animation: leash-loading 1s infinite steps(1, start);
+    -moz-animation: leash-loading 1s infinite steps(1, start);
+    -ms-animation: leash-loading 1s infinite steps(1, start);
+    animation: leash-loading 1s infinite steps(1, start);
+}
+@-webkit-keyframes leash-loading {
+    0%, 100% {
+    color: #aaa;
+}
+50% {
+    color: #000;
+}
+}
+@-moz-keyframes leash-loading {
+    0%, 100% {
+    color: #aaa;
+}
+50% {
+    color: #000;
+}
+}
+@-ms-keyframes leash-loading {
+    0%, 100% {
+    color: #aaa;
+}
+50% {
+    color: #000;
+}
+}
+@keyframes leash-loading {
+    0%, 100% {
+    color: #aaa;
+}
+50% {
+    color: #000;
+}
+}
