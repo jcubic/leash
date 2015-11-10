@@ -413,7 +413,12 @@ var leash = (function() {
                                     leash.cwd = config.home;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
-                                        term.resume();
+                                        leash.prompt(function(prompt) {
+                                            term.set_prompt(prompt);
+                                            setTimeout(function() {
+                                                term.resume();
+                                            }, 100);
+                                        });
                                     });
                                     if (config.purgeOnUnload) {
                                         $(window).unload(function() {
