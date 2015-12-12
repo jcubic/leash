@@ -752,7 +752,6 @@ class Service {
             $pre = ". .bashrc\ncd $path\n";
             $post = ";echo -n \"$marker\";pwd";
             $command = escapeshellarg($pre . $command . $post);
-            //return '/bin/bash -c ' . $command . ' 2>&1';
             $result = $this->$shell_fn($token, '/bin/bash -c ' . $command . ' 2>&1');
             if ($result) {
                 // work wth `set` that return BASH_EXECUTION_STRING

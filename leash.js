@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Sat, 12 Dec 2015 12:06:24 +0000
+ *  Date: Sat, 12 Dec 2015 13:46:09 +0000
  */
 
 var leash = (function() {
@@ -247,7 +247,7 @@ var leash = (function() {
             
             var leash = {
                 version: '0.2',
-                date: 'Sat, 12 Dec 2015 12:06:24 +0000',
+                date: 'Sat, 12 Dec 2015 13:46:09 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -447,7 +447,8 @@ var leash = (function() {
                         service.shell(token, command, leash.cwd)(function(err, res) {
                             if (res.output) {
                                 var re = /\n(\x1b\[m)?$/;
-                                term.echo(res.output.replace(re, ''));
+                                var output = res.output.replace(re, '');
+                                term.echo($.terminal.escape_brackets(output));
                             }
                             if (leash.cwd !== res.cwd) {
                                 leash.cwd = res.cwd;
@@ -913,11 +914,8 @@ var leash = (function() {
                             var home = $.terminal.escape_regex(config.home);
                             var re = new RegExp('^' + home);
                             path = leash.cwd.replace(re, '~');
-                            console.log(re);
-                            console.log('if: ' + path);
                         } else {
                             path = leash.cwd;
-                            console.log('else: ' + path);
                         }
                         username = username || $.terminal.active().login_name();
                         callback(unix_prompt(username, server, path));
