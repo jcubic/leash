@@ -421,6 +421,7 @@ var leash = (function() {
                                             term.set_prompt(prompt);
                                             setTimeout(function() {
                                                 term.resume();
+                                                term.set_prompt(leash.prompt);
                                             }, 100);
                                         });
                                     });
@@ -914,8 +915,11 @@ var leash = (function() {
                             var home = $.terminal.escape_regex(config.home);
                             var re = new RegExp('^' + home);
                             path = leash.cwd.replace(re, '~');
+                            console.log(re);
+                            console.log('if: ' + path);
                         } else {
                             path = leash.cwd;
+                            console.log('else: ' + path);
                         }
                         username = username || $.terminal.active().login_name();
                         callback(unix_prompt(username, server, path));
