@@ -317,6 +317,10 @@ var leash = (function() {
                             text: "Your normal username"
                         },
                         {
+                            name: "home",
+                            text: "Home directory"
+                        },
+                        {
                             name: "password",
                             mask: true
                         }
@@ -358,9 +362,9 @@ var leash = (function() {
                                 var text = "Test Shell '" + sh + "' ";
                                 service.test_shell(null, sh)(function(err, valid) {
                                     if (valid) {
-                                        text += '[[[b;'+colors.green+';]PASS]]';
+                                        text += '&#91;[[b;'+colors.green+';]PASS]&#93;';
                                     } else {
-                                        text += '[[[b;'+colors.red+';]FAIL]]';
+                                        text += '&#91;[[b;'+colors.red+';]FAIL]&#93;';
                                     }
                                     term.echo(text);
                                     if (valid) {

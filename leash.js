@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Sat, 13 Jun 2015 09:12:36 +0000
+ *  Date: Sat, 12 Dec 2015 11:15:22 +0000
  */
 
 var leash = (function() {
@@ -206,7 +206,6 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
-                console.log('err');
                 var message;
                 if (error.error) {
                     error = error.error;
@@ -248,7 +247,7 @@ var leash = (function() {
             
             var leash = {
                 version: '0.2',
-                date: 'Sat, 13 Jun 2015 09:12:36 +0000',
+                date: 'Sat, 12 Dec 2015 11:15:22 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -318,6 +317,10 @@ var leash = (function() {
                             text: "Your normal username"
                         },
                         {
+                            name: "home",
+                            text: "Home directory"
+                        },
+                        {
                             name: "password",
                             mask: true
                         }
@@ -359,9 +362,9 @@ var leash = (function() {
                                 var text = "Test Shell '" + sh + "' ";
                                 service.test_shell(null, sh)(function(err, valid) {
                                     if (valid) {
-                                        text += '[[[b;'+colors.green+';]PASS]]';
+                                        text += '&#91;[[b;'+colors.green+';]PASS]&#93;';
                                     } else {
-                                        text += '[[[b;'+colors.red+';]FAIL]]';
+                                        text += '&#91;[[b;'+colors.red+';]FAIL]&#93;';
                                     }
                                     term.echo(text);
                                     if (valid) {
@@ -414,7 +417,12 @@ var leash = (function() {
                                     leash.cwd = config.home;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
-                                        term.resume();
+                                        leash.prompt(function(prompt) {
+                                            term.set_prompt(prompt);
+                                            setTimeout(function() {
+                                                term.resume();
+                                            }, 100);
+                                        });
                                     });
                                     if (config.purgeOnUnload) {
                                         $(window).unload(function() {
