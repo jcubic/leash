@@ -981,7 +981,6 @@ var leash = (function() {
                                 });
                             }
                             callback(token);
-                            self.resume();
                         });
                     };
                 } else {
