@@ -936,6 +936,7 @@ var leash = (function() {
                         // we need to pause because prompt was flickering
                         // and pause should be always called before ajax call
                         this.pause();
+                        var self = this;
                         service.login(user, password)(function(err, token) {
                             // we don't call resume because it's called in
                             // onInit if we call it here if you execute
@@ -951,6 +952,7 @@ var leash = (function() {
                                 });
                             }
                             callback(token);
+                            self.resume();
                         });
                     };
                 } else {
