@@ -410,20 +410,18 @@ var leash = (function() {
                                 term.logout();
                                 term.resume();
                             } else {
-                                // TODO: serice need to be call in pararell
+                                // TODO: serivce need to be call in pararell
                                 // instead of function use promises
                                 service.get_settings(token)(function(err, result) {
                                     config = result;
                                     leash.cwd = config.home;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
-                                        leash.prompt(function(prompt) {
-                                            term.set_prompt(prompt);
-                                            setTimeout(function() {
-                                                term.resume();
-                                                term.set_prompt(leash.prompt);
-                                            }, 100);
-                                        });
+                                        // we can set prompt after we have config
+                                        term.set_prompt(leash.prompt);
+                                        setTimeout(function() {
+                                            term.resume();
+                                        }, 100);
                                     });
                                     if (config.purgeOnUnload) {
                                         $(window).unload(function() {

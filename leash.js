@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Date: Sat, 12 Dec 2015 11:59:35 +0000
+ *  Date: Sat, 12 Dec 2015 12:06:24 +0000
  */
 
 var leash = (function() {
@@ -247,7 +247,7 @@ var leash = (function() {
             
             var leash = {
                 version: '0.2',
-                date: 'Sat, 12 Dec 2015 11:59:35 +0000',
+                date: 'Sat, 12 Dec 2015 12:06:24 +0000',
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -410,20 +410,18 @@ var leash = (function() {
                                 term.logout();
                                 term.resume();
                             } else {
-                                // TODO: serice need to be call in pararell
+                                // TODO: serivce need to be call in pararell
                                 // instead of function use promises
                                 service.get_settings(token)(function(err, result) {
                                     config = result;
                                     leash.cwd = config.home;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
-                                        leash.prompt(function(prompt) {
-                                            term.set_prompt(prompt);
-                                            setTimeout(function() {
-                                                term.resume();
-                                                term.set_prompt(leash.prompt);
-                                            }, 100);
-                                        });
+                                        // we can set prompt after we have config
+                                        term.set_prompt(leash.prompt);
+                                        setTimeout(function() {
+                                            term.resume();
+                                        }, 100);
                                     });
                                     if (config.purgeOnUnload) {
                                         $(window).unload(function() {
