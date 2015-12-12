@@ -572,10 +572,39 @@ var leash = (function() {
                             concat(config.executables));
                     } else {
                         var cmd = $.terminal.parse_command(command);
+                        var m = cmd.args[0].match(/(.*)\/([^\/]+)/);
+                        var token = term.token(), path;
+                        function dirs_slash(dir) {
+                            return (dir.dirs || []).map(function(dir) {
+                                return dir + '/';
+                            });
+                        }
                         if (cmd.name == 'cd') {
-                            callback(dir.dirs || []);
+                            if (m) {
+                                path = leash.cwd + '/' + m[1];
+                                service.dir(token, path)(function(err, result) {
+                                    var dirs = (result.dirs || []).map(function(dir) {
+                                        return m[1] + '/' + dir + '/';
+                                    })
+                                    callback(dirs);
+                                });
+                            } else {
+                                callback(dirs_slash(dir));
+                            }
                         } else {
-                            callback(dir.files || []);
+                            if (m) {
+                                path = leash.cwd + '/' + m[1];
+                                service.dir(token, path)(function(err, result) {
+                                    var dirs = dirs_slash(result);
+                                    var dirs_files = (result.files || []).concat(dirs).
+                                        map(function(file_dir) {
+                                            return m[1] + '/' + file_dir;
+                                        });
+                                    callback(dirs_files);
+                                });
+                            } else {
+                                callback((dir.files || []).concat(dirs_slash(dir)));
+                            }
                         }
                     }
                 },
