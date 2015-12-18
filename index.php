@@ -32,6 +32,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <link href="css/jquery.micro.css" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */
+     .DlDesktop { display: none; }
     </style>
 </head>
 <body>

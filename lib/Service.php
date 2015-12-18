@@ -195,15 +195,20 @@ class Service {
         $session = $this->get_session($token);
         return $session ? $session->username : null;
     }
+    // ------------------------------------------------------------------------
+    public function get_current_user() {
+        return get_current_user();
+    }
 
     // ------------------------------------------------------------------------
     private function __write($filename, $content) {
-        $file = fopen($filename, 'w+');
-        if (!$file) {
-            throw new Exception("Couldn't open file '$filename' for write");
+        if (file_exists($filename) && !is_writable($filename)) {
+            return false;
         }
+        $file = fopen($filename, 'w+');
         fwrite($file, $content);
         fclose($file);
+        return true;
     }
 
     // ------------------------------------------------------------------------
@@ -285,8 +290,8 @@ class Service {
     // ------------------------------------------------------------------------
     // for client convient all functions have token - in this case it's ignored
     public function file($token, $filename) {
-        if (!file_exists($filename)) {
-            throw new Exception("File '$filename' don't exists");
+        if (!file_exists($filename) || !is_readable($filename)) {
+            return null;
         }
         return file_get_contents($filename);
     }
@@ -296,7 +301,7 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $this->__write($filename, $content);
+        return $this->__write($filename, $content);
     }
 
     // ------------------------------------------------------------------------
@@ -404,6 +409,10 @@ class Service {
     // ------------------------------------------------------------------------
     public function file_exists($path) {
         return file_exists($path);
+    }
+    // ------------------------------------------------------------------------
+    public function is_file($token, $path) {
+        return is_file($path);
     }
     // ------------------------------------------------------------------------
     public function function_exists($token, $function) {

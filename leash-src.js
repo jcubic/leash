@@ -447,8 +447,10 @@ var leash = (function() {
                         service.shell(token, command, leash.cwd)(function(err, res) {
                             if (res.output) {
                                 var re = /\n(\x1b\[m)?$/;
-                                var output = res.output.replace(re, '');
-                                term.echo($.terminal.escape_brackets(output));
+                                var output = res.output.replace(re, '').
+                                    replace(/\[\[/g, '&#91;&#91;').
+                                    replace(/\]\]/g, '&#93;&#93;');
+                                term.echo(output);
                             }
                             if (leash.cwd !== res.cwd) {
                                 leash.cwd = res.cwd;
