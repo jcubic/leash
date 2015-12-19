@@ -30,7 +30,7 @@ one of the following:
 * python interpreter
 * javascript interpreter
 * jargon command (will display definitions from jargon file)
-* micro editor (based on nano/pico) [editor in progress]
+* ymacs editor (Emacs clone for the web)
 * vi editor (using jsvi) (not yet)
 * tab completion
 * File Drag & Drop upload (using HTML5) (not yet)
