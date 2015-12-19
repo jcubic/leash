@@ -142,7 +142,9 @@ class Service {
     // ------------------------------------------------------------------------
     function __destruct() {
         $path = $this->path . "/" . $this->config_file;
-        $this->__write($path, json_encode($this->config));
+        try {
+            $this->__write($path, json_encode($this->config));
+        } catch (Exception $e) {}
     }
 
     // ------------------------------------------------------------------------
@@ -208,6 +210,9 @@ class Service {
         $file = fopen($filename, 'w+');
         fwrite($file, $content);
         fclose($file);
+        if ($filename == $this->path . "/" . $this->config_file) {
+            $this->__construct($this->config_file, $this->path);
+        }
         return true;
     }
 
