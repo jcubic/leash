@@ -32,7 +32,10 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <link href="css/jquery.micro.css" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */
-     .DlDesktop { display: none; }
+    .DlDesktop { display: none; }
+    .Ymacs-frame-content {
+        float: left;
+     }
     </style>
 </head>
 <body>

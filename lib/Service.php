@@ -142,9 +142,7 @@ class Service {
     // ------------------------------------------------------------------------
     function __destruct() {
         $path = $this->path . "/" . $this->config_file;
-        try {
-            $this->__write($path, json_encode($this->config));
-        } catch (Exception $e) {}
+        $this->__write($path, json_encode($this->config));
     }
 
     // ------------------------------------------------------------------------
@@ -210,9 +208,6 @@ class Service {
         $file = fopen($filename, 'w+');
         fwrite($file, $content);
         fclose($file);
-        if ($filename == $this->path . "/" . $this->config_file) {
-            $this->__construct($this->config_file, $this->path);
-        }
         return true;
     }
 
@@ -306,7 +301,15 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        return $this->__write($filename, $content);
+        if (!$this->__write($filename, $content)) {
+            return false;
+        }
+        $path = $this->shell($token, 'readlink -f "' . $filename . '"', '/');
+        $path = preg_replace('/\n$/', '', $path['output']);
+        if ($path == $this->path . "/" . $this->config_file) {
+            $this->__construct($this->config_file, $this->path);
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------------

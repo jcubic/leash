@@ -1,0 +1,43 @@
+   __   _______   ______ __
+  / /  / __/ _ | / __/ // /
+ / /__/ _// __ |_\ \/ _  /
+/____/___/_/ |_/___/_//_/ v. {{VERSION}}
+
+----------------------------------------------------------------------------
+
+This is web application that will give you access to the shell, you will not
+need root priviliges, ssh or telnet only php based hosting. You only need
+one of the following:
+
+* php exec function enabled
+* php shell_exec function enabled
+* Enabled CGI with python or perl on the server
+
+----------------------------------------------------------------------------
+:: Shell Limitations
+----------------------------------------------------------------------------
+
+* you will not be able to execute interactive commands like `php -a`
+* you can't create a function and run it in next command (because each
+  command is run as separated process)
+
+----------------------------------------------------------------------------
+:: Features
+----------------------------------------------------------------------------
+
+* mysql command
+* sqlite command (not yet)
+* python interpreter
+* javascript interpreter
+* jargon command (will display definitions from jargon file)
+* micro editor (based on nano/pico) [editor in progress]
+* vi editor (using jsvi) (not yet)
+* tab completion
+* File Drag & Drop upload (using HTML5) (not yet)
+
+----------------------------------------------------------------------------
+:: License
+----------------------------------------------------------------------------
+
+Copyright (C) 2013-2015 Jakub Jankiewicz
+Licensed under GNU GPL Version 3 license
