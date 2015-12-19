@@ -649,23 +649,48 @@ var leash = (function() {
                         ].join('\n'));
                     },
                     rpc: function(cmd, token, term) {
+                        var name = cmd.args[0] || '', completion;
+                        if (name === '') {
+                            completion = function(term, string, callback) {
+                                callback(Object.keys(service));
+                            };
+                        } else {
+                            var defer = $.Deferred();
+                            $.jrpc(name, 'system.describe', [], function(json) {
+                                defer.resolve(json.procs.map(function(proc) {
+                                    return proc.name;
+                                }));
+                            }, function(xhr, status, text) {
+                                term.error('[AJAX]: ' + status);
+                                term.resume();
+                                if (status == "Invalid JSON") {
+                                    term.error(xhr.responseText);
+                                }
+                                defer.reject();
+                            });
+                            completion = function(term, string, callback) {
+                                defer.then(callback).fail(function() {
+                                    callback([]);
+                                });
+                            };
+                        }
                         term.push(function(command) {
                             var cmd = $.terminal.parse_command(expand_env_vars(command));
                             term.pause();
-                            $.jrpc('', cmd.name, cmd.args, function(result) {
-                                if (result.error) {
-                                    if (result.error.error) {
-                                        var err = result.error.error;
+                            $.jrpc(name, cmd.name, cmd.args, function(json) {
+                                if (json.error) {
+                                    if (json.error.error) {
+                                        var err = json.error.error;
                                         var file = err.file.replace(config.home,
                                                                     '');
                                         term.error(err.message + ' in ' + file +
                                                    ' at ' + err.at);
                                         term.error(err.line);
-                                    } else if (result.error.message) {
-                                        term.error(result.error.message);
+                                    } else if (json.error.message) {
+                                        term.error(json.error.message);
                                     }
                                 } else {
-                                    term.echo(JSON.stringify(result.result));
+                                    term.echo(JSON.stringify(json.result));
                                 }
                                 term.resume();
                             }, function(xhr, status, text) {
@@ -678,7 +703,7 @@ var leash = (function() {
                         }, {
                             name: 'rpc',
                             prompt: 'rpc> ',
-                            completion: Object.keys(service)
+                            completion: completion
                         });
                     },
                     jargon: function(cmd, token, term) {
