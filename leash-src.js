@@ -244,7 +244,6 @@ var leash = (function() {
                 });
                 return fixed_command;
             }
-            
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',

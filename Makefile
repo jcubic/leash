@@ -22,16 +22,16 @@ CAT=cat
 RM=rm
 DATE=`date -uR`
 
-ALL: leash.js leash.min.js
+ALL: leash.js leash.min.js README
 
 leash.js: leash-src.js .$(VERSION) Makefile
 	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" -e "s/{{DATE}}/$(DATE)/g" leash-src.js > leash.js
 
+README: README.in .$(VERSION)
+	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" README.in > README
+
 leash.min.js: leash.js
-	$(JSCOMPRESS) -o tmp.min.js leash.js
-	$(SED) -e "s/{{VER}}/$(VERSION)/g" -e "s/{{DATE}}/$(DATE)/g" copy > copy.tmp
-	$(CAT) copy.tmp tmp.min.js > leash.min.js
-	$(RM) tmp.min.js copy.tmp
+	$(JSCOMPRESS) -o leash.min.js --comments -- leash.js
 
 .$(VERSION):
 	touch .$(VERSION)
