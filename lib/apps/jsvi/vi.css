@@ -1,0 +1,23 @@
+.editor {
+	color: #aaa;
+	background-color: #000;
+	position: absolute;
+    top: 0px;
+    left: 0px;
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+    font-family: monospace;
+    font-size: 100%;
+}
+.print, .editor, .editorcursor { display: none; }
+@media print {
+	.editor { display:none !important; }
+	html,body { overflow:auto !important; }
+	.editorcursor { display:none !important; }
+	.print {position:absolute;top:0;left:0;display:block !important;font-family:monospace;height:100%;}
+	.editortools {display:none !important;}
+	textarea,input { display:none !important;}
+}
