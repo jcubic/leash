@@ -29,13 +29,13 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <![endif]-->
     <link href="css/jquery.terminal.css" rel="stylesheet"/>
     <link href="css/style.css" rel="stylesheet"/>
-    <link href="css/jquery.micro.css" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */
     .DlDesktop { display: none; }
     .Ymacs-frame-content {
-        float: left;
-     }
+        display: inline-block;
+        min-width: 100%;
+    }
     </style>
 </head>
 <body>
@@ -64,7 +64,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <script src="lib/browser.js"></script>
   <script src="lib/optparse.js"></script>
   <script src="lib/jquery.ba-hashchange.min.js"></script>
-  <script src="lib/jquery.micro-min.js"></script>
   <script src="lib/sysend.js"></script>
   <?php if (__DEVEL__) { ?>
     <script src="leash-src.js"></script>
