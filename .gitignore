@@ -3,6 +3,5 @@
 .\#*
 \#*\#
 config.json
-init.js
 tmp/*
 cgi-bin/*.pyc
