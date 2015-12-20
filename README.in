@@ -31,7 +31,7 @@ one of the following:
 * javascript interpreter
 * jargon command (will display definitions from jargon file)
 * ymacs editor (Emacs clone for the web)
-* vi editor (using jsvi) (not yet)
+* vi editor (using jsvi)
 * tab completion
 * File Drag & Drop upload (using HTML5) (not yet)
 
