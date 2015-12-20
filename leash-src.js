@@ -1037,6 +1037,7 @@ var leash = (function() {
             var leash_promise = leash();
             self.data('leash', leash_promise);
             leash_promise.then(function(leash) {
+                var animation = false;
                 var defaults = {
                     onInit: leash.init,
                     //maskChar: '',
@@ -1067,11 +1068,103 @@ var leash = (function() {
                     login: leash.login,
                     name: 'leash',
                     outputLimit: 500,
-                    greetings: leash.greetings
+                    greetings: leash.greetings,
+                    keydown: function(e) {
+                        if (animation) {
+                            return false;
+                        }
+                    }
                 };
                 var terminal = self.terminal(leash.interpreter,
                                              $.extend(defaults, options || {}));
                 leash.terminal = terminal;
+                terminal.on('drop', function(e) {
+                    e.preventDefault();
+                    var prompt;
+                    var org = e.originalEvent;
+                    var files = org.dataTransfer.files || org.target.files;
+                    var token = terminal.token();
+                    if (!token) {
+                        return;
+                    }
+                    if (files.length) {
+                        var files = [].slice.call(files);
+                        (function upload() {
+                            var file = files.shift();
+                            function uploadFile() {
+                                var formData = new FormData();
+                                formData.append('file', file);
+                                formData.append('token', token);
+                                formData.append('path', leash.cwd);
+                                animation = true;
+                                var anim = ['/', '-', '\\', '|'], i = 0, delay = 400;
+                                var timer;
+                                (function animation() {
+                                    terminal.set_prompt(anim[i++]);
+                                    if (i > anim.length-1) {
+                                        i = 0;
+                                    }
+                                    timer = setTimeout(animation, delay);
+                                })();
+                                function finish() {
+                                    clearTimeout(timer);
+                                    terminal.set_prompt(prompt);
+                                    animation = false;
+                                }
+                                $.ajax({
+                                    url: 'lib/upload.php',
+                                    type: 'POST',
+                                    success: function(response) {
+                                        finish();
+                                        if (response.error) {
+                                            terminal.error(response.error);
+                                        } else {
+                                            terminal.echo('File "' + file.name + '" ' +
+                                                          'uploaded.');
+                                        }
+                                        upload();
+                                    },
+                                    error: function(jxhr, error, status) {
+                                        terminal.error(jxhr.statusText);
+                                        finish();
+                                    },
+                                    data: formData,
+                                    cache: false,
+                                    contentType: false,
+                                    processData: false
+                                });
+                            }
+                            if (file) {
+                                prompt = terminal.get_prompt();
+                                var fname = leash.cwd + '/' + file.name;
+                                leash.service.file_exists(fname)(function(err, exists) {
+                                    if (exists) {
+                                        var msg = 'File "' + file.name + '" exists do you'+
+                                            ' want to overwrite (Y/N)? ';
+                                        terminal.push(function(yesno) {
+                                            if (yesno.match(/^y$/i)) {
+                                                // upload
+                                                terminal.pop();
+                                                uploadFile();
+                                            } else if (yesno.match(/^n$/i)) {
+                                                terminal.pop();
+                                                upload();
+                                            }
+                                        }, {
+                                            prompt: msg
+                                        });
+                                    } else {
+                                        uploadFile();
+                                    }
+                                });
+                            }
+                        })();
+                    }
+                }).on('dragover', function(e) {
+                    e.preventDefault();
+                }).on('dragenter', function(e) {
+                    e.preventDefault();
+                })
                 if (typeof sysend != 'undefined') {
                     sysend.on('leash.logout', function() {
                         // it look empty without echo prompt

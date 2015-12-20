@@ -1,7 +1,7 @@
 <?php
 /**
  *  This file is part of Leash (Browser Shell)
- *  Copyright (C) 2013  Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (C) 2013-2015  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -112,13 +112,13 @@ class Service {
     function __construct($config_file, $path) {
         $this->path = $path;
         $this->config_file = $config_file;
-        if (file_exists($config_file)) {
+        $full_path = $path . "/" . $this->config_file;
+        if (file_exists($full_path)) {
             try {
-                $this->config = json_decode(file_get_contents($config_file));
+                $this->config = json_decode(file_get_contents($full_path));
             } catch (Exception $e) {
                 $this->config = new stdClass();
             }
-            $full_path = $path . "/" . $this->config_file;
             // it had no write permission when first created while testing
             if (!is_writable($full_path)) {
                 chmod($full_path, 0664);
