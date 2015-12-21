@@ -221,6 +221,10 @@ class Service {
                 preg_match(self::password_regex, $root->password);
         }
     }
+    // ------------------------------------------------------------------------
+    public function debug() {
+        return $this->config->settings->debug;
+    }
 
     // ------------------------------------------------------------------------
     public function valid_token($token) {
@@ -339,6 +343,7 @@ class Service {
         foreach ($settings as $key => $val) {
             $this->config->settings[$key] = $val;
         }
+        $this->config->settings['debug'] = false;
         $this->new_user('root', $root_password);
         $this->new_user($username, $password);
         if (!file_exists('init.js')) {

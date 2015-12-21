@@ -1,19 +1,33 @@
 <?php
+/**
+ *  This file is part of Leash (Browser Shell)
+ *  Copyright (C) 2013-2015  Jakub Jankiewicz <http://jcubic.pl>
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-define('__DEVEL__', true);
-
-error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
-ini_set('display_errors', 'On');
-
+require('lib/Service.php');
+$service = new Service('config.json', getcwd());
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
     require('lib/json-rpc.php');
-    require('lib/Service.php');
-    if (__DEVEL__) {
+    if ($service->debug()) {
         error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
         ini_set('display_errors', 'On');
     }
-    echo handle_json_rpc(new Service('config.json', getcwd()));
+    echo handle_json_rpc($service);
     exit;
 }
 
@@ -54,7 +68,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <div id="shell" style="display:none"></div>
   <script src="lib/jquery-1.11.2.js"></script>
   <script src="lib/json-rpc.js"></script>
-  <?php if (__DEVEL__) { ?>
+  <?php if ($service->debug()) { ?>
     <script src="lib/jquery.terminal-src.js"></script>
   <?php } else { ?>
     <script src="lib/jquery.terminal-min.js"></script>
@@ -65,7 +79,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <script src="lib/optparse.js"></script>
   <script src="lib/jquery.ba-hashchange.min.js"></script>
   <script src="lib/sysend.js"></script>
-  <?php if (__DEVEL__) { ?>
+  <?php if ($service->debug()) { ?>
     <script src="leash-src.js"></script>
   <?php } else { ?>
     <script src="leash.min.js"></script>
