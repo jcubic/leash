@@ -44,7 +44,7 @@ var leash = (function() {
         'You should have received a copy of the GNU General Public License',
         'along with this program.  If not, see <http://www.gnu.org/licenses/>.'
     ].map(function(line) {
-        return line == '' ? line : '  ' + line;
+        return line === '' ? line : '  ' + line;
     }).join('\n');
     // -------------------------------------------------------------------------
     // fill text with char to have width of size
@@ -368,7 +368,7 @@ var leash = (function() {
                                     term.echo(text);
                                     if (valid) {
                                         term.echo("Using shell " + sh);
-                                        settings['shell'] = sh;
+                                        settings.shell = sh;
                                         continuation();
                                     } else {
                                         test_shells(rest, continuation);
@@ -567,7 +567,12 @@ var leash = (function() {
                 },
                 completion: function(term, string, callback) {
                     var command = term.get_command();
-                    if (command.match(/^\s*[^\s]*\s*$/) || command == '') {
+                    function dirs_slash(dir) {
+                        return (dir.dirs || []).map(function(dir) {
+                            return dir + '/';
+                        });
+                    }
+                    if (command.match(/^\s*[^\s]*\s*$/) || command === '') {
                         var commands = Object.keys(leash.commands);
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));
@@ -575,18 +580,13 @@ var leash = (function() {
                         var cmd = $.terminal.parse_command(command);
                         var m = string.match(/(.*)\/([^\/]+)/);
                         var token = term.token(), path;
-                        function dirs_slash(dir) {
-                            return (dir.dirs || []).map(function(dir) {
-                                return dir + '/';
-                            });
-                        }
                         if (cmd.name == 'cd') {
                             if (m) {
                                 path = leash.cwd + '/' + m[1];
                                 service.dir(token, path)(function(err, result) {
                                     var dirs = (result.dirs || []).map(function(dir) {
                                         return m[1] + '/' + dir + '/';
-                                    })
+                                    });
                                     callback(dirs);
                                 });
                             } else {
@@ -895,7 +895,7 @@ var leash = (function() {
                                     python_code += command + "\n";
                                     term.set_prompt('... ');
                                 } else if (python_code) {
-                                    if (command == '') {
+                                    if (command === '') {
                                         term.set_prompt('>>> ');
                                         py.evaluate(python_code);
                                         python_code = '';
@@ -1088,7 +1088,7 @@ var leash = (function() {
                         return;
                     }
                     if (files.length) {
-                        var files = [].slice.call(files);
+                        files = [].slice.call(files);
                         (function upload() {
                             var file = files.shift();
                             function uploadFile() {
@@ -1164,7 +1164,7 @@ var leash = (function() {
                     e.preventDefault();
                 }).on('dragenter', function(e) {
                     e.preventDefault();
-                })
+                });
                 if (typeof sysend != 'undefined') {
                     sysend.on('leash.logout', function() {
                         // it look empty without echo prompt
