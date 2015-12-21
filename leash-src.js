@@ -572,13 +572,24 @@ var leash = (function() {
                             return dir + '/';
                         });
                     }
+                    function fix_spaces(dirs_files) {
+                        if (string.match(/^"/)) {
+                            return dirs_files.map(function(file_dir) {
+                                return '"' + file_dir
+                            });
+                        } else {
+                            return dirs_files.map(function(file_dir) {
+                                return file_dir.replace(/ /g, '\\ ');
+                            });
+                        }
+                    }
                     if (command.match(/^\s*[^\s]*\s*$/) || command === '') {
                         var commands = Object.keys(leash.commands);
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));
                     } else {
                         var cmd = $.terminal.parse_command(command);
-                        var m = string.match(/(.*)\/([^\/]+)/);
+                        var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
                         var token = term.token(), path;
                         if (cmd.name == 'cd') {
                             if (m) {
@@ -587,10 +598,10 @@ var leash = (function() {
                                     var dirs = (result.dirs || []).map(function(dir) {
                                         return m[1] + '/' + dir + '/';
                                     });
-                                    callback(dirs);
+                                    callback(fix_spaces(dirs));
                                 });
                             } else {
-                                callback(dirs_slash(dir));
+                                callback(fix_spaces(dirs_slash(dir)));
                             }
                         } else {
                             if (m) {
@@ -601,10 +612,11 @@ var leash = (function() {
                                         map(function(file_dir) {
                                             return m[1] + '/' + file_dir;
                                         });
-                                    callback(dirs_files);
+                                    callback(fix_spaces(dirs_files));
                                 });
                             } else {
-                                callback((dir.files || []).concat(dirs_slash(dir)));
+                                var dirs_files = (dir.files || []).concat(dirs_slash(dir));
+                                callback(fix_spaces(dirs_files));
                             }
                         }
                     }
@@ -637,11 +649,9 @@ var leash = (function() {
                         term.echo([
                             'record terminal keystroke with animation and allow to playback',
                             'guess login',
-                            'drag and drop upload',
                             'filesystem API',
                             'Option to block access when 3 fail attempts (create file on disk and check if it exist)',
                             '[[;#fff;]cat] without argument',
-                            'pick the shell',
                             'timer 1s command',
                             'edit history',
                             '#["guess", "guess", "play: xxxx"]'
