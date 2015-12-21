@@ -106,6 +106,8 @@ var leash = (function() {
         return keywords;
     }
     function sqlite_keywords() {
+        // sqlite keywords taken from
+        // https://www.sqlite.org/lang_keywords.html
         var uppercase = [
             'ABORT', 'ACTION', 'ADD', 'AFTER', 'ALL', 'ALTER', 'ANALYZE', 'AND',
             'AS', 'ASC', 'ATTACH', 'AUTOINCREMENT', 'BEFORE', 'BEGIN',
@@ -256,7 +258,7 @@ var leash = (function() {
             }
             function print_sql_result(err, result) {
                 if (err) {
-                    leash.terminal.error(err.message);
+                    print_error(err);
                 } else {
                     switch ($.type(result)) {
                     case 'array':

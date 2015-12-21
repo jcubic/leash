@@ -26,7 +26,7 @@ one of the following:
 ----------------------------------------------------------------------------
 
 * mysql command
-* sqlite command (not yet)
+* sqlite command
 * python interpreter
 * javascript interpreter
 * jargon command (will display definitions from jargon file)

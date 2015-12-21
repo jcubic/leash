@@ -540,13 +540,10 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        if (!file_exists($filename)) {
-            throw new Exception("File don't exists");
-        }
         $db = new SQLite($filename);
         $res = $db->query($query);
         if ($res) {
-            if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER/i", $query)) {
+            if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER|CREATE/i", $query)) {
                 return $db->rowAffected();
             } else {
                 return $res->fetchAll();
