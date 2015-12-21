@@ -573,7 +573,7 @@ var leash = (function() {
                             concat(config.executables));
                     } else {
                         var cmd = $.terminal.parse_command(command);
-                        var m = cmd.args[0].match(/(.*)\/([^\/]+)/);
+                        var m = string.match(/(.*)\/([^\/]+)/);
                         var token = term.token(), path;
                         function dirs_slash(dir) {
                             return (dir.dirs || []).map(function(dir) {
