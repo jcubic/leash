@@ -137,6 +137,9 @@ class SQLite {
             throw new Exception('SQLite not installed');
         }
     }
+    function rowAffected() {
+        return $this->db->changes();
+    }
     static function escape($string) {
         if (class_exists('SQLiteDatabase')) {
             return sqlite_escape_string($string);

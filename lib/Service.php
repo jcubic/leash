@@ -536,6 +536,27 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
+    public function sqlite_query($token, $filename, $query) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        if (!file_exists($filename)) {
+            throw new Exception("File don't exists");
+        }
+        $db = new SQLite($filename);
+        $res = $db->query($query);
+        if ($res) {
+            if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER/i", $query)) {
+                return $db->rowAffected();
+            } else {
+                return $res->fetchAll();
+            }
+        } else {
+            throw new Error("Coudn't open file");
+        }
+    }
+
+    // ------------------------------------------------------------------------
     private function mysql_create_connection($host, $username, $password, $db) {
         return $this->mysql_connection = new Database($host, $username, $password, $db);
     }
@@ -781,7 +802,8 @@ class Service {
     }
     // ------------------------------------------------------------------------
     private function cgi_perl($token, $code) {
-        
+        $url = root() . "cgi-bin/cmd.cgi?token=" . $token;
+        $response = json_decode($this->post($url, $code));
     }
     // ------------------------------------------------------------------------
     public function cgi_python($token, $code) {

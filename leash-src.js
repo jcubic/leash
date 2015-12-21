@@ -60,61 +60,72 @@ var leash = (function() {
         // mysql keywords from
         // http://dev.mysql.com/doc/refman/5.1/en/reserved-words.html
         var uppercase = [
-            'ACCESSIBLE', 'ADD', 'ALL', 'ALTER', 'ANALYZE',
-            'AND', 'AS', 'ASC', 'ASENSITIVE', 'BEFORE',
-            'BETWEEN', 'BIGINT', 'BINARY', 'BLOB', 'BOTH',
-            'BY', 'CALL', 'CASCADE', 'CASE', 'CHANGE',
-            'CHAR', 'CHARACTER', 'CHECK', 'COLLATE',
-            'COLUMN', 'CONDITION', 'CONSTRAINT', 'CONTINUE',
-            'CONVERT', 'CREATE', 'CROSS', 'CURRENT_DATE',
-            'CURRENT_TIME', 'CURRENT_TIMESTAMP',
-            'CURRENT_USER', 'CURSOR', 'DATABASE',
-            'DATABASES', 'DAY_HOUR', 'DAY_MICROSECOND',
-            'DAY_MINUTE', 'DAY_SECOND', 'DEC', 'DECIMAL',
-            'DECLARE', 'DEFAULT', 'DELAYED', 'DELETE',
-            'DESC', 'DESCRIBE', 'DETERMINISTIC', 'DISTINCT',
-            'DISTINCTROW', 'DIV', 'DOUBLE', 'DROP', 'DUAL',
-            'EACH', 'ELSE', 'ELSEIF', 'ENCLOSED', 'ESCAPED',
-            'EXISTS', 'EXIT', 'EXPLAIN', 'FALSE', 'FETCH',
-            'FLOAT', 'FLOAT4', 'FLOAT8', 'FOR', 'FORCE',
-            'FOREIGN', 'FROM', 'FULLTEXT', 'GRANT', 'GROUP',
-            'HAVING', 'HIGH_PRIORITY', 'HOUR_MICROSECOND',
-            'HOUR_MINUTE', 'HOUR_SECOND', 'IF', 'IGNORE',
-            'IN', 'INDEX', 'INFILE', 'INNER', 'INOUT',
-            'INSENSITIVE', 'INSERT', 'INT', 'INT1', 'INT2',
-            'INT3', 'INT4', 'INT8', 'INTEGER', 'INTERVAL',
-            'INTO', 'IS', 'ITERATE', 'JOIN', 'KEY', 'KEYS',
-            'KILL', 'LEADING', 'LEAVE', 'LEFT', 'LIKE',
-            'LIMIT', 'LINEAR', 'LINES', 'LOAD', 'LOCALTIME',
-            'LOCALTIMESTAMP', 'LOCK', 'LONG', 'LONGBLOB',
-            'LONGTEXT', 'LOOP', 'LOW_PRIORITY',
-            'MASTER_SSL_VERIFY_SERVER_CERT', 'MATCH',
-            'MEDIUMBLOB', 'MEDIUMINT', 'MEDIUMTEXT',
-            'MIDDLEINT', 'MINUTE_MICROSECOND',
-            'MINUTE_SECOND', 'MOD', 'MODIFIES', 'NATURAL',
-            'NOT', 'NO_WRITE_TO_BINLOG', 'NULL', 'NUMERIC',
-            'ON', 'OPTIMIZE', 'OPTION', 'OPTIONALLY', 'OR',
-            'ORDER', 'OUT', 'OUTER', 'OUTFILE', 'PRECISION',
-            'PRIMARY', 'PROCEDURE', 'PURGE', 'RANGE',
-            'READ', 'READS', 'READ_WRITE', 'REAL',
-            'REFERENCES', 'REGEXP', 'RELEASE', 'RENAME',
-            'REPEAT', 'REPLACE', 'REQUIRE', 'RESTRICT',
-            'RETURN', 'REVOKE', 'RIGHT', 'RLIKE', 'SCHEMA',
-            'SCHEMAS', 'SECOND_MICROSECOND', 'SELECT',
-            'SENSITIVE', 'SEPARATOR', 'SET', 'SHOW',
-            'SMALLINT', 'SPATIAL', 'SPECIFIC', 'SQL',
-            'SQLEXCEPTION', 'SQLSTATE', 'SQLWARNING',
-            'SQL_BIG_RESULT', 'SQL_CALC_FOUND_ROWS',
-            'SQL_SMALL_RESULT', 'SSL', 'STARTING',
-            'STRAIGHT_JOIN', 'TABLE', 'TERMINATED', 'THEN',
-            'TINYBLOB', 'TINYINT', 'TINYTEXT', 'TO',
-            'TRAILING', 'TRIGGER', 'TRUE', 'UNDO', 'UNION',
-            'UNIQUE', 'UNLOCK', 'UNSIGNED', 'UPDATE',
-            'USAGE', 'USE', 'USING', 'UTC_DATE', 'UTC_TIME',
-            'UTC_TIMESTAMP', 'VALUES', 'VARBINARY',
-            'VARCHAR', 'VARCHARACTER', 'VARYING', 'WHEN',
-            'WHERE', 'WHILE', 'WITH', 'WRITE', 'XOR',
-            'YEAR_MONTH', 'ZEROFILL'];
+            'ACCESSIBLE', 'ADD', 'ALL', 'ALTER', 'ANALYZE', 'AND', 'AS', 'ASC',
+            'ASENSITIVE', 'BEFORE', 'BETWEEN', 'BIGINT', 'BINARY', 'BLOB',
+            'BOTH', 'BY', 'CALL', 'CASCADE', 'CASE', 'CHANGE', 'CHAR',
+            'CHARACTER', 'CHECK', 'COLLATE', 'COLUMN', 'CONDITION',
+            'CONSTRAINT', 'CONTINUE', 'CONVERT', 'CREATE', 'CROSS',
+            'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'CURRENT_USER',
+            'CURSOR', 'DATABASE', 'DATABASES', 'DAY_HOUR', 'DAY_MICROSECOND',
+            'DAY_MINUTE', 'DAY_SECOND', 'DEC', 'DECIMAL', 'DECLARE', 'DEFAULT',
+            'DELAYED', 'DELETE', 'DESC', 'DESCRIBE', 'DETERMINISTIC',
+            'DISTINCT', 'DISTINCTROW', 'DIV', 'DOUBLE', 'DROP', 'DUAL', 'EACH',
+            'ELSE', 'ELSEIF', 'ENCLOSED', 'ESCAPED', 'EXISTS', 'EXIT',
+            'EXPLAIN', 'FALSE', 'FETCH', 'FLOAT', 'FLOAT4', 'FLOAT8', 'FOR',
+            'FORCE', 'FOREIGN', 'FROM', 'FULLTEXT', 'GRANT', 'GROUP', 'HAVING',
+            'HIGH_PRIORITY', 'HOUR_MICROSECOND', 'HOUR_MINUTE', 'HOUR_SECOND',
+            'IF', 'IGNORE', 'IN', 'INDEX', 'INFILE', 'INNER', 'INOUT',
+            'INSENSITIVE', 'INSERT', 'INT', 'INT1', 'INT2', 'INT3', 'INT4',
+            'INT8', 'INTEGER', 'INTERVAL', 'INTO', 'IS', 'ITERATE', 'JOIN',
+            'KEY', 'KEYS', 'KILL', 'LEADING', 'LEAVE', 'LEFT', 'LIKE', 'LIMIT',
+            'LINEAR', 'LINES', 'LOAD', 'LOCALTIME', 'LOCALTIMESTAMP', 'LOCK',
+            'LONG', 'LONGBLOB', 'LONGTEXT', 'LOOP', 'LOW_PRIORITY',
+            'MASTER_SSL_VERIFY_SERVER_CERT', 'MATCH', 'MEDIUMBLOB', 'MEDIUMINT',
+            'MEDIUMTEXT', 'MIDDLEINT', 'MINUTE_MICROSECOND', 'MINUTE_SECOND',
+            'MOD', 'MODIFIES', 'NATURAL', 'NOT', 'NO_WRITE_TO_BINLOG', 'NULL',
+            'NUMERIC', 'ON', 'OPTIMIZE', 'OPTION', 'OPTIONALLY', 'OR', 'ORDER',
+            'OUT', 'OUTER', 'OUTFILE', 'PRECISION', 'PRIMARY', 'PROCEDURE',
+            'PURGE', 'RANGE', 'READ', 'READS', 'READ_WRITE', 'REAL',
+            'REFERENCES', 'REGEXP', 'RELEASE', 'RENAME', 'REPEAT', 'REPLACE',
+            'REQUIRE', 'RESTRICT', 'RETURN', 'REVOKE', 'RIGHT', 'RLIKE',
+            'SCHEMA', 'SCHEMAS', 'SECOND_MICROSECOND', 'SELECT', 'SENSITIVE',
+            'SEPARATOR', 'SET', 'SHOW', 'SMALLINT', 'SPATIAL', 'SPECIFIC',
+            'SQL', 'SQLEXCEPTION', 'SQLSTATE', 'SQLWARNING', 'SQL_BIG_RESULT',
+            'SQL_CALC_FOUND_ROWS', 'SQL_SMALL_RESULT', 'SSL', 'STARTING',
+            'STRAIGHT_JOIN', 'TABLE', 'TERMINATED', 'THEN', 'TINYBLOB',
+            'TINYINT', 'TINYTEXT', 'TO', 'TRAILING', 'TRIGGER', 'TRUE', 'UNDO',
+            'UNION', 'UNIQUE', 'UNLOCK', 'UNSIGNED', 'UPDATE', 'USAGE', 'USE',
+            'USING', 'UTC_DATE', 'UTC_TIME', 'UTC_TIMESTAMP', 'VALUES',
+            'VARBINARY', 'VARCHAR', 'VARCHARACTER', 'VARYING', 'WHEN', 'WHERE',
+            'WHILE', 'WITH', 'WRITE', 'XOR', 'YEAR_MONTH', 'ZEROFILL'];
+        var keywords = [];
+        $.each(uppercase, function(_, keyword) {
+            keywords.push(keyword);
+            keywords.push(keyword.toLowerCase());
+        });
+        return keywords;
+    }
+    function sqlite_keywords() {
+        var uppercase = [
+            'ABORT', 'ACTION', 'ADD', 'AFTER', 'ALL', 'ALTER', 'ANALYZE', 'AND',
+            'AS', 'ASC', 'ATTACH', 'AUTOINCREMENT', 'BEFORE', 'BEGIN',
+            'BETWEEN', 'BY', 'CASCADE', 'CASE', 'CAST', 'CHECK', 'COLLATE',
+            'COLUMN', 'COMMIT', 'CONFLICT', 'CONSTRAINT', 'CREATE', 'CROSS',
+            'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'DATABASE',
+            'DEFAULT', 'DEFERRABLE', 'DEFERRED', 'DELETE', 'DESC', 'DETACH',
+            'DISTINCT', 'DROP', 'EACH', 'ELSE', 'END', 'ESCAPE', 'EXCEPT',
+            'EXCLUSIVE', 'EXISTS', 'EXPLAIN', 'FAIL', 'FOR', 'FOREIGN', 'FROM',
+            'FULL', 'GLOB', 'GROUP', 'HAVING', 'IF', 'IGNORE', 'IMMEDIATE',
+            'IN', 'INDEX', 'INDEXED', 'INITIALLY', 'INNER', 'INSERT', 'INSTEAD',
+            'INTERSECT', 'INTO', 'IS', 'ISNULL', 'JOIN', 'KEY', 'LEFT', 'LIKE',
+            'LIMIT', 'MATCH', 'NATURAL', 'NO', 'NOT', 'NOTNULL', 'NULL', 'OF',
+            'OFFSET', 'ON', 'OR', 'ORDER', 'OUTER', 'PLAN', 'PRAGMA', 'PRIMARY',
+            'QUERY', 'RAISE', 'RECURSIVE', 'REFERENCES', 'REGEXP', 'REINDEX',
+            'RELEASE', 'RENAME', 'REPLACE', 'RESTRICT', 'RIGHT', 'ROLLBACK',
+            'ROW', 'SAVEPOINT', 'SELECT', 'SET', 'TABLE', 'TEMP', 'TEMPORARY',
+            'THEN', 'TO', 'TRANSACTION', 'TRIGGER', 'UNION', 'UNIQUE', 'UPDATE',
+            'USING', 'VACUUM', 'VALUES', 'VIEW', 'VIRTUAL', 'WHEN', 'WHERE',
+            'WITH', 'WITHOUT'];
         var keywords = [];
         $.each(uppercase, function(_, keyword) {
             keywords.push(keyword);
@@ -236,18 +247,52 @@ var leash = (function() {
             var home;
             var config;
             var dir = {};
-            var env = {};
             function expand_env_vars(command) {
                 var fixed_command = command;
-                $.each(env, function(k, v) {
+                $.each(leash.env, function(k, v) {
                     fixed_command = fixed_command.replace('$' + k, v);
                 });
                 return fixed_command;
+            }
+            function print_sql_result(err, result) {
+                if (err) {
+                    leash.terminal.error(err.message);
+                } else {
+                    switch ($.type(result)) {
+                    case 'array':
+                        leash.terminal.echo(result.map(function(row_assoc) {
+                            if (row_assoc instanceof Array) {
+                                return $.terminal.escape_brackets(row_assoc.join(' | '));
+                            } else {
+                                var values = Object.keys(row_assoc).map(function(key) {
+                                    return row_assoc[key];
+                                });
+                                return $.terminal.escape_brackets(values.join(' | '));
+                            }
+                        }).join('\n'));
+                        break;
+                    case 'number':
+                        leash.terminal.echo('Query OK, ' + result +
+                                            ' row affected');
+                    }
+                }
+                leash.terminal.resume();
+            }
+            function print_error(err) {
+                if (err.error) {
+                    leash.terminal.error(err.error.message);
+                    leash.terminal.error('in ' + err.error.file + ' at line ' +
+                               err.error.at);
+                    leash.terminal.error(err.error.line);
+                } else {
+                    leash.terminal.error(err.message);
+                }
             }
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
                 jargon: [],
+                env: {},
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -289,7 +334,7 @@ var leash = (function() {
                                    "age");
                     } else {
                         var token = term.token();
-                        env.TOKEN = token;
+                        leash.env.TOKEN = token;
                         var cmd = $.terminal.parse_command(command);
                         if (leash.commands[cmd.name]) {
                             leash.commands[cmd.name](cmd, token, term);
@@ -780,6 +825,39 @@ var leash = (function() {
                             term.resume();
                         });
                     },
+                    sqlite: function(cmd, token, term) {
+                        term.pause();
+                        var fn;
+                        if (!cmd.args.length) {
+                            term.error('You need to provide the file').resume();
+                            return;
+                        }
+                        if (cmd.args[0].match(/^\//)) {
+                            fn = cmd.args[0];
+                        } else {
+                            fn = leash.cwd + '/' + cmd.args[0];
+                        }
+                        function push(tables) {
+                            term.push(function(q) {
+                                leash.service.sqlite_query(token, fn, q)(print_sql_result);
+                            }, {
+                                name: 'sqlite',
+                                prompt: 'sqlite> ',
+                                completion: sqlite_keywords().concat(tables)
+                            });
+                        }
+                        var query = 'SELECT name FROM sqlite_master WHERE type = "table"';
+                        leash.service.sqlite_query(token, fn, query)(function(err, res) {
+                            if (err) {
+                                print_error(err);
+                            } else {
+                                push(res.map(function(assoc) {
+                                    return assoc['name'];
+                                }));
+                            }
+                            term.resume();
+                        });
+                    },
                     mysql: function(cmd, token, term) {
                         var database, host, username, password;
                         var parser = new optparse.OptionParser([
@@ -824,26 +902,10 @@ var leash = (function() {
                         function mysql() {
                             term.pause();
                             var db;
-                            function print(err, result) {
-                                if (err) {
-                                    term.error(err.message);
-                                } else {
-                                    switch ($.type(result)) {
-                                    case 'array':
-                                        term.echo(result.map(function(row) {
-                                            return row.join(' | ');
-                                        }).join('\n'));
-                                        break;
-                                    case 'number':
-                                        term.echo('Query OK, ' + result +
-                                                  ' row affected');
-                                    }
-                                }
-                                term.resume();
-                            }
+                            
                             function mysql_query(query) {
                                 term.pause();
-                                service.mysql_query(token, db, query)(print);
+                                service.mysql_query(token, db, query)(print_sql_result);
                             }
                             function mysql_close() {
                                 service.mysql_close(token, db)($.noop);
@@ -866,11 +928,7 @@ var leash = (function() {
                                 password,
                                 database)(function(err, result) {
                                     if (err) {
-                                        if (err.error) {
-                                            term.error(err.error.message);
-                                        } else {
-                                            term.error(err.message);
-                                        }
+                                        print_error(err);
                                         term.resume();
                                     } else {
                                         db = result;
@@ -1177,7 +1235,7 @@ var leash = (function() {
                             }
                             if (file) {
                                 prompt = terminal.get_prompt();
-                                var fname = leash.cwd + '/' + file.name;
+                                var fn = leash.cwd + '/' + file.name;
                                 leash.service.file_exists(fname)(function(err, exists) {
                                     if (exists) {
                                         var msg = 'File "' + file.name + '" exists do you'+
