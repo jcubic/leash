@@ -247,6 +247,7 @@ var leash = (function() {
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
+                jargon: [],
                 banner: function() {
                     var version = '';
                     // display version only if inside versioned file
@@ -409,6 +410,9 @@ var leash = (function() {
                                 term.logout();
                                 term.resume();
                             } else {
+                                service.jargon_list()(function(err, result) {
+                                    leash.jargon = result;
+                                });
                                 // TODO: serivce need to be call in pararell
                                 // instead of function use promises
                                 service.get_settings(token)(function(err, result) {
@@ -579,7 +583,6 @@ var leash = (function() {
                                     term.set_prompt(prompt);
                                 } else if (e.which == 13) { // enter
                                     // basic search find only first
-                                    
                                     if (command.length > 0) {
                                         in_search = true;
                                         last_found = search(command, 0);
@@ -598,14 +601,14 @@ var leash = (function() {
                             return dir + '/';
                         });
                     }
-                    function fix_spaces(dirs_files) {
+                    function fix_spaces(array) {
                         if (string.match(/^"/)) {
-                            return dirs_files.map(function(file_dir) {
-                                return '"' + file_dir
+                            return array.map(function(item) {
+                                return '"' + item
                             });
                         } else {
-                            return dirs_files.map(function(file_dir) {
-                                return file_dir.replace(/ /g, '\\ ');
+                            return array.map(function(item) {
+                                return item.replace(/ /g, '\\ ');
                             });
                         }
                     }
@@ -629,6 +632,8 @@ var leash = (function() {
                             } else {
                                 callback(fix_spaces(dirs_slash(dir)));
                             }
+                        } else if (cmd.name == 'jargon') {
+                            callback(fix_spaces(leash.jargon));
                         } else {
                             if (m) {
                                 path = leash.cwd + '/' + m[1];
@@ -1032,7 +1037,7 @@ var leash = (function() {
                             // we don't call resume because it's called in
                             // onInit if we call it here if you execute
                             // login/password and command it will be executed
-                            //  before leash get config from the server
+                            // before leash get config from the server
                             login_callback = null; // we are fine now
                             username = user; // for use in prompt
                             leash.token = token;

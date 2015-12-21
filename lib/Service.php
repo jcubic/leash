@@ -600,29 +600,40 @@ class Service {
     }
     // ------------------------------------------------------------------------
     function jargon_list() {
-        $db = new SQLiteDatabase('jargon.db');
+        $db = new SQLite($this->get_jargon_db_file());
         $res = $db->query("SELECT term FROM terms");
         if ($res) {
-            return array_map(function($a) {
+            return array_map(function($term) {
                 return $term['term'];
-            }, $res->fetchAll(SQLITE_ASSOC));
+            }, $res->fetchAll());
         } else {
             return array();
         }
     }
     // ------------------------------------------------------------------------
-    private function jargon_sqlite2($search_term) {
-        $db = new SQLiteDatabase('jargon.db');
-        $search_term = sqlite_escape_string($search_term);
+    function get_jargon_db_file() {
+        if (class_exists('SQLiteDatabase')) {
+            return 'jargon.db';
+        } else if (class_exists('SQLite3')) {
+            return 'jargon3.db';
+        } else {
+            throw new Exception('SQLite not installed');
+        }
+    }
+    // ------------------------------------------------------------------------
+    function jargon($search_term) {
+        $filename = $this->get_jargon_db_file();
+        $db = new SQLite($filename);
+        $search_term = SQLite::escape($search_term);
         $res = $db->query("SELECT * FROM terms WHERE term like '$search_term'");
         $result = array();
         if ($res) {
-            $result = $res->fetchAll(SQLITE_ASSOC);
+            $result = $res->fetchAll();
             foreach($result as &$term) {
                 $query = "SELECT name FROM abbrev WHERE term = " . $term['id'];
                 $res = $db->query($query);
                 if ($res) {
-                    $abbr_array = $res->fetchAll(SQLITE_ASSOC);
+                    $abbr_array = $res->fetchAll();
                     if (!empty($abbr_array)) {
                         foreach ($abbr_array as $abbr) {
                             $term['abbr'][] = $abbr['name'];
@@ -632,40 +643,6 @@ class Service {
             }
         }
         return $result;
-    }
-    // ------------------------------------------------------------------------
-    private function jargon_sqlite3($search_term) {
-        $db = new SQLite3('jargon3.db');
-        $search_term = SQLite3::escapeString($search_term);
-        $res = $db->query("SELECT * FROM terms WHERE term like '$search_term'");
-        $result = array();
-        if ($res) {
-            while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-                $result[] = $row;
-            }
-            foreach($result as &$term) {
-                $id = $term['id'];
-                $query = "SELECT name FROM abbrev WHERE term = " . $id;
-                $res = $db->query($query);
-                if ($res) {
-                    $abbr_array = array();
-                    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-                        $term['abbr'][] = $row['name'];
-                    }
-                }
-            }
-        }
-        return $result;
-    }
-    // ------------------------------------------------------------------------
-    function jargon($search_term) {
-        if (class_exists('SQLiteDatabase')) {
-            return $this->jargon_sqlite2($search_term);
-        } else if (class_exists('SQLite3')) {
-            return $this->jargon_sqlite3($search_term);
-        } else {
-            throw new Exception('SQLite not installed');
-        }
     }
     // ------------------------------------------------------------------------
     private function curl($url) {
