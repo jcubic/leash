@@ -1,5 +1,5 @@
 /**@license
- *  This file is part of Leash (Browser Shell)
+ *  This file is part of leash (Browser Shell)
  *  Copyright (c) 2013-2015 Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -471,7 +471,8 @@ var leash = (function() {
                     var cols, rows;
                     var pos = 0;
                     //string = $.terminal.escape_brackets(string);
-                    var lines = string.split('\n');
+                    var original_lines = string.split('\n');
+                    var lines = original_lines.slice();
                     function print() {
                         term.clear();
                         term.echo(lines.slice(pos, pos+rows-1).join('\n'));
@@ -497,11 +498,45 @@ var leash = (function() {
                     term.mousewheel(function() {
                     });
                     */
+                    var in_search = false, last_found;
+                    function search(string, start, reset) {
+                        var regex = new RegExp(string), index = -1;
+                        lines = original_lines.slice();
+                        if (reset) {
+                            index = pos = 0;
+                        }
+                        for (var i=start; i<lines.length; ++i) {
+                            if (regex.test(lines[i])) {
+                                lines[i] = lines[i].replace(string,
+                                                            '[[;;;inverted]' +
+                                                            string + ']');
+                                if (index === -1) {
+                                    index = pos = i;
+                                }
+                            }
+                        }
+                        print();
+                        term.set_command(string);
+                        term.set_prompt(prompt);
+                        return index;
+                    }
                     term.push($.noop, {
                         keydown: function(e) {
+                            var command = term.get_command();
                             if (term.get_prompt() !== '/') {
                                 if (e.which == 191) {
                                     term.set_prompt('/');
+                                } else if (in_search &&
+                                           $.inArray(e.which, [78, 80]) != -1) {
+                                    if (e.which == 78) { // N
+                                        if (last_found != -1) {
+                                            last_found = search(command, last_found+1);
+                                        }
+                                    } else if (e.which == 80) { // P
+                                        if (last_found != -1) {
+                                            last_found = search(command, 0, true);
+                                        }
+                                    }
                                 } else if (e.which == 81) { //Q
                                     quit();
                                 } else {
@@ -538,25 +573,16 @@ var leash = (function() {
                                     return false;
                                 }
                             } else {
-                                var command = term.get_command();
+                                // search
                                 if (e.which === 8 && command === '') {
                                     // backspace
                                     term.set_prompt(prompt);
                                 } else if (e.which == 13) { // enter
                                     // basic search find only first
-                                    // instance and don't mark the result
+                                    
                                     if (command.length > 0) {
-                                        var regex = new RegExp(command);
-                                        for (var i=0; i<lines.length; ++i) {
-                                            if (regex.test(lines[i])) {
-                                                pos = i;
-                                                print();
-                                                term.set_command('');
-                                                break;
-                                            }
-                                        }
-                                        term.set_command('');
-                                        term.set_prompt(prompt);
+                                        in_search = true;
+                                        last_found = search(command, 0);
                                     }
                                     return false;
                                 }
