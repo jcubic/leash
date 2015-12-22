@@ -691,6 +691,7 @@ class Service {
         $ch = $this->curl($url);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-type: text/plain"));
         $result = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         if ($code != 200) {
@@ -770,7 +771,11 @@ class Service {
             );
         } else {
             $marker = 'XXXX' . md5(time());
-            $pre = ". .bashrc\ncd $path\n";
+            if ($shell_fn == 'cgi_perl') {
+                $pre = ". ../.bashrc\ncd $path\n";
+            } else {
+                $pre = ". .bashrc\ncd $path\n";
+            }
             $post = ";echo -n \"$marker\";pwd";
             $command = escapeshellarg($pre . $command . $post);
             $result = $this->$shell_fn($token, '/bin/bash -c ' . $command . ' 2>&1');

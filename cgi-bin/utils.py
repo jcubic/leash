@@ -37,7 +37,7 @@ def valid_token():
         # at least md5 hash
         if re.match("^[0-9a-f]{32,}$", token):
             # share token from php
-            config = json.parse(open('../config.json').read())
+            config = json.loads(open('../config.json').read())
             for session in config['sessions']:
                 if session['token'] == token:
                     return True

@@ -50,4 +50,4 @@ if __name__ == '__main__':
             response['trace'] = trace()
     else:
         response['error'] = "The token is invalid"
-    stdout.write(json.serialize(response))
+    stdout.write(json.dumps(response))

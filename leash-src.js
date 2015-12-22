@@ -463,6 +463,11 @@ var leash = (function() {
                                 // TODO: serivce need to be call in pararell
                                 // instead of function use promises
                                 service.get_settings(token)(function(err, result) {
+                                    if (err) {
+                                        print_error(err);
+                                        term.resume();
+                                        return;
+                                    }
                                     config = result;
                                     leash.cwd = config.home;
                                     service.dir(token, leash.cwd)(function(err, result) {
@@ -489,27 +494,36 @@ var leash = (function() {
                     if (command.match(re)) {
                         command = command.replace(re, '');
                         service.shell(token, command, leash.cwd)(function(err, res) {
-                            // even if empty
-                            leash.less(res.output, term);
+                            if (err) {
+                                print_error(err);
+                            } else {
+                                // even if empty
+                                leash.less(res.output, term);
+                            }
                             term.resume();
                         });
                     } else {
                         service.shell(token, command, leash.cwd)(function(err, res) {
-                            if (res.output) {
-                                var re = /\n(\x1b\[m)?$/;
-                                var output = res.output.replace(re, '').
-                                    replace(/\[\[/g, '&#91;&#91;').
-                                    replace(/\]\]/g, '&#93;&#93;');
-                                term.echo(output);
-                            }
-                            if (leash.cwd !== res.cwd) {
-                                leash.cwd = res.cwd;
-                                service.dir(token, leash.cwd)(function(err, result) {
-                                    dir = result;
-                                    term.resume();
-                                });
-                            } else {
+                            if (err) {
+                                print_error(err);
                                 term.resume();
+                            } else {
+                                if (res.output) {
+                                    var re = /\n(\x1b\[m)?$/;
+                                    var output = res.output.replace(re, '').
+                                        replace(/\[\[/g, '&#91;&#91;').
+                                        replace(/\]\]/g, '&#93;&#93;');
+                                    term.echo(output);
+                                }
+                                if (leash.cwd !== res.cwd) {
+                                    leash.cwd = res.cwd;
+                                    service.dir(token, leash.cwd)(function(err, result) {
+                                        dir = result;
+                                        term.resume();
+                                    });
+                                } else {
+                                    term.resume();
+                                }
                             }
                         });
                     }
@@ -723,8 +737,12 @@ var leash = (function() {
                         var shell_cmd = 'cat ' + cmd.args[0];
                         term.pause();
                         service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
+                            if (err) {
+                                print_error(err);
+                            } else {
+                                leash.less($.terminal.escape_brackets(ret.output), term);
+                            }
                             term.resume();
-                            leash.less($.terminal.escape_brackets(ret.output), term);
                         });
                     },
                     record: function(cmd, token, term) {
