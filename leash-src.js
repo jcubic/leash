@@ -1,5 +1,5 @@
 /**@license
- *  This file is part of leash (Browser Shell)
+ *  This file is part of Leash (Browser Shell)
  *  Copyright (c) 2013-2015 Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -524,8 +524,15 @@ var leash = (function() {
                     //string = $.terminal.escape_brackets(string);
                     var original_lines = string.split('\n');
                     var lines = original_lines.slice();
+                    var prompt;
                     function print() {
                         term.clear();
+                        if (lines.length-pos > rows-1) {
+                            prompt = ':';
+                        } else {
+                            prompt = '[[;;;inverted](END)]';
+                        }
+                        term.set_prompt(prompt);
                         term.echo(lines.slice(pos, pos+rows-1).join('\n'));
                     }
                     function refresh_view() {
@@ -539,19 +546,25 @@ var leash = (function() {
                     }
                     term.on('resize.less', refresh_view);
                     refresh_view();
-                    var prompt;
-                    if (lines.length > rows) {
-                        prompt = ':';
-                    } else {
-                        prompt = '[[;;;inverted](END)]';
-                    }
-                    /*
-                    term.mousewheel(function() {
+                    term.mousewheel(function(event, delta) {
+                        if (delta > 0) {
+                            pos -= 10;
+                            if (pos < 0) {
+                                pos = 0;
+                            }
+                            print();
+                        } else {
+                            pos += 10;
+                            if (pos-1 > lines.length-rows) {
+                                pos = lines.length-rows+1;
+                            }
+                            print();
+                        }
                     });
-                    */
                     var in_search = false, last_found;
                     function search(string, start, reset) {
-                        var regex = new RegExp(string), index = -1;
+                        var regex = new RegExp($.terminal.escape_brackets(string)),
+                            index = -1;
                         lines = original_lines.slice();
                         if (reset) {
                             index = pos = 0;
@@ -711,7 +724,7 @@ var leash = (function() {
                         term.pause();
                         service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
                             term.resume();
-                            leash.less(ret.output, term);
+                            leash.less($.terminal.escape_brackets(ret.output), term);
                         });
                     },
                     record: function(cmd, token, term) {
