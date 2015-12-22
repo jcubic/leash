@@ -223,7 +223,11 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function debug() {
-        return $this->config->settings->debug;
+        if ($this->installed()) {
+            return $this->config->settings->debug;
+        } else {
+            return true;
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -549,7 +553,7 @@ class Service {
                 return $res->fetchAll();
             }
         } else {
-            throw new Error("Coudn't open file");
+            throw new Exception("Coudn't open file");
         }
     }
 
@@ -783,7 +787,7 @@ class Service {
                     'cwd' => $cwd
                 );
             } else {
-                throw new Error("Internal error, shell function give no result");
+                throw new Exception("Internal error, shell function give no result");
             }
         }
     }
@@ -799,7 +803,8 @@ class Service {
     }
     // ------------------------------------------------------------------------
     private function cgi_perl($token, $code) {
-        $url = root() . "cgi-bin/cmd.cgi?token=" . $token;
+        $url = root() . "cgi-bin/cmd.pl?" . $token;
+        return $this->post($url, $code);
         $response = json_decode($this->post($url, $code));
     }
     // ------------------------------------------------------------------------
