@@ -771,10 +771,10 @@ class Service {
             );
         } else {
             $marker = 'XXXX' . md5(time());
-            if ($shell_fn == 'cgi_perl') {
-                $pre = ". ../.bashrc\ncd $path\n";
-            } else {
+            if ($shell_fn == 'exec') {
                 $pre = ". .bashrc\ncd $path\n";
+            } else {
+                $pre = ". ../.bashrc\ncd $path\n";
             }
             $post = ";echo -n \"$marker\";pwd";
             $command = escapeshellarg($pre . $command . $post);

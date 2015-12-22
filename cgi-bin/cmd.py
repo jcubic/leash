@@ -21,7 +21,6 @@ from sys import stdout, stdin
 import json
 
 def shell_exec(code):
-    os.chdir('..') # where are in cgi-bin
     try:
         return subprocess.check_output(code, shell=True)
     except subprocess.CalledProcessError as e:
