@@ -544,11 +544,12 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $db = new SQLite($filename);
+        $db = new PDO('sqlite:' . $filename);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $res = $db->query($query);
         if ($res) {
-            if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER|CREATE/i", $query)) {
-                return $db->rowAffected();
+            if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER|CREATE|DROP/i", $query)) {
+                return $res->rowCount();
             } else {
                 return $res->fetchAll();
             }
@@ -622,7 +623,8 @@ class Service {
     }
     // ------------------------------------------------------------------------
     function jargon_list() {
-        $db = new SQLite($this->get_jargon_db_file());
+        $db = new PDO('sqlite:' . $this->get_jargon_db_file());
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $res = $db->query("SELECT term FROM terms");
         if ($res) {
             return array_map(function($term) {
@@ -645,9 +647,10 @@ class Service {
     // ------------------------------------------------------------------------
     function jargon($search_term) {
         $filename = $this->get_jargon_db_file();
-        $db = new SQLite($filename);
-        $search_term = SQLite::escape($search_term);
-        $res = $db->query("SELECT * FROM terms WHERE term like '$search_term'");
+        $db = new PDO('sqlite:' . $filename);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $search_term = $db->quote($search_term);
+        $res = $db->query("SELECT * FROM terms WHERE term like $search_term");
         $result = array();
         if ($res) {
             $result = $res->fetchAll();

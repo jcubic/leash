@@ -458,7 +458,9 @@ var leash = (function() {
                                 term.resume();
                             } else {
                                 service.jargon_list()(function(err, result) {
-                                    leash.jargon = result;
+                                    if (!err) {
+                                        leash.jargon = result;
+                                    }
                                 });
                                 // TODO: serivce need to be call in pararell
                                 // instead of function use promises
@@ -839,15 +841,20 @@ var leash = (function() {
                             // TODO: echo function that will resize text based
                             //       on words
                             service.jargon(word)(function(err, result) {
-                                term.echo($.map(result, function(entry) {
-                                    var text = '[[b;#fff;]' + entry.term + ']';
-                                    if (entry.abbr) {
-                                        text += ' ('+entry.abbr.join(', ')+')';
-                                    }
-                                    return text + '\n' + entry.def + '\n';
-                                }).join('\n').replace(/\n$/, ''), {
-                                    keepWords: true
-                                }).resume();
+                                if (err) {
+                                    print_error(err);
+                                } else {
+                                    term.echo($.map(result, function(entry) {
+                                        var text = '[[b;#fff;]' + entry.term + ']';
+                                        if (entry.abbr) {
+                                            text += ' ('+entry.abbr.join(', ')+')';
+                                        }
+                                        return text + '\n' + entry.def + '\n';
+                                    }).join('\n').replace(/\n$/, ''), {
+                                        keepWords: true
+                                    });
+                                }
+                                term.resume();
                             });
                         }
                     },
