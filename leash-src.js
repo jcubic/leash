@@ -800,9 +800,36 @@ var leash = (function() {
                             'Option to block access when 3 fail attempts (create file on disk and check if it exist)',
                             '[[;#fff;]cat] without argument',
                             'timer 1s command',
-                            'edit history',
-                            '#["guess", "guess", "play: xxxx"]'
+                            'edit history'
                         ].join('\n'));
+                    },
+                    timer: function(cmd, token, term) {
+                        function usage() {
+                            term.echo('timer time\ntime - number [smh]');
+                        }
+                        if (cmd.args.length > 1) {
+                            var time = cmd.args[0];
+                            var m = time.match(/^([0-9.]+)([smh])$/);
+                            if (m) {
+                                var command = cmd.rest.trim().replace(/^[0-9.]+[smh]?/, '');
+                                var time = parseFloat(m[1]);
+                                switch(m[2]) {
+                                case 'h':
+                                    time *= 24
+                                case 'm':
+                                    time *= 60;
+                                case 's':
+                                    time *= 1000;
+                                }
+                                setTimeout(function() {
+                                    leash.interpreter(command, term);
+                                }, time);
+                            } else {
+                                usage();
+                            }
+                        } else {
+                            usage();
+                        }
                     },
                     rpc: function(cmd, token, term) {
                         var name = cmd.args[0] || '', completion;
