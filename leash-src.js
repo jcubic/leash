@@ -56,6 +56,15 @@ var leash = (function() {
         }
     }
     // -------------------------------------------------------------------------
+    function keywords(uppercase) {
+        var keywords = [];
+        $.each(uppercase, function(_, keyword) {
+            keywords.push(keyword);
+            keywords.push(keyword.toLowerCase());
+        });
+        return keywords;
+    }
+    // -------------------------------------------------------------------------
     function mysql_keywords() {
         // mysql keywords from
         // http://dev.mysql.com/doc/refman/5.1/en/reserved-words.html
@@ -98,13 +107,9 @@ var leash = (function() {
             'USING', 'UTC_DATE', 'UTC_TIME', 'UTC_TIMESTAMP', 'VALUES',
             'VARBINARY', 'VARCHAR', 'VARCHARACTER', 'VARYING', 'WHEN', 'WHERE',
             'WHILE', 'WITH', 'WRITE', 'XOR', 'YEAR_MONTH', 'ZEROFILL'];
-        var keywords = [];
-        $.each(uppercase, function(_, keyword) {
-            keywords.push(keyword);
-            keywords.push(keyword.toLowerCase());
-        });
-        return keywords;
+        return keywords(uppercase);
     }
+    // -------------------------------------------------------------------------
     function sqlite_keywords() {
         // sqlite keywords taken from
         // https://www.sqlite.org/lang_keywords.html
@@ -128,12 +133,7 @@ var leash = (function() {
             'THEN', 'TO', 'TRANSACTION', 'TRIGGER', 'UNION', 'UNIQUE', 'UPDATE',
             'USING', 'VACUUM', 'VALUES', 'VIEW', 'VIRTUAL', 'WHEN', 'WHERE',
             'WITH', 'WITHOUT'];
-        var keywords = [];
-        $.each(uppercase, function(_, keyword) {
-            keywords.push(keyword);
-            keywords.push(keyword.toLowerCase());
-        });
-        return keywords;
+        return keywords(uppercase);
     }
     // -------------------------------------------------------------------------
     // :: PYTHON INTERPRETER RPC HANDLER
@@ -793,15 +793,6 @@ var leash = (function() {
                         } else {
                             term.echo('usage:\n\trecord [stop|start]');
                         }
-                    },
-                    todo: function(cmd, token, term) {
-                        term.echo([
-                            'record terminal keystroke with animation and allow to playback',
-                            'Option to block access when 3 fail attempts (create file on disk and check if it exist)',
-                            '[[;#fff;]cat] without argument',
-                            'timer 1s command',
-                            'edit history'
-                        ].join('\n'));
                     },
                     timer: function(cmd, token, term) {
                         function usage() {
