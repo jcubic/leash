@@ -319,6 +319,19 @@ class Service {
         }
         return true;
     }
+    // ------------------------------------------------------------------------
+    public function append($token, $filename, $content) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        if (file_exists($filename) && !is_writable($filename)) {
+            return false;
+        }
+        $file = fopen($filename, 'a+');
+        fwrite($file, $content);
+        fclose($file);
+        return true;
+    }
 
     // ------------------------------------------------------------------------
     // root

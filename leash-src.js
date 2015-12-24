@@ -732,6 +732,44 @@ var leash = (function() {
                     help: function() {
 
                     },
+                    cat: function(cmd, token, term) {
+                        if (cmd.command.match(/cat\s*$/)) {
+                            term.push(function(text) {
+                                term.echo(text);
+                            }, {
+                                prompt: ''
+                            });
+                        } else if (cmd.command.match(/cat\s*>+\s*\w+/)) {
+                            var string = '';
+                            var fname = cmd.args[cmd.args.length-1];
+                            if (!fname.match(/^\//)) {
+                                fname = leash.cwd + '/' + fname;
+                            }
+                            term.push(function(text) {
+                                string += text + '\n';
+                            }, {
+                                prompt: '',
+                                onExit: function() {
+                                    if (cmd.args[0].match(/>>/)) {
+                                        service.append(token, fname, string)(function(e,w) {
+                                            if (!w) {
+                                                term.error("Can't save file");
+                                            }
+                                        });
+                                    } else {
+                                        service.write(token, fname, string)(function(err, w) {
+                                            if (!w) {
+                                                term.error("Can't save file");
+                                            }
+                                        });
+                                    }
+                                },
+                                completion: [] // turn of completion
+                            });
+                        } else {
+                            leash.shell(cmd.command, token, term);
+                        }
+                    },
                     copyright: function(cmd, token, term) {
                         term.echo(copyright);
                     },
@@ -759,8 +797,6 @@ var leash = (function() {
                     todo: function(cmd, token, term) {
                         term.echo([
                             'record terminal keystroke with animation and allow to playback',
-                            'guess login',
-                            'filesystem API',
                             'Option to block access when 3 fail attempts (create file on disk and check if it exist)',
                             '[[;#fff;]cat] without argument',
                             'timer 1s command',
@@ -942,7 +978,6 @@ var leash = (function() {
                         function mysql() {
                             term.pause();
                             var db;
-                            
                             function mysql_query(query) {
                                 term.pause();
                                 service.mysql_query(token, db, query)(print_sql_result);
