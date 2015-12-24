@@ -636,12 +636,13 @@ class Service {
     }
     // ------------------------------------------------------------------------
     function get_jargon_db_file() {
-        if (class_exists('SQLiteDatabase')) {
-            return 'jargon.db';
-        } else if (class_exists('SQLite3')) {
+        $db = new PDO('sqlite::memory:');
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $version = $db->query('select sqlite_version()')->fetch()[0];
+        if (preg_match("/^3\\./", $version)) {
             return 'jargon3.db';
-        } else {
-            throw new Exception('SQLite not installed');
+        } elseif (preg_match("/^2\\./", $version)) {
+            return 'jargon.db';
         }
     }
     // ------------------------------------------------------------------------
