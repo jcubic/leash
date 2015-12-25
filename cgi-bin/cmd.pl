@@ -44,8 +44,7 @@ sub stdin {
     my $line;
     my $data = '';
     foreach $line ( <STDIN> ) {
-        chomp( $line );
-        $data .= $line . "\n";
+        $data .= $line ;
     }
     return $data;
 }
