@@ -15,15 +15,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use JSON;
 use strict;
 use warnings;
-use CGI q~:standard~;
-use CGI::Carp qw(fatalsToBrowser);
-
 use lib qw(..);
-
 use JSON qw( );
+
 sub valid_token {
     my $filename = '../config.json';
 
@@ -44,12 +40,19 @@ sub valid_token {
     }
     return 0;
 }
-#print "Content-Type: text/plain\n\n";
+sub stdin {
+    my $line;
+    my $data = '';
+    foreach $line ( <STDIN> ) {
+        chomp( $line );
+        $data .= $line . "\n";
+    }
+    return $data;
+}
+
 if ($ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}) {
     if (valid_token()) {
-        my $query = CGI->new;
-        print $query->header('text/plain');
-        my $data = $query->param('POSTDATA');
-        system($data);
+        print "Content-Type: text/plain\n\n";
+        system(stdin());
     }
 }
