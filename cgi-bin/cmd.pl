@@ -45,9 +45,11 @@ sub valid_token {
     return 0;
 }
 #print "Content-Type: text/plain\n\n";
-if (valid_token()) {
-    my $query = CGI->new;
-    print $query->header('text/plain');
-    my $data = $query->param('POSTDATA');
-    system($data);
+if ($ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}) {
+    if (valid_token()) {
+        my $query = CGI->new;
+        print $query->header('text/plain');
+        my $data = $query->param('POSTDATA');
+        system($data);
+    }
 }
