@@ -44,7 +44,6 @@ sub valid_token {
 if ($ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}) {
     if (valid_token()) {
         print "Content-Type: text/plain\n\n";
-        local $/;
-        system(<STDIN>);
+        system(join("", <STDIN>));
     }
 }
