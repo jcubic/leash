@@ -40,18 +40,11 @@ sub valid_token {
     }
     return 0;
 }
-sub stdin {
-    my $line;
-    my $data = '';
-    foreach $line ( <STDIN> ) {
-        $data .= $line ;
-    }
-    return $data;
-}
 
 if ($ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}) {
     if (valid_token()) {
         print "Content-Type: text/plain\n\n";
-        system(stdin());
+        local $/;
+        system(<STDIN>);
     }
 }
