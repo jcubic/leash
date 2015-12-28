@@ -898,13 +898,15 @@ var leash = (function() {
                                 if (err) {
                                     print_error(err);
                                 } else {
-                                    term.echo($.map(result, function(entry) {
+                                    var def = $.map(result, function(entry) {
                                         var text = '[[b;#fff;]' + entry.term + ']';
                                         if (entry.abbr) {
                                             text += ' ('+entry.abbr.join(', ')+')';
                                         }
                                         return text + '\n' + entry.def + '\n';
-                                    }).join('\n').replace(/\n$/, ''), {
+                                    }).join('\n');
+                                    //def = $.terminal.strip(def);
+                                    term.echo(def.replace(/\n$/, ''), {
                                         keepWords: true
                                     });
                                 }
@@ -1141,7 +1143,10 @@ var leash = (function() {
                                 });
                             }
                         }, {prompt: 'name: '});
-                    }
+                    },
+                    purge: function(cmd, token, term) {
+                        term.logout().purge();
+                    },
                 } // commands
             }; // leash
             service.installed()(function(err, installed) {
