@@ -1334,7 +1334,7 @@ var leash = (function() {
                             }
                             if (file) {
                                 prompt = terminal.get_prompt();
-                                var fn = leash.cwd + '/' + file.name;
+                                var fname = leash.cwd + '/' + file.name;
                                 leash.service.file_exists(fname)(function(err, exists) {
                                     if (exists) {
                                         var msg = 'File "' + file.name + '" exists do you'+
