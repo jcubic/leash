@@ -904,9 +904,6 @@ var leash = (function() {
                                         }
                                         return text + '\n' + entry.def + '\n';
                                     }).join('\n');
-                                    //def = $.terminal.strip(def);
-                                    def = def.replace(/\n$/, '').
-                                        replace(/\.(?!\s|\.)/g, '. ');
                                     term.echo(def, {
                                         keepWords: true
                                     });
