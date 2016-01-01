@@ -671,12 +671,12 @@ class Service {
         $res = $db->query("SELECT * FROM terms WHERE term like $search_term");
         $result = array();
         if ($res) {
-            $result = $res->fetchAll();
+            $result = $res->fetchAll(PDO::FETCH_ASSOC);
             foreach($result as &$term) {
                 $query = "SELECT name FROM abbrev WHERE term = " . $term['id'];
                 $res = $db->query($query);
                 if ($res) {
-                    $abbr_array = $res->fetchAll();
+                    $abbr_array = $res->fetchAll(PDO::FETCH_ASSOC);
                     if (!empty($abbr_array)) {
                         foreach ($abbr_array as $abbr) {
                             $term['abbr'][] = $abbr['name'];
