@@ -568,6 +568,7 @@ class Service {
             if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER|CREATE|DROP/i", $query)) {
                 return $res->rowCount();
             } else {
+                $res->setFetchMode(PDO::FETCH_NUM);
                 return $res->fetchAll();
             }
         } else {
