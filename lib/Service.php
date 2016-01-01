@@ -305,6 +305,17 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
+    public function unlink($token, $filename) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        if (file_exists($filename)) {
+            return unlink($filename);
+        } else {
+            return false;
+        }
+    }
+    // ------------------------------------------------------------------------
     public function write($token, $filename, $content) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");

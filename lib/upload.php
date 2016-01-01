@@ -40,11 +40,19 @@ if (isset($_POST['token']) && isset($_POST['path'])) {
                 if (file_exists($full_name) && !is_writable($full_name)) {
                     echo json_encode(array('error' => 'File "'.$fname.'" is not writable'));
                 } else {
-                    if (!move_uploaded_file($_FILES['file']['tmp_name'],
-                                            $full_name)) {
-                        echo json_encode(array('error' => 'Can\'t save file.'));
-                    } else {
+                    if (isset($_GET['append'])) {
+                        $contents = file_get_contents($_FILES['file']['tmp_name']);
+                        $f = fopen($full_name, 'a+');
+                        fwrite($f, $contents);
+                        fclose($f);
                         echo json_encode(array('success' => true));
+                    } else {
+                        if (!move_uploaded_file($_FILES['file']['tmp_name'],
+                                                $full_name)) {
+                            echo json_encode(array('error' => 'Can\'t save file.'));
+                        } else {
+                            echo json_encode(array('success' => true));
+                        }
                     }
                 }
                 break;

@@ -1357,11 +1357,66 @@ var leash = (function() {
                                     }
                                 });
                             }
+                            function upload_by_chunks() {
+                                var chunk_size = 1048576; // 1MB
+                                function slice(start, end) {
+                                    if (file.slice) {
+                                        return file.slice(start, end);
+                                    } else if (file.webkitSlice) {
+                                        return file.webkitSlice(start, end);
+                                    }
+                                }
+                                var i = 0;
+                                function process(start, end) {
+                                    if (start < file.size) {
+                                        var chunk = slice(start, end);
+                                        var formData = new FormData();
+                                        formData.append('file', chunk, file.name);
+                                        formData.append('token', token);
+                                        formData.append('path', leash.cwd);
+                                        $.ajax({
+                                            url: 'lib/upload.php?append=1',
+                                            type: 'POST',
+                                            success: function(response) {
+                                                if (response.error) {
+                                                    terminal.error(response.error);
+                                                }
+                                                process(end, end+chunk_size);
+                                            },
+                                            error: function(jxhr, error, status) {
+                                                terminal.error(jxhr.statusText);
+                                                anim.stop();
+                                            },
+                                            data: formData,
+                                            cache: false,
+                                            contentType: false,
+                                            processData: false
+                                        });
+                                    } else {
+                                        anim.stop();
+                                        terminal.echo('File "' + file.name + '" uploaded.');
+                                        upload();
+                                    }
+                                }
+                                anim.start(400);
+                                leash.service.unlink(token, fname)(function(err, del) {
+                                    if (err) {
+                                        leash.terminal.error(err.message);
+                                        anim.stop();
+                                    } else {
+                                        process(0, chunk_size);
+                                    }
+                                });
+                            }
                             if (file) {
                                 var fname = leash.cwd + '/' + file.name;
                                 if (file.size > leash.settings.upload_max_filesize) {
-                                    terminal.error('Exceeded filesize limit.');
-                                    upload();
+                                    if (!(file.slice || file.webkitSlice)) {
+                                        terminal.error('Exceeded filesize limit.');
+                                        upload();
+                                    } else {
+                                        maybe_ask(upload_by_chunks);
+                                    }
                                 } else {
                                     maybe_ask(uploadFile);
                                 }
