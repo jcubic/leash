@@ -687,12 +687,12 @@ var leash = (function() {
                             });
                         }
                     }
-                    if (command.match(/^\s*[^\s]*\s*$/) || command === '') {
+                    var cmd = $.terminal.parse_command(command);
+                    if (command.match(/^\s*[^\s]*$/) || command === '') {
                         var commands = Object.keys(leash.commands);
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));
                     } else {
-                        var cmd = $.terminal.parse_command(command);
                         var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
                         var token = term.token(), path;
                         if (cmd.name == 'cd') {
@@ -904,7 +904,7 @@ var leash = (function() {
                                         }
                                         return text + '\n' + entry.def + '\n';
                                     }).join('\n');
-                                    term.echo(def, {
+                                    term.echo(def.replace(/\n$/, ''), {
                                         keepWords: true
                                     });
                                 }
