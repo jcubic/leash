@@ -380,6 +380,10 @@ class Service {
         $path = $this->shell($token, 'echo -n $PATH', '/');
         $settings['path'] = $path['output'];
         $settings['executables'] = $this->executables($token, '/');
+        $upload_limit = intval(ini_get('upload_max_filesize')) * 1024 * 1024;
+        $settings['upload_max_filesize'] = $upload_limit;
+        $post_limit = intval(ini_get('post_max_size')) * 1024 * 1024;
+        $settings['post_max_size'] = $post_limit;
         return $settings;
     }
 

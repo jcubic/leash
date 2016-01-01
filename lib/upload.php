@@ -28,6 +28,10 @@ $service = new Service('config.json', preg_replace("/\/[^\/]+$/", "", getcwd()))
 
 if (isset($_POST['token']) && isset($_POST['path'])) {
     if ($service->valid_token($_POST['token'])) {
+        if (!isset($_FILES['file'])) {
+            echo json_encode(array('error' => 'No File'));
+            exit();
+        }
         $fname = basename($_FILES['file']['name']);
 
         switch ($_FILES['file']['error']) {

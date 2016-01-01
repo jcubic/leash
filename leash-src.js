@@ -17,7 +17,34 @@
  *
  *  Date: {{DATE}}
  */
+// requestAnimationFrame polyfill by Erik Möller. fixes from Paul Irish and Tino Zijdel
 
+// MIT license
+
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
 var leash = (function() {
     var colors = $.omap({
         blue:  '#55f',
@@ -470,7 +497,7 @@ var leash = (function() {
                                         term.resume();
                                         return;
                                     }
-                                    config = result;
+                                    leash.settings = config = result;
                                     leash.cwd = config.home;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
@@ -1285,6 +1312,26 @@ var leash = (function() {
                     if (!token) {
                         return;
                     }
+                    var anim = {
+                        start: function(delay) {
+                            var anim = ['/', '-', '\\', '|'], i = 0;
+                            animation = true;
+                            this.prompt = terminal.get_prompt();
+                            var self = this;
+                            (function animation() {
+                                terminal.set_prompt(anim[i++]);
+                                if (i > anim.length-1) {
+                                    i = 0;
+                                }
+                                self.timer = setTimeout(animation, delay);
+                            })();
+                        },
+                        stop: function() {
+                            clearTimeout(this.timer);
+                            terminal.set_prompt(this.prompt);
+                            animation = false;
+                        }
+                    };
                     if (files.length) {
                         files = [].slice.call(files);
                         (function upload() {
@@ -1294,26 +1341,12 @@ var leash = (function() {
                                 formData.append('file', file);
                                 formData.append('token', token);
                                 formData.append('path', leash.cwd);
-                                animation = true;
-                                var anim = ['/', '-', '\\', '|'], i = 0, delay = 400;
-                                var timer;
-                                (function animation() {
-                                    terminal.set_prompt(anim[i++]);
-                                    if (i > anim.length-1) {
-                                        i = 0;
-                                    }
-                                    timer = setTimeout(animation, delay);
-                                })();
-                                function finish() {
-                                    clearTimeout(timer);
-                                    terminal.set_prompt(prompt);
-                                    animation = false;
-                                }
+                                anim.start(400);
                                 $.ajax({
                                     url: 'lib/upload.php',
                                     type: 'POST',
                                     success: function(response) {
-                                        finish();
+                                        anim.stop();
                                         if (response.error) {
                                             terminal.error(response.error);
                                         } else {
@@ -1324,7 +1357,7 @@ var leash = (function() {
                                     },
                                     error: function(jxhr, error, status) {
                                         terminal.error(jxhr.statusText);
-                                        finish();
+                                        anim.stop();
                                     },
                                     data: formData,
                                     cache: false,
@@ -1332,18 +1365,16 @@ var leash = (function() {
                                     processData: false
                                 });
                             }
-                            if (file) {
-                                prompt = terminal.get_prompt();
-                                var fname = leash.cwd + '/' + file.name;
+                            function maybe_ask(callback) {
                                 leash.service.file_exists(fname)(function(err, exists) {
                                     if (exists) {
-                                        var msg = 'File "' + file.name + '" exists do you'+
-                                            ' want to overwrite (Y/N)? ';
+                                        var msg = 'File "' + file.name + '" exis'+
+                                            'ts do you want to overwrite (Y/N)? ';
                                         terminal.push(function(yesno) {
                                             if (yesno.match(/^y$/i)) {
                                                 // upload
                                                 terminal.pop();
-                                                uploadFile();
+                                                callback();
                                             } else if (yesno.match(/^n$/i)) {
                                                 terminal.pop();
                                                 upload();
@@ -1352,9 +1383,18 @@ var leash = (function() {
                                             prompt: msg
                                         });
                                     } else {
-                                        uploadFile();
+                                        callback();
                                     }
                                 });
+                            }
+                            if (file) {
+                                var fname = leash.cwd + '/' + file.name;
+                                if (file.size > leash.settings.upload_max_filesize) {
+                                    terminal.error('Exceeded filesize limit.');
+                                    upload();
+                                } else {
+                                    maybe_ask(uploadFile);
+                                }
                             }
                         })();
                     }
