@@ -296,8 +296,10 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
-    // for client convient all functions have token - in this case it's ignored
     public function file($token, $filename) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
         if (!file_exists($filename) || !is_readable($filename)) {
             return null;
         }
