@@ -1188,10 +1188,6 @@ var leash = (function() {
                         this.pause();
                         var self = this;
                         service.login(user, password)(function(err, token) {
-                            // we don't call resume because it's called in
-                            // onInit if we call it here if you execute
-                            // login/password and command it will be executed
-                            // before leash get config from the server
                             login_callback = null; // we are fine now
                             username = user; // for use in prompt
                             leash.token = token;
@@ -1202,7 +1198,13 @@ var leash = (function() {
                                 });
                             }
                             callback(token);
-                            self.resume();
+                            if (!token) {
+                                // we resume only on error because onInit call resume
+                                // after it get config from server so we don't have
+                                // undefined as server and path in prompt for a split
+                                // of second
+                                self.resume();
+                            }
                         });
                     };
                 } else {
