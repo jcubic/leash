@@ -632,6 +632,9 @@ class Service {
             throw new Exception("Invalid resource id");
         }
         unset($session->mysql->$res_id);
+        if (empty((array)$session->mysql)) {
+            unset($session->mysql); // this don't work, don't know why
+        }
     }
     // ------------------------------------------------------------------------
     public function mysql_query($token, $res_id, $query) {

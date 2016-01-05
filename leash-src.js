@@ -1000,8 +1000,13 @@ var leash = (function() {
                                 term.pause();
                                 service.mysql_query(token, db, query)(print_sql_result);
                             }
-                            function mysql_close() {
-                                service.mysql_close(token, db)($.noop);
+                            function mysql_close(db) {
+                                service.mysql_close(token, db)(function() {
+                                    var mysql = mysql_storage().filter(function(mysql_db) {
+                                        return mysql_db != db;
+                                    });
+                                    save_mysql(mysql);
+                                });
                             }
                             var prompt = '[[b;#55f;]mysql]> ';
                             function push(err, tables) {
@@ -1010,10 +1015,27 @@ var leash = (function() {
                                 });
                                 term.push(mysql_query, {
                                     prompt: prompt,
-                                    onExit: mysql_close,
+                                    onExit: function() {
+                                        mysql_close(db);
+                                    },
                                     completion: mysql_keywords().concat(tables)
                                 }).resume();
                             }
+                            function mysql_storage() {
+                                var mysql;
+                                try {
+                                    mysql = JSON.parse($.Storage.get('leash_mysql'));
+                                } catch(e) {
+                                    mysql = [];
+                                }
+                                return mysql;
+                            }
+                            function save_mysql(mysql) {
+                                $.Storage.set('leash_mysql', JSON.stringify(mysql));
+                            }
+                            mysql_storage().forEach(function(db) {
+                                mysql_close(db);
+                            });
                             service.mysql_connect(
                                 token,
                                 host,
@@ -1025,6 +1047,9 @@ var leash = (function() {
                                         term.resume();
                                     } else {
                                         db = result;
+                                        var mysql = mysql_storage();
+                                        mysql.push(db);
+                                        save_mysql(mysql);
                                         // fetch tables for tab completion
                                         service.mysql_query(
                                             token,
@@ -1083,7 +1108,7 @@ var leash = (function() {
                                                                     'print $1.'+
                                                                     '__doc__'));
                                     }
-                                } else if (command.match(/: *$/)) {
+                                } else if (command.match(/:\s*$/)) {
                                     python_code += command + "\n";
                                     term.set_prompt('... ');
                                 } else if (python_code) {
