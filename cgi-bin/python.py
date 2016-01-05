@@ -16,7 +16,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, re, sys, types
-import json
+import json_rpc
 from StringIO import StringIO
 
 from utils import uniq_id, valid_token
@@ -76,10 +76,10 @@ class Interpreter(object):
 
 if __name__ == '__main__':
     if valid_token():
-        json.handle_cgi(Interpreter())
+        json_rpc.handle_cgi(Interpreter())
     else:
         print "Content-Type: application/json"
         print
-        print json.serialize({"error": message})
+        print json_rpc.serialize({"error": "Invalid token"})
 
 

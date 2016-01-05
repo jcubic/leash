@@ -42,7 +42,11 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <link href="css/jquery.terminal.css" rel="stylesheet"/>
+    <?php if ($service->debug()) { ?>
+        <link href="css/jquery.terminal.css?<?= time() ?>" rel="stylesheet"/>
+    <?php } else { ?>
+        <link href="css/jquery.terminal.css" rel="stylesheet"/>
+    <?php } ?>
     <link href="css/style.css" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */

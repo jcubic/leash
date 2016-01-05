@@ -1100,6 +1100,7 @@ var leash = (function() {
                             }, {
                                 name: 'python',
                                 prompt: '>>> ',
+                                completion: false,
                                 onExit: function() {
                                     py.destroy();
                                 }
