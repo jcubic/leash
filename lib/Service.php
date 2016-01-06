@@ -51,6 +51,9 @@ class Session {
     function __isset($name) {
         return isset($this->storage->$name);
     }
+    function __unset($name) {
+        unset($this->storage->$name);
+    }
     static function create_sessions($sessions) {
         $result = array();
         foreach ($sessions as $session) {
