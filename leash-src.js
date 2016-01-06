@@ -821,6 +821,44 @@ var leash = (function() {
                             usage();
                         }
                     },
+                    passwd: function(cmd, token, term) {
+                        term.set_mask(true).history().disable();
+                        term.push(function(old_p) {
+                            term.push(function(new_p) {
+                                term.pause();
+                                service.valid_password(token, old_p)(function(err, valid) {
+                                    if (valid) {
+                                        service.change_password(token, new_p)(function(err) {
+                                            if (!err) {
+                                                term.echo('Password successfully changed');
+                                            } else {
+                                                term.error(err.message);
+                                            }
+                                            term.pop().pop().resume();
+                                            term.set_mask(false).history().enable();
+                                        });
+                                    } else {
+                                        term.error('Current password is not valid');
+                                        term.pop().pop().resume();
+                                        term.set_mask(false).history().enable();
+                                    }
+                                });
+                            }, {
+                                prompt: 'new password: ',
+                                name: 'passwd_2',
+                                keydown: function(e) {
+                                    if (e.which == 68 && e.ctrlKey) { // CTRL+D
+                                        term.pop().pop().echo('new password: ');
+                                        term.set_mask(false).history().enable();
+                                        return false;
+                                    }
+                                }
+                            });
+                        }, {
+                            prompt: 'current password: ',
+                            name: 'passwd_1'
+                        });
+                    },
                     rpc: function(cmd, token, term) {
                         var name = cmd.args[0] || '', completion;
                         if (name === '') {

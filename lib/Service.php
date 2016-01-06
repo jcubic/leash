@@ -238,6 +238,18 @@ class Service {
         return $token ? $this->get_session($token) != null : false;
     }
     // ------------------------------------------------------------------------
+    public function valid_password($token, $password) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $current_user = $this->get_user($this->get_username($token));
+        preg_match(self::password_regex, $current_user->password, $match);
+        if (!$match) {
+            throw new Exception("Password for user '$username' have invalid format");
+        }
+        return $match[2] == call_user_func($match[1], $password);
+    }
+    // ------------------------------------------------------------------------
     function login($username, $password) {
         $user = $this->get_user($username);
         if (!$user) {
@@ -435,7 +447,7 @@ class Service {
         // TODO: this is probably not working
         $this->config->users[] = new User($username, $password);
         // remove session
-        foreach($this->config->tokens as $token => $token_username) {
+        foreach ($this->config->tokens as $token => $token_username) {
             if ($username == $token_username) {
                 unset($this->config->tokens[$token]);
             }
@@ -562,7 +574,19 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function change_password($token, $password) {
-        
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $current_user = $this->get_user($this->get_username($token));
+        if (!$current_user) {
+            throw new Exception("Can't find the right user");
+        }
+        $new_password = $this->hash($password);
+        foreach ($this->config->users as $user) {
+            if ($user->username == $current_user->username) {
+                $user->password = $new_password;
+            }
+        }
     }
     // ------------------------------------------------------------------------
     public function logout($token) {
