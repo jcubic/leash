@@ -1407,13 +1407,14 @@ var leash = (function() {
                                     if (exists) {
                                         var msg = 'File "' + file.name + '" exis'+
                                             'ts do you want to overwrite (Y/N)? ';
+                                        terminal.history().disable();
                                         terminal.push(function(yesno) {
                                             if (yesno.match(/^y$/i)) {
                                                 // upload
-                                                terminal.pop();
+                                                terminal.pop().history().enable();
                                                 callback();
                                             } else if (yesno.match(/^n$/i)) {
-                                                terminal.pop();
+                                                terminal.pop().history().enable();
                                                 upload();
                                             }
                                         }, {
