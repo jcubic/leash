@@ -1409,13 +1409,13 @@ var leash = (function() {
                                             'ts do you want to overwrite (Y/N)? ';
                                         terminal.history().disable();
                                         terminal.push(function(yesno) {
-                                            if (yesno.match(/^y$/i)) {
-                                                // upload
+                                            if (yesno.match(/^(y|n)$/i)) {
                                                 terminal.pop().history().enable();
-                                                callback();
-                                            } else if (yesno.match(/^n$/i)) {
-                                                terminal.pop().history().enable();
-                                                upload();
+                                                if (yesno.match(/^y$/i)) {
+                                                    callback(); // upload
+                                                } else if (yesno.match(/^n$/i)) {
+                                                    upload(); // next file
+                                                }
                                             }
                                         }, {
                                             prompt: msg
