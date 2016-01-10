@@ -537,9 +537,12 @@ var leash = (function() {
                     var cols, rows;
                     var pos = 0;
                     //string = $.terminal.escape_brackets(string);
-                    var original_lines = string.split('\n');
-                    var lines = original_lines.slice();
+                    var original_lines;
+                    var lines;
                     var prompt;
+                    function resize() {
+                        
+                    }
                     function print() {
                         term.clear();
                         if (lines.length-pos > rows-1) {
@@ -559,6 +562,8 @@ var leash = (function() {
                     function refresh_view() {
                         cols = term.cols();
                         rows = term.rows();
+                        original_lines = $.terminal.split_equal(string, cols, true);
+                        lines = original_lines.slice();
                         print();
                     }
                     function quit() {
@@ -951,6 +956,49 @@ var leash = (function() {
                             name: 'rpc',
                             prompt: 'rpc> ',
                             completion: completion
+                        });
+                    },
+                    wikipedia: function(cmd, token, term) {
+                        term.pause();
+                        $.ajax({
+                            url: "https://en.wikipedia.org/w/api.php?",
+                            data: {
+                                action: 'query',
+                                prop:'revisions',
+                                rvprop: 'content',
+                                format:'json',
+                                titles: cmd.rest
+                            },
+                            headers: {
+                                'Api-User-Agent': 'Leash Shell (http://leash.jcubic.pl)'
+                            },
+                            dataType: 'jsonp',
+                            success: function(data) {
+                                var datatp = '';
+                                var text = Object.keys(data.query.pages).map(function(key) {
+                                    return data.query.pages[key].revisions[0]['*'];
+                                }).join('\n');
+                                var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
+                                             /\[\[\s*File:[^\]]+\]\]/g];
+                                var cnt=1;
+                                var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
+                                while (cnt) {
+                                    cnt=0;
+                                    text = text.replace(re, function (_) {
+                                        cnt++; return '';
+                                    });
+                                }
+                                strip.forEach(function(re) {
+                                    text = text.replace(re, '');
+                                });
+                                text = text.replace(/\[\[([^\]]+)\]\]/g,
+                                                    '[[bu;#fff;;wiki]$1]').
+                                    replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
+                                    replace(/'''([^']+)'''/, '[[i;;]$1]').
+                                    replace(/^(\n\s*)*/, '');
+                                leash.less(text, term);
+                                term.resume();
+                            }
                         });
                     },
                     jargon: function(cmd, token, term) {
