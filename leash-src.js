@@ -570,9 +570,14 @@ var leash = (function() {
                             strip.forEach(function(re) {
                                 text = text.replace(re, '');
                             });
-                            text = text.replace(/\[\[([^\]]+)\]\]/g,
-                                                '[[bu;#fff;;wiki]$1]').
-                                replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
+                            text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, gr) {
+                                gr = gr.split('|');
+                                if (gr.length == 1) {
+                                    return '[[bu;#fff;;wiki]' + gr[0] + ']';
+                                } else {
+                                    return '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
+                                }
+                            }).replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
                                 replace(/'''([^']+)'''/g, '[[i;;]$1]').
                                 replace(/^(\n\s*)*/, '');
                             callback(text);
