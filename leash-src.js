@@ -322,6 +322,10 @@ var leash = (function() {
                         term.exec('jargon ' + $(this).data('text').replace(/\s/g, ' '));
                     }).on('click', '.exec', function() {
                         term.exec($(this).data('text'));
+                    }).on('click', '.wiki', function() {
+                        var article = $(this).data('text').replace(/\s/g, ' ');
+                        var cmd = $.terminal.split_command('wikipedia ' + article);
+                        leash.commands.wikipedia(cmd, term.token(), term);
                     });
                     if (!leash.installed) {
                         leash.install(term);
@@ -529,10 +533,53 @@ var leash = (function() {
                         });
                     }
                 },
-                less: function(string, term) {
-                    if (typeof string != 'string') {
-                        return;
-                    }
+                wikipedia: function(query, callback) {
+                    $.ajax({
+                        url: "https://en.wikipedia.org/w/api.php?",
+                        data: {
+                            action: 'query',
+                            prop:'revisions',
+                            rvprop: 'content',
+                            format:'json',
+                            titles: query
+                        },
+                        headers: {
+                            'Api-User-Agent': 'Leash Shell (http://leash.jcubic.pl)'
+                        },
+                        dataType: 'jsonp',
+                        success: function(data) {
+                            var datatp = '';
+                            var text = Object.keys(data.query.pages).map(function(key) {
+                                var page = data.query.pages[key];
+                                if (page.revisions) {
+                                    return page.revisions[0]['*'];
+                                } else if (typeof page.missing != 'undefined') {
+                                    return 'Article Not Found';
+                                }
+                            }).join('\n');
+                            var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
+                                         /\[\[\s*File:[^\]]+\]\]/g];
+                            var cnt=1;
+                            var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
+                            while (cnt) {
+                                cnt=0;
+                                text = text.replace(re, function (_) {
+                                    cnt++; return '';
+                                });
+                            }
+                            strip.forEach(function(re) {
+                                text = text.replace(re, '');
+                            });
+                            text = text.replace(/\[\[([^\]]+)\]\]/g,
+                                                '[[bu;#fff;;wiki]$1]').
+                                replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
+                                replace(/'''([^']+)'''/g, '[[i;;]$1]').
+                                replace(/^(\n\s*)*/, '');
+                            callback(text);
+                        }
+                    });
+                },
+                less: function(text, term) {
                     var export_data = term.export_view();
                     var cols, rows;
                     var pos = 0;
@@ -540,9 +587,6 @@ var leash = (function() {
                     var original_lines;
                     var lines;
                     var prompt;
-                    function resize() {
-                        
-                    }
                     function print() {
                         term.clear();
                         if (lines.length-pos > rows-1) {
@@ -562,8 +606,15 @@ var leash = (function() {
                     function refresh_view() {
                         cols = term.cols();
                         rows = term.rows();
-                        original_lines = $.terminal.split_equal(string, cols, true);
-                        lines = original_lines.slice();
+                        if ($.isFunction(text)) {
+                            text(cols, function(new_lines) {
+                                original_lines = new_lines;
+                                lines = original_lines.slice();
+                            });
+                        } else {
+                            original_lines = text.split('\n');
+                            lines = original_lines.slice();
+                        }
                         print();
                     }
                     function quit() {
@@ -960,45 +1011,12 @@ var leash = (function() {
                     },
                     wikipedia: function(cmd, token, term) {
                         term.pause();
-                        $.ajax({
-                            url: "https://en.wikipedia.org/w/api.php?",
-                            data: {
-                                action: 'query',
-                                prop:'revisions',
-                                rvprop: 'content',
-                                format:'json',
-                                titles: cmd.rest
-                            },
-                            headers: {
-                                'Api-User-Agent': 'Leash Shell (http://leash.jcubic.pl)'
-                            },
-                            dataType: 'jsonp',
-                            success: function(data) {
-                                var datatp = '';
-                                var text = Object.keys(data.query.pages).map(function(key) {
-                                    return data.query.pages[key].revisions[0]['*'];
-                                }).join('\n');
-                                var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
-                                             /\[\[\s*File:[^\]]+\]\]/g];
-                                var cnt=1;
-                                var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
-                                while (cnt) {
-                                    cnt=0;
-                                    text = text.replace(re, function (_) {
-                                        cnt++; return '';
-                                    });
-                                }
-                                strip.forEach(function(re) {
-                                    text = text.replace(re, '');
-                                });
-                                text = text.replace(/\[\[([^\]]+)\]\]/g,
-                                                    '[[bu;#fff;;wiki]$1]').
-                                    replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
-                                    replace(/'''([^']+)'''/, '[[i;;]$1]').
-                                    replace(/^(\n\s*)*/, '');
-                                leash.less(text, term);
-                                term.resume();
-                            }
+                        leash.wikipedia(cmd.rest, function(article) {
+                            leash.less(function(cols, callback) {
+                                var lines = $.terminal.split_equal(article, cols, true);
+                                callback(lines);
+                            }, term);
+                            term.resume();
                         });
                     },
                     jargon: function(cmd, token, term) {

@@ -55,6 +55,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
         display: inline-block;
         min-width: 100%;
     }
+    .wiki { cursor: pointer; }
     </style>
 </head>
 <body>
