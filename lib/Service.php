@@ -659,7 +659,8 @@ class Service {
             throw new Exception("Invalid resource id");
         }
         unset($session->mysql->$res_id);
-        if (empty((array)$session->mysql)) {
+        $tmp = (array)$session->mysql;
+        if (empty($tmp)) {
             unset($session->mysql); // this don't work, don't know why
         }
     }
@@ -698,10 +699,10 @@ class Service {
     function get_jargon_db_file() {
         $db = new PDO('sqlite::memory:');
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $version = $db->query('select sqlite_version()')->fetch()[0];
-        if (preg_match("/^3\\./", $version)) {
+        $version = $db->query('select sqlite_version()')->fetch();
+        if (preg_match("/^3\\./", $version[0])) {
             return 'jargon3.db';
-        } elseif (preg_match("/^2\\./", $version)) {
+        } elseif (preg_match("/^2\\./", $version[0])) {
             return 'jargon.db';
         }
     }
