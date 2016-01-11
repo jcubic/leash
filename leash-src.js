@@ -559,15 +559,13 @@ var leash = (function() {
                             }).join('\n');
                             var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
                                          /\[\[File:[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi];
-                                         
-                            var cnt=1;
                             var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
-                            while (cnt) {
-                                cnt=0;
+                            do {
+                                var cnt=0;
                                 text = text.replace(re, function (_) {
                                     cnt++; return '';
                                 });
-                            }
+                            } while (cnt);
                             strip.forEach(function(re) {
                                 text = text.replace(re, '');
                             });
