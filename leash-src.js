@@ -558,7 +558,8 @@ var leash = (function() {
                                 }
                             }).join('\n');
                             var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
-                                         /\[\[\s*File:[^\]]+\]\]/g];
+                                         /\[\[File:[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi];
+                                         
                             var cnt=1;
                             var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
                             while (cnt) {
@@ -579,7 +580,8 @@ var leash = (function() {
                                 }
                             }).replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
                                 replace(/'''([^']+)'''/g, '[[i;;]$1]').
-                                replace(/^(\n\s*)*/, '');
+                                replace(/^(\n\s*)*/, '').
+                                replace(/\n{3,}/g, '\n\n');
                             callback(text);
                         }
                     });
