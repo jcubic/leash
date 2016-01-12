@@ -34,6 +34,7 @@ one of the following:
 * vi editor (using jsvi)
 * tab completion
 * File Drag & Drop upload (using HTML5)
+* wikipedia command that display wikipedia articles
 
 ----------------------------------------------------------------------------
 :: License

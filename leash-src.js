@@ -1027,14 +1027,19 @@ var leash = (function() {
                         });
                     },
                     wikipedia: function(cmd, token, term) {
-                        term.pause();
-                        leash.wikipedia(cmd.rest, function(article) {
-                            leash.less(function(cols, callback) {
-                                var lines = $.terminal.split_equal(article, cols, true);
-                                callback(lines);
-                            }, term);
-                            term.resume();
-                        });
+                        if (cmd.args.length === 0) {
+                            term.echo('Display contents of wikipedia articles\n' +
+                                      'usage:\n\twikipedia {ARTICLE}');
+                        } else {
+                            term.pause();
+                            leash.wikipedia(cmd.rest, function(article) {
+                                leash.less(function(cols, callback) {
+                                    var lines = $.terminal.split_equal(article, cols, true);
+                                    callback(lines);
+                                }, term);
+                                term.resume();
+                            });
+                        }
                     },
                     jargon: function(cmd, token, term) {
                         if (!cmd.args.length) {
