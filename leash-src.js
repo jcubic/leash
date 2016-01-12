@@ -558,7 +558,16 @@ var leash = (function() {
                                 }
                             }).join('\n');
                             var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
-                                         /\[\[File:[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi];
+                                         /\[\[File:[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
+                                         /<!--[\s\S]*?-->/g];
+                            text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
+                                                function(_, quote) {
+                                                    return quote.replace(/^\s*\|/gm, '').
+                                                        replace(/^ /m, '-- ');
+                                                }).
+                                replace(/{{Main\|([^}]+)}}/ig,
+                                        '[[bu;#fff;;wiki;$1]Main Article]');
+                            // strip all templates
                             var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
                             do {
                                 var cnt=0;
@@ -625,10 +634,11 @@ var leash = (function() {
                     function quit() {
                         term.pop().import_view(export_data);
                         term.off('resize.less', refresh_view);
+                        term.off('mousewheel', wheel);
                     }
                     term.on('resize.less', refresh_view);
                     refresh_view();
-                    term.mousewheel(function(event, delta) {
+                    function wheel(event, delta) {
                         if (delta > 0) {
                             pos -= 10;
                             if (pos < 0) {
@@ -641,7 +651,8 @@ var leash = (function() {
                             }
                         }
                         print();
-                    });
+                    }
+                    term.on('mousewheel', wheel);
                     var in_search = false, last_found, search_string;
                     function search(start, reset) {
                         var escape = $.terminal.escape_brackets(search_string),
@@ -672,7 +683,7 @@ var leash = (function() {
                                         in_text = true;
                                         prev_format = line.substring(start, j+1);
                                     }
-                                } else {
+                                } else if (formatting && in_text || !formatting) {
                                     if (line.substring(j).match(start_re)) {
                                         var rep;
                                         if (formatting && in_text) {
@@ -760,6 +771,7 @@ var leash = (function() {
                                         search_string = command;
                                         last_found = search(0);
                                     }
+                                    return false;
                                 }
                             }
                         },
