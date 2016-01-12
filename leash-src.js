@@ -578,6 +578,23 @@ var leash = (function() {
                             strip.forEach(function(re) {
                                 text = text.replace(re, '');
                             });
+                            function format(style, color) {
+                                var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
+                                var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
+                                return function(_, text) {
+                                    return text.split(format_split_re).map(function(txt) {
+                                        function replace(_, st, cl, rest) {
+                                            return '[['+style+st+';'+(color||cl)+rest;
+                                        }
+                                        if ($.terminal.is_formatting(txt)) {
+                                            return txt.replace(format_begin_re, replace);
+                                        } else {
+                                            return '[[' + style + ';' + (color||'')+';]' +
+                                                txt + ']';
+                                        }
+                                    }).join('');
+                                };
+                            }
                             text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, gr) {
                                 gr = gr.split('|');
                                 if (gr.length == 1) {
@@ -586,9 +603,10 @@ var leash = (function() {
                                     return '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
                                 }
                             }).replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
-                                replace(/'''([^']+)'''/g, '[[i;;]$1]').
+                                replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
-                                replace(/\n{3,}/g, '\n\n');
+                                replace(/\n{3,}/g, '\n\n').
+                                replace(/''([^']*(?:'[^']+)*)''/g, format('i'));
                             callback(text);
                         }
                     });
@@ -638,14 +656,15 @@ var leash = (function() {
                     }
                     term.on('resize.less', refresh_view);
                     refresh_view();
+                    var scroll_by = 3;
                     function wheel(event, delta) {
                         if (delta > 0) {
-                            pos -= 10;
+                            pos -= scroll_by;
                             if (pos < 0) {
                                 pos = 0;
                             }
                         } else {
-                            pos += 10;
+                            pos += scroll_by;
                             if (pos-1 > lines.length-rows) {
                                 pos = lines.length-rows+1;
                             }
