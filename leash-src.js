@@ -797,7 +797,9 @@ var leash = (function() {
                         }
                     }
                     var cmd = $.terminal.parse_command(command);
-                    if (command.match(/^\s*[^\s]*$/) || command === '') {
+                    var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
+                    if (command.match(re) || command === '') {
+                        console.log('true');
                         var commands = Object.keys(leash.commands);
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));
