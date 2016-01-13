@@ -33,7 +33,8 @@ one of the following:
 * ymacs editor (Emacs clone for the web)
 * vi editor (using jsvi)
 * tab completion
-* File Drag & Drop upload (using HTML5)
+* File Drag & Drop upload (using HTML5) you can upload files that are bigger
+  then the php limit
 * wikipedia command that display wikipedia articles
 
 ----------------------------------------------------------------------------
