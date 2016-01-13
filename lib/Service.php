@@ -608,7 +608,7 @@ class Service {
             if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER|CREATE|DROP/i", $query)) {
                 return $res->rowCount();
             } else {
-                return $res->fetchAll(PDO::FETCH_NUM);
+                return $res->fetchAll(PDO::FETCH_ASSOC);
             }
         } else {
             throw new Exception("Coudn't open file");
@@ -659,8 +659,8 @@ class Service {
             throw new Exception("Invalid resource id");
         }
         unset($session->mysql->$res_id);
-        $tmp = (array)$session->mysql;
-        if (empty($tmp)) {
+        $mysql = (array)$session->mysql;
+        if (empty($mysql)) {
             unset($session->mysql); // this don't work, don't know why
         }
     }

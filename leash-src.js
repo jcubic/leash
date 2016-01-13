@@ -261,16 +261,18 @@ var leash = (function() {
                 } else {
                     switch ($.type(result)) {
                     case 'array':
-                        leash.terminal.echo(result.map(function(row_assoc) {
-                            if (row_assoc instanceof Array) {
-                                return $.terminal.escape_brackets(row_assoc.join(' | '));
-                            } else {
-                                var values = Object.keys(row_assoc).map(function(key) {
-                                    return row_assoc[key];
+                        result = [Object.keys(result[0])].concat(result.map(function(row) {
+                            if (row instanceof Array) {
+                                return row.map(function(item) {
+                                    return $.terminal.escape_brackets(item);
                                 });
-                                return $.terminal.escape_brackets(values.join(' | '));
+                            } else {
+                                return Object.keys(row).map(function(key) {
+                                    return $.terminal.escape_brackets(row[key]);
+                                });
                             }
-                        }).join('\n'));
+                        }));
+                        leash.terminal.echo(ascii_table(result, true));
                         break;
                     case 'number':
                         leash.terminal.echo('Query OK, ' + result +
@@ -287,6 +289,38 @@ var leash = (function() {
                     leash.terminal.error(err.error.line);
                 } else {
                     leash.terminal.error(err.message);
+                }
+            }
+            function ascii_table(array, header) {
+                var lengths = array[0].map(function(_, i) {
+                    var col = array.map(function(row) {
+                        return $.terminal.strip(row[i]).length;
+                    });
+                    return Math.max.apply(Math, col);
+                });
+                array = array.map(function(row) {
+                    return '| ' + row.map(function(item, i) {
+                        var size = $.terminal.strip(item).length;
+                        if (size < lengths[i]) {
+                            for (var j=size; j<lengths[i]; ++j) {
+                                item += ' ';
+                            }
+                        }
+                        return item;
+                    }).join(' | ') + ' |';
+                });
+                var sep = '+' + lengths.map(function(length) {
+                    var result = '';
+                    for (var i=0; i<length+2; i++) {
+                        result += '-';
+                    }
+                    return result;
+                }).join('+') + '+';
+                if (header) {
+                    return sep + '\n' + array[0] + '\n' + sep + '\n' +
+                        array.slice(1).join('\n') + '\n' + sep;
+                } else {
+                    return sep + '\n' + array.join('\n') + '\n' + sep;
                 }
             }
             var leash = {
@@ -566,7 +600,11 @@ var leash = (function() {
                                                         replace(/^ /m, '-- ');
                                                 }).
                                 replace(/{{Main\|([^}]+)}}/ig,
-                                        '[[bu;#fff;;wiki;$1]Main Article]');
+                                        '[[bu;#fff;;wiki;$1]Main Article]').
+                                replace(/{{(yes|no)}}/gi, function(_, text) {
+                                    return text.replace(/yes/i, '[[;#0f0;]' + text + ']').
+                                        replace(/no/i, '[[;#f00;]' + text + ']');
+                                })
                             // strip all templates
                             var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
                             do {
@@ -600,13 +638,47 @@ var leash = (function() {
                                 if (gr.length == 1) {
                                     return '[[bu;#fff;;wiki]' + gr[0] + ']';
                                 } else {
+                                    gr[1] = gr[1].replace(/''([^']+)''/gm, function(_, g) {
+                                        return '][[bui;#fff;;wiki;' + gr[0] + ']' + g + ']' +
+                                            '[[bu;#fff;;wiki;' + gr[0] + ']';
+                                    });
                                     return '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
                                 }
                             }).replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
                                 replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
                                 replace(/\n{3,}/g, '\n\n').
-                                replace(/''([^']*(?:'[^']+)*)''/g, format('i'));
+                                replace(/''([^']*(?:'[^']+)*(?![^\]]+\]\]))''/g, format('i')).
+                                replace(/{\|([\s\S]*?)\|}/g, function(_, table) {
+                                    var header_re = /\|\+(.*)\n/;
+                                    var m = table.match(header_re);
+                                    if (m) {
+                                        var header = m[1].trim();
+                                    }
+                                    table = table.replace(/^.*\n/, '').
+                                        replace(header_re, '').split(/\|\-\s*\n/);
+                                    table = table.map(function(text) {
+                                        return text.split(/\n*[|!]\s*/).map(function(item) {
+                                            return item.replace(/\n/, '').trim();
+                                        }).filter(function(item, i) {
+                                            return i !== 0 || item;
+                                        });
+                                    }).filter(function(row) {
+                                        return row.length;
+                                    });
+                                    var lengths = table[0].map(function(_, i) {
+                                        var col = table.map(function(row) {
+                                            return $.terminal.strip(row[i]).length;
+                                        });
+                                        return Math.max.apply(Math, col);
+                                    });
+                                    var result = '';
+                                    if (header) {
+                                        result = '[[i;;]' + header + ']\n';
+                                    }
+                                    result += ascii_table(table, true);
+                                    return result;
+                                });
                             callback(text);
                         }
                     });
@@ -818,7 +890,6 @@ var leash = (function() {
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
                     if (command.match(re) || command === '') {
-                        console.log('true');
                         var commands = Object.keys(leash.commands);
                         callback(commands.concat(dir.execs || []).
                             concat(config.executables));

@@ -56,7 +56,7 @@ class Database {
         if ($ret->num_rows == 0) {
             return $result;
         }
-        while ($row = $ret->fetch_array(MYSQLI_NUM)) {
+        while ($row = $ret->fetch_assoc()) {
             $result[] = $row;
         }
         $ret->close();
