@@ -37,19 +37,19 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <meta charset="utf-8" />
     <title>Leash</title>
     <meta name="Description" content=""/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="shortcut icon" href="favicon.ico"/>
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <link href="css/jquery.terminal.css" rel="stylesheet"/>
+    <?php if ($service->debug()) { ?>
+        <link href="css/jquery.terminal.css?<?= time() ?>" rel="stylesheet"/>
+    <?php } else { ?>
+        <link href="css/jquery.terminal.css" rel="stylesheet"/>
+    <?php } ?>
     <link href="css/style.css" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */
-    .DlDesktop { display: none; }
-    .Ymacs-frame-content {
-        display: inline-block;
-        min-width: 100%;
-    }
     </style>
 </head>
 <body>
@@ -69,7 +69,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <script src="lib/jquery-1.11.2.js"></script>
   <script src="lib/json-rpc.js"></script>
   <?php if ($service->debug()) { ?>
-    <script src="lib/jquery.terminal-src.js"></script>
+    <script src="lib/jquery.terminal-src.js?<?= time() ?>"></script>
   <?php } else { ?>
     <script src="lib/jquery.terminal-min.js"></script>
   <?php } ?>
@@ -80,7 +80,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <script src="lib/jquery.ba-hashchange.min.js"></script>
   <script src="lib/sysend.js"></script>
   <?php if ($service->debug()) { ?>
-    <script src="leash-src.js"></script>
+    <script src="leash-src.js?<?= time() ?>"></script>
   <?php } else { ?>
     <script src="leash.min.js"></script>
   <?php } ?>

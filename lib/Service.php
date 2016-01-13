@@ -1,7 +1,7 @@
 <?php
 /**
  *  This file is part of Leash (Browser Shell)
- *  Copyright (C) 2013-2015  Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (C) 2013-2016  Jakub Jankiewicz <http://jcubic.pl>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,6 +50,9 @@ class Session {
     }
     function __isset($name) {
         return isset($this->storage->$name);
+    }
+    function __unset($name) {
+        unset($this->storage->$name);
     }
     static function create_sessions($sessions) {
         $result = array();
@@ -235,6 +238,18 @@ class Service {
         return $token ? $this->get_session($token) != null : false;
     }
     // ------------------------------------------------------------------------
+    public function valid_password($token, $password) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $current_user = $this->get_user($this->get_username($token));
+        preg_match(self::password_regex, $current_user->password, $match);
+        if (!$match) {
+            throw new Exception("Password for user '$username' have invalid format");
+        }
+        return $match[2] == call_user_func($match[1], $password);
+    }
+    // ------------------------------------------------------------------------
     function login($username, $password) {
         $user = $this->get_user($username);
         if (!$user) {
@@ -296,14 +311,27 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
-    // for client convient all functions have token - in this case it's ignored
     public function file($token, $filename) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
         if (!file_exists($filename) || !is_readable($filename)) {
             return null;
         }
         return file_get_contents($filename);
     }
 
+    // ------------------------------------------------------------------------
+    public function unlink($token, $filename) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        if (file_exists($filename)) {
+            return unlink($filename);
+        } else {
+            return false;
+        }
+    }
     // ------------------------------------------------------------------------
     public function write($token, $filename, $content) {
         if (!$this->valid_token($token)) {
@@ -317,6 +345,19 @@ class Service {
         if ($path == $this->path . "/" . $this->config_file) {
             $this->__construct($this->config_file, $this->path);
         }
+        return true;
+    }
+    // ------------------------------------------------------------------------
+    public function append($token, $filename, $content) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        if (file_exists($filename) && !is_writable($filename)) {
+            return false;
+        }
+        $file = fopen($filename, 'a+');
+        fwrite($file, $content);
+        fclose($file);
         return true;
     }
 
@@ -367,6 +408,10 @@ class Service {
         $path = $this->shell($token, 'echo -n $PATH', '/');
         $settings['path'] = $path['output'];
         $settings['executables'] = $this->executables($token, '/');
+        $upload_limit = intval(ini_get('upload_max_filesize')) * 1024 * 1024;
+        $settings['upload_max_filesize'] = $upload_limit;
+        $post_limit = intval(ini_get('post_max_size')) * 1024 * 1024;
+        $settings['post_max_size'] = $post_limit;
         return $settings;
     }
 
@@ -402,7 +447,7 @@ class Service {
         // TODO: this is probably not working
         $this->config->users[] = new User($username, $password);
         // remove session
-        foreach($this->config->tokens as $token => $token_username) {
+        foreach ($this->config->tokens as $token => $token_username) {
             if ($username == $token_username) {
                 unset($this->config->tokens[$token]);
             }
@@ -529,7 +574,19 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function change_password($token, $password) {
-        
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $current_user = $this->get_user($this->get_username($token));
+        if (!$current_user) {
+            throw new Exception("Can't find the right user");
+        }
+        $new_password = $this->hash($password);
+        foreach ($this->config->users as $user) {
+            if ($user->username == $current_user->username) {
+                $user->password = $new_password;
+            }
+        }
     }
     // ------------------------------------------------------------------------
     public function logout($token) {
@@ -551,7 +608,7 @@ class Service {
             if (preg_match("/^\s*INSERT|UPDATE|DELETE|ALTER|CREATE|DROP/i", $query)) {
                 return $res->rowCount();
             } else {
-                return $res->fetchAll();
+                return $res->fetchAll(PDO::FETCH_ASSOC);
             }
         } else {
             throw new Exception("Coudn't open file");
@@ -602,6 +659,10 @@ class Service {
             throw new Exception("Invalid resource id");
         }
         unset($session->mysql->$res_id);
+        $mysql = (array)$session->mysql;
+        if (empty($mysql)) {
+            unset($session->mysql); // this don't work, don't know why
+        }
     }
     // ------------------------------------------------------------------------
     public function mysql_query($token, $res_id, $query) {
@@ -638,10 +699,10 @@ class Service {
     function get_jargon_db_file() {
         $db = new PDO('sqlite::memory:');
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $version = $db->query('select sqlite_version()')->fetch()[0];
-        if (preg_match("/^3\\./", $version)) {
+        $version = $db->query('select sqlite_version()')->fetch();
+        if (preg_match("/^3\\./", $version[0])) {
             return 'jargon3.db';
-        } elseif (preg_match("/^2\\./", $version)) {
+        } elseif (preg_match("/^2\\./", $version[0])) {
             return 'jargon.db';
         }
     }
@@ -654,12 +715,12 @@ class Service {
         $res = $db->query("SELECT * FROM terms WHERE term like $search_term");
         $result = array();
         if ($res) {
-            $result = $res->fetchAll();
+            $result = $res->fetchAll(PDO::FETCH_ASSOC);
             foreach($result as &$term) {
                 $query = "SELECT name FROM abbrev WHERE term = " . $term['id'];
                 $res = $db->query($query);
                 if ($res) {
-                    $abbr_array = $res->fetchAll();
+                    $abbr_array = $res->fetchAll(PDO::FETCH_ASSOC);
                     if (!empty($abbr_array)) {
                         foreach ($abbr_array as $abbr) {
                             $term['abbr'][] = $abbr['name'];
@@ -775,7 +836,7 @@ class Service {
             );
         } else {
             $marker = 'XXXX' . md5(time());
-            if ($shell_fn == 'exec') {
+            if ($shell_fn == 'exec' || $shell_fn == 'shell_exec') {
                 $pre = ". .bashrc\ncd $path\n";
             } else {
                 $pre = ". ../.bashrc\ncd $path\n";
