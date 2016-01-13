@@ -50,12 +50,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <link href="css/style.css" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */
-    .DlDesktop { display: none; }
-    .Ymacs-frame-content {
-        display: inline-block;
-        min-width: 100%;
-    }
-    .wiki { cursor: pointer; }
     </style>
 </head>
 <body>
