@@ -69,7 +69,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <script src="lib/jquery-1.11.2.js"></script>
   <script src="lib/json-rpc.js"></script>
   <?php if ($service->debug()) { ?>
-    <script src="../terminal/repo/js/jquery.terminal-src.js?<?= time() ?>"></script>
+    <script src="lib/jquery.terminal-src.js?<?= time() ?>"></script>
   <?php } else { ?>
     <script src="lib/jquery.terminal-min.js"></script>
   <?php } ?>
@@ -112,7 +112,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
       if ($dh = opendir($dir)) {
           while (($file = readdir($dh)) !== false) {
               if (is_dir($dir . $file) && file_exists($dir . $file . '/init.js')) {
-                  //echo '    <script src="' . $dir. $file . '/init.js"></script>';
+                  echo '    <script src="' . $dir. $file . '/init.js"></script>';
               }
           }
           closedir($dh);
