@@ -653,7 +653,7 @@ var leash = (function() {
                             }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
                                 replace(/\n{3,}/g, '\n\n').
-                                replace(/([^\n])\n(?!\n)/g, '$1').
+                                replace(/([^\n])\n(?!\n)/g, '$1 ').
                                 replace(/''([^']*(?:'[^']+)*)''/g, format('i')).
                                 replace(/{\|([\s\S]*?)\|}/g, function(_, table) {
                                     var header_re = /\|\+(.*)\n/;
