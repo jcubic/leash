@@ -294,7 +294,11 @@ var leash = (function() {
             function ascii_table(array, header) {
                 var lengths = array[0].map(function(_, i) {
                     var col = array.map(function(row) {
-                        return $.terminal.strip(row[i]).length;
+                        if (row[i] != undefined) {
+                            return $.terminal.strip(row[i]).length;
+                        } else {
+                            return 0;
+                        }
                     });
                     return Math.max.apply(Math, col);
                 });
@@ -591,7 +595,7 @@ var leash = (function() {
                                     return 'Article Not Found';
                                 }
                             }).join('\n');
-                            var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[^<]*<\/ref>/g,
+                            var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]+?<\/ref>/g,
                                          /\[\[File:[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
                                          /<!--[\s\S]*?-->/g];
                             text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
@@ -601,6 +605,7 @@ var leash = (function() {
                                                 }).
                                 replace(/{{Main\|([^}]+)}}/ig,
                                         '[[bu;#fff;;wiki;$1]Main Article]').
+                                replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
                                 replace(/{{(yes|no)}}/gi, function(_, text) {
                                     return text.replace(/yes/i, '[[;#0f0;]' + text + ']').
                                         replace(/no/i, '[[;#f00;]' + text + ']');
@@ -620,6 +625,7 @@ var leash = (function() {
                                 var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
                                 var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
                                 return function(_, text) {
+                                    console.log(_);
                                     return text.split(format_split_re).map(function(txt) {
                                         function replace(_, st, cl, rest) {
                                             return '[['+style+st+';'+(color||cl)+rest;
@@ -644,11 +650,11 @@ var leash = (function() {
                                     });
                                     return '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
                                 }
-                            }).replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]').
-                                replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
+                            }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
                                 replace(/\n{3,}/g, '\n\n').
-                                replace(/''([^']*(?:'[^']+)*(?![^\]]+\]\]))''/g, format('i')).
+                                replace(/([^\n])\n(?!\n)/g, '$1').
+                                replace(/''([^']*(?:'[^']+)*)''/g, format('i')).
                                 replace(/{\|([\s\S]*?)\|}/g, function(_, table) {
                                     var header_re = /\|\+(.*)\n/;
                                     var m = table.match(header_re);
@@ -666,12 +672,6 @@ var leash = (function() {
                                     }).filter(function(row) {
                                         return row.length;
                                     });
-                                    var lengths = table[0].map(function(_, i) {
-                                        var col = table.map(function(row) {
-                                            return $.terminal.strip(row[i]).length;
-                                        });
-                                        return Math.max.apply(Math, col);
-                                    });
                                     var result = '';
                                     if (header) {
                                         result = '[[i;;]' + header + ']\n';
@@ -679,7 +679,7 @@ var leash = (function() {
                                     result += ascii_table(table, true);
                                     return result;
                                 });
-                            callback(text);
+                            callback(text.replace(/&/g, '&amp;'));
                         }
                     });
                 },
