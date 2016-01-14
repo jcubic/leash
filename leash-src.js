@@ -653,6 +653,19 @@ var leash = (function() {
                                 }
                             }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
+                                replace(/([^[])\[([^\[ ]+) ([^\]]+)\]/g,
+                                        function(_, c, url, text) {
+                                            console.log(url)
+                                            function rep(_, str) {
+                                                return '][[!i;;;;' + url + ']' + str +
+                                                    '][[!i;;;;' + url + ']';
+                                            }
+                                            text = text.replace(/'''([^']*(?:'[^']+)*)'''/g,
+                                                                '$1').
+                                                replace(/''([^']*(?:'[^']+)*)''/g,
+                                                                rep);
+                                            return c + '[[!;;;;' + url + ']' + text + ']';
+                                        }).
                                 replace(/\n{3,}/g, '\n\n').
                                 replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
                                 replace(/([^\n])\n(?!\n)/g, '$1 ').
@@ -685,7 +698,7 @@ var leash = (function() {
                         }
                     });
                 },
-                less: function(text, term) {
+                less: function(text, term, exit) {
                     var export_data = term.export_view();
                     var cols, rows;
                     var pos = 0;
@@ -727,6 +740,9 @@ var leash = (function() {
                         term.pop().import_view(export_data);
                         term.off('resize.less', refresh_view);
                         term.off('mousewheel', wheel);
+                        if ($.isFunction(exit)) {
+                            exit();
+                        }
                     }
                     term.on('resize.less', refresh_view);
                     refresh_view();
@@ -1126,11 +1142,16 @@ var leash = (function() {
                                       'usage:\n\twikipedia {ARTICLE}');
                         } else {
                             term.pause();
+                            term.option('convertLinks', false);
                             leash.wikipedia(cmd.rest, function(article) {
                                 leash.less(function(cols, callback) {
-                                    var lines = $.terminal.split_equal(article, cols, true);
+                                    var lines = $.terminal.split_equal(article,
+                                                                       cols,
+                                                                       true);
                                     callback(lines);
-                                }, term);
+                                }, term, function() {
+                                    term.option('convertLinks', true);
+                                });
                                 term.resume();
                             });
                         }
