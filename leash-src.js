@@ -1543,7 +1543,7 @@ var leash = (function() {
                     onInit: leash.init,
                     //maskChar: '',
                     completion: leash.completion,
-                    linksNoReferer: true,
+                    linksNoReferrer: true,
                     execHash: true,
                     historyFilter: /^[^\s]/,
                     /*
