@@ -655,7 +655,6 @@ var leash = (function() {
                                 replace(/^(\n\s*)*/, '').
                                 replace(/([^[])\[([^\[ ]+) ([^\]]+)\]/g,
                                         function(_, c, url, text) {
-                                            console.log(url)
                                             function rep(_, str) {
                                                 return '][[!i;;;;' + url + ']' + str +
                                                     '][[!i;;;;' + url + ']';
