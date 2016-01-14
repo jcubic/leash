@@ -595,9 +595,11 @@ var leash = (function() {
                                     return 'Article Not Found';
                                 }
                             }).join('\n');
-                            var strip = [/<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]+?<\/ref>/g,
-                                         /\[\[File:[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
-                                         /<!--[\s\S]*?-->/g];
+                            var strip = [
+                                    /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]+?<\/ref>/g,
+                                    /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
+                                    /<!--[\s\S]*?-->/g
+                            ];
                             text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
                                                 function(_, quote) {
                                                     return quote.replace(/^\s*\|/gm, '').
@@ -625,7 +627,6 @@ var leash = (function() {
                                 var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
                                 var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
                                 return function(_, text) {
-                                    console.log(_);
                                     return text.split(format_split_re).map(function(txt) {
                                         function replace(_, st, cl, rest) {
                                             return '[['+style+st+';'+(color||cl)+rest;
@@ -653,6 +654,7 @@ var leash = (function() {
                             }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
                                 replace(/\n{3,}/g, '\n\n').
+                                replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
                                 replace(/([^\n])\n(?!\n)/g, '$1 ').
                                 replace(/''([^']*(?:'[^']+)*)''/g, format('i')).
                                 replace(/{\|([\s\S]*?)\|}/g, function(_, table) {
