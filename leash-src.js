@@ -695,6 +695,7 @@ var leash = (function() {
                                     }).filter(function(row) {
                                         return row.length;
                                     });
+                                    console.log(JSON.stringify(table));
                                     var result = '';
                                     if (header) {
                                         result = '[[i;;]' + header + ']\n';
