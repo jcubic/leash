@@ -695,10 +695,9 @@ var leash = (function() {
                                     }).filter(function(row) {
                                         return row.length;
                                     });
-                                    console.log(JSON.stringify(table));
                                     var result = '';
                                     if (header) {
-                                        result = '[[i;;]' + header + ']\n';
+                                        result = '\n[[i;;]' + header + ']\n';
                                     }
                                     result += ascii_table(table, true);
                                     return result;
