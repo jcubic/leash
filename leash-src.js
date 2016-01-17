@@ -593,13 +593,38 @@ var leash = (function() {
                                     /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
                                     /<!--[\s\S]*?-->/g
                             ];
+                            var templates = {
+                                'main': function(content) {
+                                    return 'Main Article: [[bu;#fff;;wiki;' + content +
+                                        ']' + content + ']';
+                                },
+                                'as of': function(content) {
+                                    content = content.split('|');
+                                    var months = [
+                                        'January', 'February', 'March', 'April',
+                                        'May', 'June', 'July', 'August',
+                                        'September', 'October', 'November',
+                                        'December'
+                                    ];
+                                    var date = [];
+                                    var keys = {};
+                                    for (var i=0; i<content.length; ++i) {
+                                        var m = content[i].match(/(\w+)\s*=\s*(\w+)/);
+                                        if (m) {
+                                            keys[m[1]] = m[2];
+                                        } else {
+                                            date.push(content[i]);
+                                        }
+                                    }
+                                    return 'As of ' + (date[1] ? months[date[1]] : '') +
+                                        ' ' + date[0] + (date[2]?' ' + date[2]:'');
+                                }
+                            };
                             text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
                                                 function(_, quote) {
                                                     return quote.replace(/^\s*\|/gm, '').
                                                         replace(/^ /m, '-- ');
                                                 }).
-                                replace(/{{Main\|([^}]+)}}/ig,
-                                        'Main Article: [[bu;#fff;;wiki;$1]$1]').
                                 replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
                                 replace(/{{(yes|no)}}/gi, function(_, text) {
                                     return text.replace(/yes/i, '[[;#0f0;]' + text + ']').
@@ -610,8 +635,16 @@ var leash = (function() {
                                             var m = cite.match(/title\s*=\s*([^|]+)/i);
                                             return m ? m[1] : '';
                                         });
+                            var re;
+                            for (var template in templates) {
+                                re = new RegExp('{{' + template + '\\|(.*?)}}', 'gi');
+                                console.log(re);
+                                text = text.replace(re, function(_, content) {
+                                    return templates[template](content);
+                                });
+                            }
                             // strip all templates
-                            var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
+                            re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
                             do {
                                 var cnt=0;
                                 text = text.replace(re, function (_) {
