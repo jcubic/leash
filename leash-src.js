@@ -306,19 +306,13 @@ var leash = (function() {
                     return '| ' + row.map(function(item, i) {
                         var size = $.terminal.strip(item).length;
                         if (size < lengths[i]) {
-                            for (var j=size; j<lengths[i]; ++j) {
-                                item += ' ';
-                            }
+                            item += new Array(lengths[i]-size+1).join(' ');
                         }
                         return item;
                     }).join(' | ') + ' |';
                 });
                 var sep = '+' + lengths.map(function(length) {
-                    var result = '';
-                    for (var i=0; i<length+2; i++) {
-                        result += '-';
-                    }
-                    return result;
+                    return new Array(length+3).join('-');
                 }).join('+') + '+';
                 if (header) {
                     return sep + '\n' + array[0] + '\n' + sep + '\n' +
@@ -586,7 +580,6 @@ var leash = (function() {
                         },
                         dataType: 'jsonp',
                         success: function(data) {
-                            var datatp = '';
                             var text = Object.keys(data.query.pages).map(function(key) {
                                 var page = data.query.pages[key];
                                 if (page.revisions) {
@@ -606,12 +599,12 @@ var leash = (function() {
                                                         replace(/^ /m, '-- ');
                                                 }).
                                 replace(/{{Main\|([^}]+)}}/ig,
-                                        '[[bu;#fff;;wiki;$1]Main Article]').
+                                        'Main Article: [[bu;#fff;;wiki;$1]$1]').
                                 replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
                                 replace(/{{(yes|no)}}/gi, function(_, text) {
                                     return text.replace(/yes/i, '[[;#0f0;]' + text + ']').
                                         replace(/no/i, '[[;#f00;]' + text + ']');
-                                }).replace(/\[...\]/g, '...').
+                                }).replace(/\[\.\.\.\]/g, '...').
                                 replace(/{{Cite(.*?)}}(?![\s\n]*<\/ref>)/gi,
                                         function(_, cite) {
                                             var m = cite.match(/title\s*=\s*([^|]+)/i);
