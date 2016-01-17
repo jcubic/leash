@@ -651,7 +651,7 @@ var leash = (function() {
                                 }
                             }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
-                                replace(/([^[])\[([^\[ ]+) ([^\]]+)\]/g,
+                                replace(/([^[])\[(\s*(?:http|ftp)[^\[ ]+) ([^\]]+)\]/g,
                                         function(_, c, url, text) {
                                             function rep(_, str) {
                                                 return '][[!i;;;;' + url + ']' + str +
