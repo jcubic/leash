@@ -596,7 +596,7 @@ var leash = (function() {
                             var templates = {
                                 'main': function(content) {
                                     return 'Main Article: [[bu;#fff;;wiki;' + content +
-                                        ']' + content + ']';
+                                        ']' + content + ']\n';
                                 },
                                 'as of': function(content) {
                                     content = content.split('|');
