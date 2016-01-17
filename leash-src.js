@@ -596,7 +596,7 @@ var leash = (function() {
                                 }
                             }).join('\n');
                             var strip = [
-                                    /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]+?<\/ref>/g,
+                                    /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]*?<\/ref>/g,
                                     /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
                                     /<!--[\s\S]*?-->/g
                             ];
@@ -611,7 +611,12 @@ var leash = (function() {
                                 replace(/{{(yes|no)}}/gi, function(_, text) {
                                     return text.replace(/yes/i, '[[;#0f0;]' + text + ']').
                                         replace(/no/i, '[[;#f00;]' + text + ']');
-                                })
+                                }).replace(/\[...\]/g, '...').
+                                replace(/{{Cite(.*?)}}(?![\s\n]*<\/ref>)/gi,
+                                        function(_, cite) {
+                                            var m = cite.match(/title\s*=\s*([^|]+)/i);
+                                            return m ? m[1] : '';
+                                        });
                             // strip all templates
                             var re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
                             do {
@@ -667,18 +672,22 @@ var leash = (function() {
                                         }).
                                 replace(/\n{3,}/g, '\n\n').
                                 replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
-                                replace(/([^\n])\n(?!\n)/g, '$1 ').
                                 replace(/''([^']*(?:'[^']+)*)''/g, format('i')).
-                                replace(/{\|([\s\S]*?)\|}/g, function(_, table) {
+                                replace(/{\|.*\n([\s\S]*?)\|}/g, function(_, table) {
                                     var header_re = /\|\+(.*)\n/;
                                     var m = table.match(header_re);
                                     if (m) {
-                                        var header = m[1].trim();
+                                        var header = m[1].trim().
+                                            replace(/\[\[([^;]+)(;[^\]]+\][^\]]+\])/g,
+                                                    function(_, style, rest) {
+                                                        return '][[' + style + 'i' +
+                                                            rest + '[[i;;]';
+                                                    });
                                     }
                                     table = table.replace(/^.*\n/, '').
                                         replace(header_re, '').split(/\|\-\s*\n/);
                                     table = table.map(function(text) {
-                                        return text.split(/\n*[|!]\s*/).map(function(item) {
+                                        return text.split(/\n*[|!]+\s*/).map(function(item) {
                                             return item.replace(/\n/, '').trim();
                                         }).filter(function(item, i) {
                                             return i !== 0 || item;
@@ -692,7 +701,7 @@ var leash = (function() {
                                     }
                                     result += ascii_table(table, true);
                                     return result;
-                                });
+                                }).replace(/([^\n])\n(?![\n*|+])/g, '$1 ');
                             callback(text.replace(/&/g, '&amp;'));
                         }
                     });
