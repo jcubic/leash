@@ -598,6 +598,15 @@ var leash = (function() {
                                     return 'Main Article: [[bu;#fff;;wiki;' + content +
                                         ']' + content + ']\n';
                                 },
+                                dunno: function() {
+                                    return '?';
+                                },
+                                yes: function() {
+                                    return '[[;#0f0;]yes]';
+                                },
+                                no: function() {
+                                    return '[[;#f00;]no]';
+                                },
                                 'as of': function(content) {
                                     content = content.split('|');
                                     var months = [
@@ -611,7 +620,6 @@ var leash = (function() {
                                     for (var i=0; i<content.length; ++i) {
                                         var m = content[i].match(/(\w+)\s*=\s*(\w+)/);
                                         if (m) {
-                                            console.log(m);
                                             keys[m[1].toLowerCase()] = m[2]
                                         } else {
                                             date.push(content[i]);
@@ -640,10 +648,7 @@ var leash = (function() {
                                                         replace(/^ /m, '-- ');
                                                 }).
                                 replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
-                                replace(/{{(yes|no)}}/gi, function(_, text) {
-                                    return text.replace(/yes/i, '[[;#0f0;]' + text + ']').
-                                        replace(/no/i, '[[;#f00;]' + text + ']');
-                                }).replace(/\[\.\.\.\]/g, '...').
+                                replace(/\[\.\.\.\]/g, '...').
                                 replace(/{{Cite(.*?)}}(?![\s\n]*<\/ref>)/gi,
                                         function(_, cite) {
                                             var m = cite.match(/title\s*=\s*([^|]+)/i);
@@ -651,8 +656,7 @@ var leash = (function() {
                                         });
                             var re;
                             for (var template in templates) {
-                                re = new RegExp('{{' + template + '\\|(.*?)}}', 'gi');
-                                console.log(re);
+                                re = new RegExp('{{' + template + '\\|?(.*?)}}', 'gi');
                                 text = text.replace(re, function(_, content) {
                                     return templates[template](content);
                                 });
@@ -687,15 +691,17 @@ var leash = (function() {
                             }
                             text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, gr) {
                                 gr = gr.split('|');
+                                var result;
                                 if (gr.length == 1) {
-                                    return '[[bu;#fff;;wiki]' + gr[0] + ']';
+                                    result = '[[bu;#fff;;wiki]' + gr[0] + ']';
                                 } else {
                                     gr[1] = gr[1].replace(/''([^']+)''/gm, function(_, g) {
                                         return '][[bui;#fff;;wiki;' + gr[0] + ']' + g + ']' +
                                             '[[bu;#fff;;wiki;' + gr[0] + ']';
                                     });
-                                    return '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
+                                    result = '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
                                 }
+                                return result;
                             }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
                                 replace(/^(\n\s*)*/, '').
                                 replace(/([^[])\[(\s*(?:http|ftp)[^\[ ]+) ([^\]]+)\]/g,
@@ -725,12 +731,13 @@ var leash = (function() {
                                                     });
                                     }
                                     table = table.replace(/^.*\n/, '').
-                                        replace(header_re, '').split(/\|\-\s*\n/);
+                                        replace(header_re, '').split(/\|\-.*\n/);
                                     table = table.map(function(text) {
-                                        return text.split(/\n*[|!]+\s*/).map(function(item) {
-                                            return item.replace(/\n/, '').trim();
+                                        var re = /^[|!]\s*|\n[|!]\s*|\|\|/;
+                                        return text.split(re).map(function(item) {
+                                            return item.replace(/\n/g, '').trim();
                                         }).filter(function(item, i) {
-                                            return i !== 0 || item;
+                                            return i !== 0;
                                         });
                                     }).filter(function(row) {
                                         return row.length;
@@ -741,8 +748,9 @@ var leash = (function() {
                                     }
                                     result += ascii_table(table, true);
                                     return result;
-                                }).replace(/([^\n])\n(?![\n*|+])/g, '$1 ');
-                            callback(text.replace(/&/g, '&amp;'));
+                                }).replace(/([^\n])\n(?![\n*|+])/g, '$1 ').
+                                replace(/\*(\S)/g, '* $1').replace(/&/g, '&amp;');
+                            callback(text);
                         }
                     });
                 },
