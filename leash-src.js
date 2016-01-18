@@ -588,11 +588,6 @@ var leash = (function() {
                                     return 'Article Not Found';
                                 }
                             }).join('\n');
-                            var strip = [
-                                    /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]*?<\/ref>/g,
-                                    /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
-                                    /<!--[\s\S]*?-->/g
-                            ];
                             var templates = {
                                 'main': function(content) {
                                     return 'Main Article: [[bu;#fff;;wiki;' + content +
@@ -606,6 +601,9 @@ var leash = (function() {
                                 },
                                 no: function() {
                                     return '[[;#f00;]no]';
+                                },
+                                partial: function(text) {
+                                    return '[[;#ff0;]' + text + ']';
                                 },
                                 'as of': function(content) {
                                     content = content.split('|');
@@ -649,11 +647,19 @@ var leash = (function() {
                                                 }).
                                 replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
                                 replace(/\[\.\.\.\]/g, '...').
-                                replace(/{{Cite(.*?)}}(?![\s\n]*<\/ref>)/gi,
+                                replace(/{{Cite([^}]+)}}(?![\s\n]*<\/ref>)/gi,
                                         function(_, cite) {
                                             var m = cite.match(/title\s*=\s*([^|]+)/i);
                                             return m ? m[1] : '';
                                         });
+                            var strip = [
+                                    /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]*?<\/ref>/g,
+                                    /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
+                                    /<!--[\s\S]*?-->/g
+                            ];
+                            strip.forEach(function(re) {
+                                text = text.replace(re, '');
+                            });
                             var re;
                             for (var template in templates) {
                                 re = new RegExp('{{' + template + '\\|?(.*?)}}', 'gi');
@@ -669,9 +675,6 @@ var leash = (function() {
                                     cnt++; return '';
                                 });
                             } while (cnt);
-                            strip.forEach(function(re) {
-                                text = text.replace(re, '');
-                            });
                             function format(style, color) {
                                 var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
                                 var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
@@ -733,7 +736,7 @@ var leash = (function() {
                                     table = table.replace(/^.*\n/, '').
                                         replace(header_re, '').split(/\|\-.*\n/);
                                     table = table.map(function(text) {
-                                        var re = /^[|!]\s*|\n[|!]\s*|\|\|/;
+                                        var re = /^[|!]|\n[|!]|\|\|/;
                                         return text.split(re).map(function(item) {
                                             return item.replace(/\n/g, '').trim();
                                         }).filter(function(item, i) {
