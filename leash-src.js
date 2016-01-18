@@ -611,13 +611,27 @@ var leash = (function() {
                                     for (var i=0; i<content.length; ++i) {
                                         var m = content[i].match(/(\w+)\s*=\s*(\w+)/);
                                         if (m) {
-                                            keys[m[1]] = m[2];
+                                            console.log(m);
+                                            keys[m[1].toLowerCase()] = m[2]
                                         } else {
                                             date.push(content[i]);
                                         }
                                     }
-                                    return 'As of ' + (date[1] ? months[date[1]] : '') +
-                                        ' ' + date[0] + (date[2]?' ' + date[2]:'');
+                                    var str = 'As of ';
+                                    if (keys.since) {
+                                        str = 'Since ';
+                                    }
+                                    if (keys.lc == 'y') {
+                                        str = str.toLowerCase();
+                                    }
+                                    if (keys.df && keys.df.toLowerCase() == 'us') {
+                                        return str + (date[1] ? months[date[1]-1]+' ': '') +
+                                            (date[2] ? date[2] + ', ':'') + date[0];
+                                    } else {
+                                        return str + (date[2]?date[2] + ' ':'') +
+                                            (date[1] ? months[date[1]-1] : '') +
+                                            ' ' + date[0];
+                                    }
                                 }
                             };
                             text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
