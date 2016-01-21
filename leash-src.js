@@ -292,6 +292,9 @@ var leash = (function() {
                 }
             }
             function ascii_table(array, header) {
+                if (!array.length) {
+                    return '';
+                }
                 var lengths = array[0].map(function(_, i) {
                     var col = array.map(function(row) {
                         if (row[i] != undefined) {
@@ -565,197 +568,256 @@ var leash = (function() {
                         });
                     }
                 },
-                wikipedia: function(query, callback) {
-                    $.ajax({
-                        url: "https://en.wikipedia.org/w/api.php?",
-                        data: {
-                            action: 'query',
-                            prop:'revisions',
-                            rvprop: 'content',
-                            format:'json',
-                            titles: query
+                wikipedia: function(text) {
+                    function list(list) {
+                        if (list.length == 1) {
+                            return list[0]
+                        } else if (list.length == 2) {
+                            return list.join(' and ');
+                        } else if (list.length > 2) {
+                            return list.slice(0, list.length-1).join(', ') + ' and ' +
+                                list[list.length-1];
+                        }
+                    }
+                    function wiki_list(text) {
+                        return list(text.split('|').map(function(wiki) {
+                            if (wiki.match(/^\s*\w+\s*=/)) {
+                                return '';
+                            } else {
+                                return '[[bu;#fff;;wiki;' + wiki + ']' + wiki + ']';
+                            }
+                        }));
+                    }
+                    var templates = {
+                        'main': function(content) {
+                            return 'Main Article: ' + wiki_list(content) + '\n';
                         },
-                        headers: {
-                            'Api-User-Agent': 'Leash Shell (http://leash.jcubic.pl)'
+                        dunno: function() {
+                            return '?';
                         },
-                        dataType: 'jsonp',
-                        success: function(data) {
-                            var text = Object.keys(data.query.pages).map(function(key) {
-                                var page = data.query.pages[key];
-                                if (page.revisions) {
-                                    return page.revisions[0]['*'];
-                                } else if (typeof page.missing != 'undefined') {
-                                    return 'Article Not Found';
-                                }
-                            }).join('\n');
-                            var templates = {
-                                'main': function(content) {
-                                    return 'Main Article: [[bu;#fff;;wiki;' + content +
-                                        ']' + content + ']\n';
-                                },
-                                dunno: function() {
-                                    return '?';
-                                },
-                                yes: function() {
-                                    return '[[;#0f0;]yes]';
-                                },
-                                no: function() {
-                                    return '[[;#f00;]no]';
-                                },
-                                partial: function(text) {
-                                    return '[[;#ff0;]' + text + ']';
-                                },
-                                'as of': function(content) {
-                                    content = content.split('|');
-                                    var months = [
-                                        'January', 'February', 'March', 'April',
-                                        'May', 'June', 'July', 'August',
-                                        'September', 'October', 'November',
-                                        'December'
-                                    ];
-                                    var date = [];
-                                    var keys = {};
-                                    for (var i=0; i<content.length; ++i) {
-                                        var m = content[i].match(/(\w+)\s*=\s*(\w+)/);
-                                        if (m) {
-                                            keys[m[1].toLowerCase()] = m[2]
-                                        } else {
-                                            date.push(content[i]);
-                                        }
-                                    }
-                                    var str = 'As of ';
-                                    if (keys.since) {
-                                        str = 'Since ';
-                                    }
-                                    if (keys.lc == 'y') {
-                                        str = str.toLowerCase();
-                                    }
-                                    if (keys.df && keys.df.toLowerCase() == 'us') {
-                                        return str + (date[1] ? months[date[1]-1]+' ': '') +
-                                            (date[2] ? date[2] + ', ':'') + date[0];
-                                    } else {
-                                        return str + (date[2]?date[2] + ' ':'') +
-                                            (date[1] ? months[date[1]-1] : '') +
-                                            ' ' + date[0];
-                                    }
-                                }
-                            };
-                            text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
-                                                function(_, quote) {
-                                                    return quote.replace(/^\s*\|/gm, '').
-                                                        replace(/^ /m, '-- ');
-                                                }).
-                                replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
-                                replace(/\[\.\.\.\]/g, '...').
-                                replace(/{{Cite([^}]+)}}(?![\s\n]*<\/ref>)/gi,
-                                        function(_, cite) {
-                                            var m = cite.match(/title\s*=\s*([^|]+)/i);
-                                            return m ? m[1] : '';
-                                        });
-                            var strip = [
-                                    /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]*?<\/ref>/g,
-                                    /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
-                                    /<!--[\s\S]*?-->/g
+                        yes: function() {
+                            return '[[;#0f0;]yes]';
+                        },
+                        no: function() {
+                            return '[[;#f00;]no]';
+                        },
+                        partial: function(text) {
+                            return '[[;#ff0;]' + text + ']';
+                        },
+                        'Cat main': function(content) {
+                            return 'The main article for this [[bu;#fff;;wiki' +
+                                ';Help:category]Category] is [[bu;#fff;;wiki]' +
+                                content + ']\n';
+                        },
+                        'see also': function(content) {
+                            return 'See also ' + wiki_list(content) + '\n';
+                        },
+                        tag: function(content) {
+                            return escape('<'+content+'>...</' + content + '>');
+                        },
+                        '(?:tlx|tl)': function(content) {
+                            content = content.split('|');
+                            var params = '';
+                            if (content.length > 1) {
+                                params = '|' + content.slice(1).join('|');
+                            }
+                            return escape('{{') + '[[bu;#fff;;wiki;Template:' + content[0] +
+                                ']' + content[0] + ']' + params + escape('}}');
+                        },
+                        'as of': function(content) {
+                            content = content.split('|');
+                            var months = [
+                                'January', 'February', 'March', 'April', 'May',
+                                'June', 'July', 'August', 'September',
+                                'October', 'November', 'December'
                             ];
-                            strip.forEach(function(re) {
-                                text = text.replace(re, '');
-                            });
-                            var re;
-                            for (var template in templates) {
-                                re = new RegExp('{{' + template + '\\|?(.*?)}}', 'gi');
-                                text = text.replace(re, function(_, content) {
-                                    return templates[template](content);
-                                });
-                            }
-                            // strip all templates
-                            re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
-                            do {
-                                var cnt=0;
-                                text = text.replace(re, function (_) {
-                                    cnt++; return '';
-                                });
-                            } while (cnt);
-                            function format(style, color) {
-                                var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
-                                var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
-                                return function(_, text) {
-                                    return text.split(format_split_re).map(function(txt) {
-                                        function replace(_, st, cl, rest) {
-                                            return '[['+style+st+';'+(color||cl)+rest;
-                                        }
-                                        if ($.terminal.is_formatting(txt)) {
-                                            return txt.replace(format_begin_re, replace);
-                                        } else {
-                                            return '[[' + style + ';' + (color||'')+';]' +
-                                                txt + ']';
-                                        }
-                                    }).join('');
-                                };
-                            }
-                            text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, gr) {
-                                gr = gr.split('|');
-                                var result;
-                                if (gr.length == 1) {
-                                    result = '[[bu;#fff;;wiki]' + gr[0] + ']';
+                            var date = [];
+                            var keys = {};
+                            for (var i=0; i<content.length; ++i) {
+                                var m = content[i].match(/(\w+)\s*=\s*(\w+)/);
+                                if (m) {
+                                    keys[m[1].toLowerCase()] = m[2]
                                 } else {
-                                    gr[1] = gr[1].replace(/''([^']+)''/gm, function(_, g) {
-                                        return '][[bui;#fff;;wiki;' + gr[0] + ']' + g + ']' +
-                                            '[[bu;#fff;;wiki;' + gr[0] + ']';
-                                    });
-                                    result = '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
+                                    date.push(content[i]);
                                 }
-                                return result;
-                            }).replace(/'''([^']*(?:'[^']+)*)'''/g, format('b', '#fff')).
-                                replace(/^(\n\s*)*/, '').
-                                replace(/([^[])\[(\s*(?:http|ftp)[^\[ ]+) ([^\]]+)\]/g,
-                                        function(_, c, url, text) {
-                                            function rep(_, str) {
-                                                return '][[!i;;;;' + url + ']' + str +
-                                                    '][[!i;;;;' + url + ']';
-                                            }
-                                            text = text.replace(/'''([^']*(?:'[^']+)*)'''/g,
-                                                                '$1').
-                                                replace(/''([^']*(?:'[^']+)*)''/g,
-                                                                rep);
-                                            return c + '[[!;;;;' + url + ']' + text + ']';
+                            }
+                            var str = 'As of ';
+                            if (keys.since) {
+                                str = 'Since ';
+                            }
+                            if (keys.lc == 'y') {
+                                str = str.toLowerCase();
+                            }
+                            if (keys.df && keys.df.toLowerCase() == 'us') {
+                                return str + (date[1] ? months[date[1]-1]+' ': '') +
+                                    (date[2] ? date[2] + ', ':'') + date[0];
+                            } else {
+                                return str + (date[2]?date[2] + ' ':'') +
+                                    (date[1] ? months[date[1]-1] : '') +
+                                    ' ' + date[0];
+                            }
+                        }
+                    };
+                    function escape(text) {
+                        var chars = {
+                            '{': '&#123;',
+                            '}': '&#125;',
+                            '[': '&#91;',
+                            ']': '&#93;',
+                            '<': '&#60;',
+                            '>': '&#62;',
+                            "'": '&#39;'
+                        };
+                        Object.keys(chars).forEach(function(chr) {
+                            text = text.replace(new RegExp('\\' + chr, 'g'), chars[chr]);
+                        });
+                        return text;
+                    }
+                    text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
+                                        function(_, quote) {
+                                            return quote.replace(/^\s*\|/gm, '').
+                                                replace(/^ /m, '-- ');
                                         }).
-                                replace(/\n{3,}/g, '\n\n').
-                                replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
-                                replace(/''([^']*(?:'[^']+)*)''/g, format('i')).
-                                replace(/{\|.*\n([\s\S]*?)\|}/g, function(_, table) {
-                                    var header_re = /\|\+(.*)\n/;
-                                    var m = table.match(header_re);
-                                    if (m) {
-                                        var header = m[1].trim().
-                                            replace(/\[\[([^;]+)(;[^\]]+\][^\]]+\])/g,
-                                                    function(_, style, rest) {
-                                                        return '][[' + style + 'i' +
-                                                            rest + '[[i;;]';
-                                                    });
+                        replace(/&nbsp;/g, ' ').
+                        replace(/&/g, '&amp;').
+                        replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
+                        replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
+                        replace(/\[\.\.\.\]/g, '...').
+                        replace(/<code><pre>(.*?)<\/pre><\/code>/g, function(_, str) {
+                            return escape(str);
+                        }).
+                        replace(/\[\[(?=<nowki\s*\/>)/, function(str) {
+                            return escape(str);
+                        }).
+                        replace(/{{Cite([^}]+)}}(?![\s\n]*<\/ref>)/gi,
+                                function(_, cite) {
+                                    var m = cite.match(/title\s*=\s*([^|]+)/i);
+                                    return m ? m[1] : '';
+                                }).
+                        replace(/<nowiki>(.*?)<\/nowiki>/g, function(_, wiki) {
+                            return escape(wiki);
+                        });
+                    var strip = [
+                            /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]*?<\/ref>/g,
+                            /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
+                            /<!--[\s\S]*?-->/g
+                    ];
+                    strip.forEach(function(re) {
+                        text = text.replace(re, '');
+                    });
+                    var re;
+                    for (var template in templates) {
+                        re = new RegExp('{{' + template + '\\|?(.*?)}}', 'gi');
+                        text = text.replace(re, function(_, content) {
+                            return templates[template](content);
+                        });
+                    }
+                    // strip the rest of the templates
+                    re = /{{[^{}]*(?:{(?!{)[^{}]*|}(?!})[^{}]*)*}}/g;
+                    do {
+                        var cnt=0;
+                        text = text.replace(re, function (_) {
+                            cnt++; return '';
+                        });
+                    } while (cnt);
+                    function format(style, color) {
+                        var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
+                        var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
+                        return function(_, text) {
+                            return text.split(format_split_re).map(function(txt) {
+                                function replace(_, st, cl, rest) {
+                                    return '[['+style+st+';'+(color||cl)+rest;
+                                }
+                                if ($.terminal.is_formatting(txt)) {
+                                    return txt.replace(format_begin_re, replace);
+                                } else {
+                                    return '[[' + style + ';' + (color||'')+';]' +
+                                        txt + ']';
+                                }
+                            }).join('');
+                        };
+                    }
+                    text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, gr) {
+                        if (_.match(/<nowiki[^>]*>/)) {
+                            return $.terminal.escape_brackets(_);
+                        }
+                        gr = gr.replace(/^:(Category)/i, '$1').split('|');
+                        var result;
+                        if (gr.length == 1) {
+                            result = '[[bu;#fff;;wiki]' + gr[0] + ']';
+                        } else {
+                            gr[1] = gr[1].replace(/''([^']+)''/gm, function(_, g) {
+                                return '][[bui;#fff;;wiki;' + gr[0] + ']' + g + ']' +
+                                    '[[bu;#fff;;wiki;' + gr[0] + ']';
+                            });
+                            result = '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
+                        }
+                        return result;
+                    }).replace(/'''([^']+(?:'[^']+)*)'''/g, format('b', '#fff')).
+                        replace(/^(\n\s*)*/, '').
+                        replace(/([^[])\[(\s*(?:http|ftp)[^\[ ]+) ([^\]]+)\]/g,
+                                function(_, c, url, text) {
+                                    function rep(_, str) {
+                                        return '][[!i;;;;' + url + ']' + str +
+                                            '][[!;;;;' + url + ']';
                                     }
-                                    table = table.replace(/^.*\n/, '').
-                                        replace(header_re, '').split(/\|\-.*\n/);
-                                    table = table.map(function(text) {
-                                        var re = /^[|!]|\n[|!]|\|\|/;
+                                    text = text.replace(/'''([^']*(?:'[^']+)*)'''/g,
+                                                        '$1').
+                                        replace(/''([^']*(?:'[^']+)*)''/g,
+                                                rep);
+                                    return c + '[[!;;;;' + url + ']' + text + ']';
+                                }).
+                        replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
+                        replace(/''([^']+(?:'[^']+)*)''/g, format('i')).
+                        replace(/{\|.*\n([\s\S]*?)\|}/g, function(_, table) {
+                            var header_re = /\|\+(.*)\n/;
+                            var m = table.match(header_re);
+                            if (m) {
+                                var header = m[1].trim().
+                                    replace(/\[\[([^;]+)(;[^\]]+\][^\]]+\])/g,
+                                            function(_, style, rest) {
+                                                return '][[' + style + 'i' +
+                                                    rest + '[[i;;]';
+                                            });
+                            }
+                            table = table.replace(/^.*\n/, '').
+                                replace(header_re, '').split(/\|\-.*\n/);
+                            if (table.length == 1) {
+                                table = table[0].replace(/[\n\s]*$/, '').
+                                    split(/\n/).map(function(text) {
+                                        return [text];
+                                    });
+                            } else {
+                                table = table.map(function(text) {
+                                    console.log(text);
+                                    var re = /^[|!]|\n[|!]|\|\|/;
+                                    if (text.match(re)) {
                                         return text.split(re).map(function(item) {
                                             return item.replace(/\n/g, '').trim();
                                         }).filter(function(item, i) {
                                             return i !== 0;
                                         });
-                                    }).filter(function(row) {
-                                        return row.length;
-                                    });
-                                    var result = '';
-                                    if (header) {
-                                        result = '\n[[i;;]' + header + ']\n';
                                     }
-                                    result += ascii_table(table, true);
-                                    return result;
-                                }).replace(/([^\n])\n(?![\n*|+])/g, '$1 ').
-                                replace(/\*(\S)/g, '* $1').replace(/&/g, '&amp;');
-                            callback(text);
-                        }
-                    });
+                                }).filter(function(row) {
+                                    return row.length;
+                                });
+                            }
+                            var result = '';
+                            if (header) {
+                                result = '\n[[i;;]' + header + ']\n';
+                            }
+                            result += ascii_table(table, !!header);
+                            return result;
+                        }).replace(/(^#.*(\n|$))+/gm, function(list) {
+                            return '\n' + list.split(/#\s*/).slice(1).map(function(line, i) {
+                                return (list.length > 9 && i < 9 ? ' ' : '') + (i+1) +
+                                    '. ' + line;
+                            }).join('') + '\n';
+                        }).replace(/([^\n])\n(?![\n*|+]|\s*[0-9]|\[\[bu;#fff;;wiki\]Category)/gi, '$1 ').
+                        replace(/<(?:.|\n)*?>/gm, '').
+                        replace(/\n{3,}/g, '\n\n').
+                        replace(/\*(\S)/g, '* $1');
+                    return text;
                 },
                 less: function(text, term, exit) {
                     var export_data = term.export_view();
@@ -1202,17 +1264,70 @@ var leash = (function() {
                         } else {
                             term.pause();
                             term.option('convertLinks', false);
-                            leash.wikipedia(cmd.rest, function(article) {
-                                leash.less(function(cols, callback) {
-                                    var lines = $.terminal.split_equal(article,
-                                                                       cols,
-                                                                       true);
-                                    callback(lines);
-                                }, term, function() {
-                                    term.option('convertLinks', true);
+                            var url = 'https://en.wikipedia.org/w/api.php?';
+                            function wiki(callback) {
+                                $.ajax({
+                                    url: url,
+                                    data: {
+                                        action: 'query',
+                                        prop:'revisions',
+                                        rvprop: 'content',
+                                        format:'json',
+                                        titles: cmd.rest
+                                    },
+                                    dataType: 'jsonp',
+                                    success: function(data) {
+                                        var pages = data.query.pages;
+                                        var article = Object.keys(pages).map(function(key) {
+                                            var page = data.query.pages[key];
+                                            if (page.revisions) {
+                                                return page.revisions[0]['*'];
+                                            } else if (typeof page.missing != 'undefined') {
+                                                return 'Article Not Found';
+                                            }
+                                        }).join('\n');
+                                        callback(leash.wikipedia(article));
+                                    }
                                 });
-                                term.resume();
-                            });
+                            }
+                            if (cmd.rest.match(/^Category:/)) {
+                                $.ajax({
+                                    url: url,
+                                    data: {
+                                        action: 'query',
+                                        list: 'categorymembers',
+                                        rvprop: 'content',
+                                        format:'json',
+                                        cmlimit: 500,
+                                        cmtitle: cmd.rest
+                                    },
+                                    dataType: 'jsonp',
+                                    success: function(data) {
+                                        var members = data.query.categorymembers;
+                                        var text = members.map(function(member) {
+                                            return '[[bu;#fff;;wiki]' + member.title + ']';
+                                        }).join('\n');
+                                        wiki(function(article) {
+                                            var re = /(\[\[bu;#fff;;wiki\]Category)/;
+                                            text = article.replace(re, text + '\n\n$1');
+                                            leash.less(text, term);
+                                            term.resume();
+                                        });
+                                    }
+                                });
+                            } else {
+                                wiki(function(article) {
+                                    leash.less(function(cols, callback) {
+                                        var lines = $.terminal.split_equal(article,
+                                                                           cols,
+                                                                           true);
+                                        callback(lines);
+                                    }, term, function() {
+                                        term.option('convertLinks', true);
+                                    });
+                                    term.resume();
+                                });
+                            }
                         }
                     },
                     jargon: function(cmd, token, term) {
