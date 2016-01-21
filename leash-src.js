@@ -770,10 +770,11 @@ var leash = (function() {
                         replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
                         replace(/''([^']+(?:'[^']+)*)''/g, format('i')).
                         replace(/{\|.*\n([\s\S]*?)\|}/g, function(_, table) {
-                            var header_re = /\|\+(.*)\n/;
-                            var m = table.match(header_re);
+                            var head_re = /\|\+(.*)\n/;
+                            var header;
+                            var m = table.match(head_re);
                             if (m) {
-                                var header = m[1].trim().
+                                var head = m[1].trim().
                                     replace(/\[\[([^;]+)(;[^\]]+\][^\]]+\])/g,
                                             function(_, style, rest) {
                                                 return '][[' + style + 'i' +
@@ -781,13 +782,17 @@ var leash = (function() {
                                             });
                             }
                             table = table.replace(/^.*\n/, '').
-                                replace(header_re, '').split(/\|\-.*\n/);
+                                replace(head_re, '').split(/\|\-.*\n/);
                             if (table.length == 1) {
+                                header = false;
                                 table = table[0].replace(/[\n\s]*$/, '').
                                     split(/\n/).map(function(text) {
                                         return [text];
                                     });
                             } else {
+                                if (table[0].match(/^!|\n!/)) {
+                                    header = true;
+                                }
                                 table = table.map(function(text) {
                                     console.log(text);
                                     var re = /^[|!]|\n[|!]|\|\|/;
@@ -803,10 +808,10 @@ var leash = (function() {
                                 });
                             }
                             var result = '';
-                            if (header) {
-                                result = '\n[[i;;]' + header + ']\n';
+                            if (head) {
+                                result = '\n[[i;;]' + head + '\n';
                             }
-                            result += ascii_table(table, !!header);
+                            result += ascii_table(table, header);
                             return result;
                         }).replace(/(^#.*(\n|$))+/gm, function(list) {
                             return '\n' + list.split(/#\s*/).slice(1).map(function(line, i) {
