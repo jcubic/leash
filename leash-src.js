@@ -581,11 +581,13 @@ var leash = (function() {
                     }
                     function wiki_list(text) {
                         return list(text.split('|').map(function(wiki) {
-                            if (wiki.match(/^\s*\w+\s*=/)) {
+                            if (wiki.match(/^\s*.*\s*=/)) {
                                 return '';
                             } else {
                                 return '[[bu;#fff;;wiki;]' + wiki + ']';
                             }
+                        }).filter(function(item) {
+                            return !!item;
                         }));
                     }
                     var templates = {
