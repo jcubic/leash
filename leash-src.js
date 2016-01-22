@@ -651,7 +651,7 @@ var leash = (function() {
                             return escape('{{') + '[[bu;#fff;;wiki;Template:' + content[0] +
                                 ']' + content[0] + ']' + params + escape('}}');
                         },
-                        'as of': function(content) {
+                        '(?:as of|Asof)': function(content) {
                             content = content.split('|');
                             var months = [
                                 'January', 'February', 'March', 'April', 'May',
@@ -676,12 +676,11 @@ var leash = (function() {
                                 str = str.toLowerCase();
                             }
                             if (keys.df && keys.df.toLowerCase() == 'us') {
-                                return str + (date[1] ? months[date[1]-1]+' ': '') +
-                                    (date[2] ? date[2] + ', ':'') + date[0];
+                                return str + (date[1] ? months[date[1]-1]+' ' : '') +
+                                    (date[2] ? date[2]+', ':'') + date[0];
                             } else {
-                                return str + (date[2]?date[2] + ' ':'') +
-                                    (date[1] ? months[date[1]-1] : '') +
-                                    ' ' + date[0];
+                                return str + (date[2] ? date[2]+' ' : '') +
+                                    (date[1] ? months[date[1]-1]+' ' : '') + date[0];
                             }
                         }
                     };
