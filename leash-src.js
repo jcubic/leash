@@ -702,6 +702,9 @@ var leash = (function() {
                         return text;
                     }
                     text = text.replace(/&nbsp;/g, ' ').
+                        replace(/^\s*;\s*([^:]+):\s*/gm, function(_, header) {
+                            return '\n' + header + '\n\n';
+                        }).
                         replace(/&/g, '&amp;').
                         replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
                         replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
