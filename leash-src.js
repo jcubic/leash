@@ -820,7 +820,6 @@ var leash = (function() {
                                     header = true;
                                 }
                                 table = table.map(function(text) {
-                                    console.log(text);
                                     var re = /^[|!]|\n[|!]|\|\|/;
                                     if (text.match(re)) {
                                         return text.split(re).map(function(item) {
@@ -861,7 +860,6 @@ var leash = (function() {
                     var lines;
                     var prompt;
                     function print() {
-                        console.log('less() -> print()');
                         term.clear();
                         if (lines.length-pos > rows-1) {
                             prompt = ':';
@@ -870,7 +868,6 @@ var leash = (function() {
                         }
                         term.set_prompt(prompt);
                         var to_print = lines.slice(pos, pos+rows-1);
-                        console.log(to_print[0]);
                         if (to_print.length < rows-1) {
                             while (rows-1 > to_print.length) {
                                 to_print.push('~');
