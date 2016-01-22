@@ -601,6 +601,33 @@ var leash = (function() {
                         no: function() {
                             return '[[;#f00;]no]';
                         },
+                        quote: function(content) {
+                            content = content.replace(/^\s*\|/gm, '').split('|');
+                            var keys = {};
+                            content = content.map(function(item) {
+                                var m = item.match(/\s*(\w+)\s*=\s*(.*)/);
+                                if (m) {
+                                    keys[m[1].toLowerCase()] = m[2];
+                                    return '';
+                                } else {
+                                    return item;
+                                }
+                            }).join('');
+                            var author = '';
+                            if (keys.author) {
+                                author = keys.author;
+                            } else if (content.match(/^ /m)) {
+                                author = content.match(/^ (.*)/m)[1];
+                            }
+                            return '[[i;;]' + content.
+                                replace(/'''([^']+(?:'[^']+)*)'''/g, function(_, bold) {
+                                    return '][[bi;#fff;]' + bold + '][[i;;]';
+                                }).
+                                replace(/''([^']+(?:'[^']+)*)''/g, '$1').
+                                replace(/\[\[([^\]]+)\]\]/g, function(_, wiki) {
+                                    return '][[bui;#fff;;wiki]' + wiki + '][[i;;]';
+                                }) + ']' + (author ? '\n-- ' + author : '');
+                        },
                         partial: function(text) {
                             return '[[;#ff0;]' + text + ']';
                         },
@@ -673,12 +700,7 @@ var leash = (function() {
                         });
                         return text;
                     }
-                    text = text.replace(/{{\s*quote([^{}]*(?:{{[^}]*}}[^}]*)*)}}/g,
-                                        function(_, quote) {
-                                            return quote.replace(/^\s*\|/gm, '').
-                                                replace(/^ /m, '-- ');
-                                        }).
-                        replace(/&nbsp;/g, ' ').
+                    text = text.replace(/&nbsp;/g, ' ').
                         replace(/&/g, '&amp;').
                         replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
                         replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
@@ -720,8 +742,8 @@ var leash = (function() {
                             cnt++; return '';
                         });
                     } while (cnt);
+                    var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
                     function format(style, color) {
-                        var format_begin_re = /\[\[([!gbiuso]*);([^;]*)(;[^\]]*\])/i;
                         var format_split_re = /(\[\[[!gbiuso]*;[^;]*;[^\]]*\](?:[^\]]*\\\][^\]]*|[^\]]*|[^\[]*\[[^\]]*)\]?)/i;
                         return function(_, text) {
                             return text.split(format_split_re).map(function(txt) {
@@ -738,6 +760,10 @@ var leash = (function() {
                         };
                     }
                     text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, gr) {
+                        if (_.match(format_begin_re)) {
+                            // empty terminal formatting
+                            return _;
+                        }
                         if (_.match(/<nowiki[^>]*>/)) {
                             return $.terminal.escape_brackets(_);
                         }
@@ -813,15 +839,17 @@ var leash = (function() {
                             }
                             result += ascii_table(table, header);
                             return result;
-                        }).replace(/(^#.*(\n|$))+/gm, function(list) {
-                            return '\n' + list.split(/#\s*/).slice(1).map(function(line, i) {
+                        }).replace(/#(REDIRECT)/i, '&#35;$1').
+                        replace(/(^#.*(\n|$))+/gm, function(list) { // numbered list
+                            list = list.split(/^#\s*/m).slice(1);
+                            return '\n' + list.map(function(line, i) {
                                 return (list.length > 9 && i < 9 ? ' ' : '') + (i+1) +
                                     '. ' + line;
                             }).join('') + '\n';
-                        }).replace(/([^\n])\n(?![\n*|+]|\s*[0-9]|\[\[bu;#fff;;wiki\]Category)/gi, '$1 ').
-                        replace(/<(?:.|\n)*?>/gm, '').
-                        replace(/\n{3,}/g, '\n\n').
-                        replace(/\*(\S)/g, '* $1');
+                        }).replace(/([^\n])\n(?![\n*|+]|\s*[0-9]|--|\[\[bu;#fff;;wiki\]Category)/gi, '$1 ').
+                        replace(/<[^>]+>/gm, ''). // strip rest of html tags
+                        replace(/\n{3,}/g, '\n\n'). // remove larger newline space
+                        replace(/\*(\S)/g, '* $1'); // Fix lists
                     return text;
                 },
                 less: function(text, term, exit) {
@@ -833,6 +861,7 @@ var leash = (function() {
                     var lines;
                     var prompt;
                     function print() {
+                        console.log('less() -> print()');
                         term.clear();
                         if (lines.length-pos > rows-1) {
                             prompt = ':';
@@ -841,6 +870,7 @@ var leash = (function() {
                         }
                         term.set_prompt(prompt);
                         var to_print = lines.slice(pos, pos+rows-1);
+                        console.log(to_print[0]);
                         if (to_print.length < rows-1) {
                             while (rows-1 > to_print.length) {
                                 to_print.push('~');
@@ -865,7 +895,7 @@ var leash = (function() {
                     function quit() {
                         term.pop().import_view(export_data);
                         term.off('resize.less', refresh_view);
-                        term.off('mousewheel', wheel);
+                        //term.off('mousewheel', wheel);
                         if ($.isFunction(exit)) {
                             exit();
                         }
@@ -873,21 +903,7 @@ var leash = (function() {
                     term.on('resize.less', refresh_view);
                     refresh_view();
                     var scroll_by = 3;
-                    function wheel(event, delta) {
-                        if (delta > 0) {
-                            pos -= scroll_by;
-                            if (pos < 0) {
-                                pos = 0;
-                            }
-                        } else {
-                            pos += scroll_by;
-                            if (pos-1 > lines.length-rows) {
-                                pos = lines.length-rows+1;
-                            }
-                        }
-                        print();
-                    }
-                    term.on('mousewheel', wheel);
+                    //term.on('mousewheel', wheel);
                     var in_search = false, last_found, search_string;
                     function search(start, reset) {
                         var escape = $.terminal.escape_brackets(search_string),
@@ -944,6 +960,21 @@ var leash = (function() {
                         return index;
                     }
                     term.push($.noop, {
+                        mousewheel: function(event, delta) {
+                            if (delta > 0) {
+                                pos -= scroll_by;
+                                if (pos < 0) {
+                                    pos = 0;
+                                }
+                            } else {
+                                pos += scroll_by;
+                                if (pos-1 > lines.length-rows) {
+                                    pos = lines.length-rows+1;
+                                }
+                            }
+                            print();
+                            return false;
+                        },
                         keydown: function(e) {
                             var command = term.get_command();
                             if (term.get_prompt() !== '/') {
@@ -1265,12 +1296,14 @@ var leash = (function() {
                     wikipedia: function(cmd, token, term) {
                         if (cmd.args.length === 0) {
                             term.echo('Display contents of wikipedia articles\n' +
-                                      'usage:\n\twikipedia {ARTICLE}');
+                                      'usage:\n\twikipedia {ARTICLE}\n\n' +
+                                      '-s {SEARCH TERM}');
                         } else {
                             term.pause();
                             term.option('convertLinks', false);
                             var url = 'https://en.wikipedia.org/w/api.php?';
                             function wiki(callback) {
+                                var defer = $.Deferred();
                                 $.ajax({
                                     url: url,
                                     data: {
@@ -1291,12 +1324,38 @@ var leash = (function() {
                                                 return 'Article Not Found';
                                             }
                                         }).join('\n');
-                                        callback(leash.wikipedia(article));
+                                        article = leash.wikipedia(article);
+                                        if ($.isFunction(callback)) {
+                                            callback(article);
+                                        }
+                                        defer.resolve(article);
                                     }
                                 });
+                                return defer.promise();
                             }
-                            if (cmd.rest.match(/^Category:/)) {
+                            if (cmd.rest.match(/^-s\s*/)) {
                                 $.ajax({
+                                    url: url,
+                                    data: {
+                                        action: 'opensearch',
+                                        format: 'json',
+                                        limit: 100,
+                                        search: cmd.rest.replace(/^-s\s*/, '')
+                                    },
+                                    dataType: 'jsonp',
+                                    success: function(data) {
+                                        if (data[1].length && data[2].length) {
+                                            var text = data[1].map(function(term, i) {
+                                                return '[[bu;#fff;;wiki]' + term + ']\n' +
+                                                    data[2][i];
+                                            }).join('\n\n');
+                                            leash.less(text, term);
+                                            term.resume();
+                                        }
+                                    }
+                                });
+                            } else if (cmd.rest.match(/^Category:/)) {
+                                var promise = $.ajax({
                                     url: url,
                                     data: {
                                         action: 'query',
@@ -1306,19 +1365,17 @@ var leash = (function() {
                                         cmlimit: 500,
                                         cmtitle: cmd.rest
                                     },
-                                    dataType: 'jsonp',
-                                    success: function(data) {
-                                        var members = data.query.categorymembers;
-                                        var text = members.map(function(member) {
-                                            return '[[bu;#fff;;wiki]' + member.title + ']';
-                                        }).join('\n');
-                                        wiki(function(article) {
-                                            var re = /(\[\[bu;#fff;;wiki\]Category)/;
-                                            text = article.replace(re, text + '\n\n$1');
-                                            leash.less(text, term);
-                                            term.resume();
-                                        });
-                                    }
+                                    dataType: 'jsonp'
+                                });
+                                $.when(promise, wiki()).then(function(data, article) {
+                                    var members = data.query.categorymembers;
+                                    text = members.map(function(member) {
+                                        return '[[bu;#fff;;wiki]' + member.title + ']';
+                                    }).join('\n');
+                                    var re = /(\[\[bu;#fff;;wiki\]Category)/;
+                                    text = article.replace(re, text + '\n\n$1');
+                                    leash.less(text, term);
+                                    term.resume();
                                 });
                             } else {
                                 wiki(function(article) {
