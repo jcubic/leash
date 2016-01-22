@@ -584,7 +584,7 @@ var leash = (function() {
                             if (wiki.match(/^\s*\w+\s*=/)) {
                                 return '';
                             } else {
-                                return '[[bu;#fff;;wiki;' + wiki + ']' + wiki + ']';
+                                return '[[bu;#fff;;wiki;]' + wiki + ']';
                             }
                         }));
                     }
@@ -845,7 +845,15 @@ var leash = (function() {
                                 return (list.length > 9 && i < 9 ? ' ' : '') + (i+1) +
                                     '. ' + line;
                             }).join('') + '\n';
-                        }).replace(/([^\n])\n(?![\n*|+]|\s*[0-9]|--|\[\[bu;#fff;;wiki\]Category)/gi, '$1 ').
+                        }).split(/(<pre[^>]*>[\s\S]*?<\/pre>)/).map(function(text, i) {
+                            var m = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
+                            var re = /([^\n])\n(?![\n*|+]|\s*[0-9]|--|\[\[bu;#fff;;wiki\]Category)/gi;
+                            if (m) {
+                                return m[1];
+                            } else {
+                                return text.replace(re, '$1 ');
+                            }
+                        }).join('').
                         replace(/<[^>]+>/gm, ''). // strip rest of html tags
                         replace(/\n{3,}/g, '\n\n'). // remove larger newline space
                         replace(/\*(\S)/g, '* $1'); // Fix lists
