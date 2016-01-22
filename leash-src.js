@@ -1361,7 +1361,7 @@ var leash = (function() {
                                     }
                                 });
                             } else if (cmd.rest.match(/^Category:/)) {
-                                var promise = $.ajax({
+                                $.ajax({
                                     url: url,
                                     data: {
                                         action: 'query',
@@ -1371,17 +1371,19 @@ var leash = (function() {
                                         cmlimit: 500,
                                         cmtitle: cmd.rest
                                     },
-                                    dataType: 'jsonp'
-                                });
-                                $.when(promise, wiki()).then(function(data, article) {
-                                    var members = data.query.categorymembers;
-                                    text = members.map(function(member) {
-                                        return '[[bu;#fff;;wiki]' + member.title + ']';
-                                    }).join('\n');
-                                    var re = /(\[\[bu;#fff;;wiki\]Category)/;
-                                    text = article.replace(re, text + '\n\n$1');
-                                    leash.less(text, term);
-                                    term.resume();
+                                    dataType: 'jsonp',
+                                    success: function(data) {
+                                        var members = data.query.categorymembers;
+                                        text = members.map(function(member) {
+                                            return '[[bu;#fff;;wiki]' + member.title + ']';
+                                        }).join('\n');
+                                        var re = /(\[\[bu;#fff;;wiki\]Category)/;
+                                        wiki(function(article) {
+                                            text = article.replace(re, text + '\n\n$1');
+                                            leash.less(text, term);
+                                            term.resume();
+                                        });
+                                    }
                                 });
                             } else {
                                 wiki(function(article) {
