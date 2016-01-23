@@ -843,6 +843,9 @@ var leash = (function() {
                             result += ascii_table(table, header);
                             return result;
                         }).replace(/#(REDIRECT)/i, '&#35;$1').
+                        replace(/(^\*.*(\n|$))+/gm, function(list) { // unordered list
+                            return '\n' + list;
+                        }).
                         replace(/(^#.*(\n|$))+/gm, function(list) { // numbered list
                             list = list.split(/^#\s*/m).slice(1);
                             return '\n' + list.map(function(line, i) {
