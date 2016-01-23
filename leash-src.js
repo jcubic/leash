@@ -922,13 +922,13 @@ var leash = (function() {
                     }
                     function quit() {
                         term.pop().import_view(export_data);
-                        term.off('resize.less', refresh_view);
+                        $(window).off('resize.less', refresh_view);
                         //term.off('mousewheel', wheel);
                         if ($.isFunction(exit)) {
                             exit();
                         }
                     }
-                    term.on('resize.less', refresh_view);
+                    $(window).on('resize.less', refresh_view);
                     refresh_view();
                     var scroll_by = 3;
                     //term.on('mousewheel', wheel);
