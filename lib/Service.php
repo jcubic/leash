@@ -309,7 +309,27 @@ class Service {
             return $session->username == $current->username;
         });
     }
-
+    // ------------------------------------------------------------------------
+    public function command_exists($token, $command) {
+        $command = "which $command > /dev/null && echo true || echo false";
+        $response = $this->shell($token, $command, ".");
+        return json_decode($response['output']);
+    }
+    // ------------------------------------------------------------------------
+    public function html($token, $url, $width) {
+        if (!$this->command_exists($token, "html2text")) {
+            throw new Exception("Command html2text not installed");
+        }
+        $page = $this->get($url);
+        $fname = tempnam($this->path . "/tmp", "html_");
+        $file = fopen($fname, 'w');
+        fwrite($file, $page);
+        fclose($file);
+        $cmd = "html2text -utf8 -width $width < $fname";
+        $response = $this->shell($token, $cmd, ".");
+        unlink($fname);
+        return $response['output'];
+    }
     // ------------------------------------------------------------------------
     public function file($token, $filename) {
         if (!$this->valid_token($token)) {

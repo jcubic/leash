@@ -363,6 +363,19 @@ var leash = (function() {
                         var article = $(this).data('text').replace(/\s/g, ' ');
                         var cmd = $.terminal.split_command('wikipedia ' + article);
                         leash.commands.wikipedia(cmd, term.token(), term);
+                    }).on('click', 'a', function(e) {
+                        if (!e.ctrlKey) {
+                            var token = term.token();
+                            var href = $(this).attr('href');
+                            leash.less(function(cols, callback) {
+                                leash.service.html(token, href, cols)(function(err, page) {
+                                    if (!err) {
+                                        callback(page.trim().split('\n'));
+                                    }
+                                });
+                            }, term);
+                            return false;
+                        }
                     });
                     if (!leash.installed) {
                         leash.install(term);
@@ -899,12 +912,13 @@ var leash = (function() {
                             text(cols, function(new_lines) {
                                 original_lines = new_lines;
                                 lines = original_lines.slice();
+                                print();
                             });
                         } else {
                             original_lines = text.split('\n');
                             lines = original_lines.slice();
+                            print();
                         }
-                        print();
                     }
                     function quit() {
                         term.pop().import_view(export_data);
