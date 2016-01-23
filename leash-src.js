@@ -324,6 +324,8 @@ var leash = (function() {
                     return sep + '\n' + array.join('\n') + '\n' + sep;
                 }
             }
+            // used on exit from wikipedia to deterimine if turn onconvertLinks
+            var wiki_stack = [];
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
@@ -343,7 +345,7 @@ var leash = (function() {
                       '   __   _______   ______ __',
                       '  / /  / __/ _ | / __/ // /',
                       ' / /__/ _// __ |_\\ \\/ _  /',
-                      '/____/___/_/ |_/___/_//_/  ' + version];
+                      '/____/___/_/ |_/___/_//_/' + version];
                     //'Today is: ' + (new Date()).toUTCString(),
                     if (build) {
                         banner.push(build);
@@ -726,7 +728,7 @@ var leash = (function() {
                     var strip = [
                             /<ref[^>]*\/>/g, /<ref[^>]*>[\s\S]*?<\/ref>/g,
                             /\[\[(file|image):[^[\]]*(?:\[\[[^[\]]*]][^[\]]*)*]]/gi,
-                            /<!--[\s\S]*?-->/g
+                            /<!--[\s\S]*?-->/g, /<gallery>[\s\S]*?<\/galery>/g
                     ];
                     strip.forEach(function(re) {
                         text = text.replace(re, '');
@@ -987,6 +989,7 @@ var leash = (function() {
                             print();
                             return false;
                         },
+                        name: 'less',
                         keydown: function(e) {
                             var command = term.get_command();
                             if (term.get_prompt() !== '/') {
@@ -1306,6 +1309,43 @@ var leash = (function() {
                         });
                     },
                     wikipedia: function(cmd, token, term) {
+                        function wiki(callback) {
+                            var defer = $.Deferred();
+                            $.ajax({
+                                url: url,
+                                data: {
+                                    action: 'query',
+                                    prop:'revisions',
+                                    rvprop: 'content',
+                                    format:'json',
+                                    titles: cmd.rest
+                                },
+                                dataType: 'jsonp',
+                                success: function(data) {
+                                    var pages = data.query.pages;
+                                    var article = Object.keys(pages).map(function(key) {
+                                        var page = data.query.pages[key];
+                                        if (page.revisions) {
+                                            return page.revisions[0]['*'];
+                                        } else if (typeof page.missing != 'undefined') {
+                                            return 'Article Not Found';
+                                        }
+                                    }).join('\n');
+                                    article = leash.wikipedia(article);
+                                    if ($.isFunction(callback)) {
+                                        callback(article);
+                                    }
+                                    defer.resolve(article);
+                                }
+                            });
+                            return defer.promise();
+                        }
+                        function exit() {
+                            wiki_stack.pop();
+                            if (!wiki_stack.length) {
+                                term.option('convertLinks', true);
+                            }
+                        }
                         if (cmd.args.length === 0) {
                             term.echo('Display contents of wikipedia articles\n' +
                                       'usage:\n\twikipedia {ARTICLE}\n\n' +
@@ -1314,37 +1354,7 @@ var leash = (function() {
                             term.pause();
                             term.option('convertLinks', false);
                             var url = 'https://en.wikipedia.org/w/api.php?';
-                            function wiki(callback) {
-                                var defer = $.Deferred();
-                                $.ajax({
-                                    url: url,
-                                    data: {
-                                        action: 'query',
-                                        prop:'revisions',
-                                        rvprop: 'content',
-                                        format:'json',
-                                        titles: cmd.rest
-                                    },
-                                    dataType: 'jsonp',
-                                    success: function(data) {
-                                        var pages = data.query.pages;
-                                        var article = Object.keys(pages).map(function(key) {
-                                            var page = data.query.pages[key];
-                                            if (page.revisions) {
-                                                return page.revisions[0]['*'];
-                                            } else if (typeof page.missing != 'undefined') {
-                                                return 'Article Not Found';
-                                            }
-                                        }).join('\n');
-                                        article = leash.wikipedia(article);
-                                        if ($.isFunction(callback)) {
-                                            callback(article);
-                                        }
-                                        defer.resolve(article);
-                                    }
-                                });
-                                return defer.promise();
-                            }
+                            wiki_stack.push(cmd.rest.replace(/^-s\s*/, ''));
                             if (cmd.rest.match(/^-s\s*/)) {
                                 $.ajax({
                                     url: url,
@@ -1361,7 +1371,7 @@ var leash = (function() {
                                                 return '[[bu;#fff;;wiki]' + term + ']\n' +
                                                     data[2][i];
                                             }).join('\n\n');
-                                            leash.less(text, term);
+                                            leash.less(text, term, exit);
                                             term.resume();
                                         }
                                     }
@@ -1386,7 +1396,7 @@ var leash = (function() {
                                         var re = /(\[\[bu;#fff;;wiki\]Category)/;
                                         wiki(function(article) {
                                             text = article.replace(re, text + '\n\n$1');
-                                            leash.less(text, term);
+                                            leash.less(text, term, exit);
                                             term.resume();
                                         });
                                     }
@@ -1398,9 +1408,7 @@ var leash = (function() {
                                                                            cols,
                                                                            true);
                                         callback(lines);
-                                    }, term, function() {
-                                        term.option('convertLinks', true);
-                                    });
+                                    }, term, exit);
                                     term.resume();
                                 });
                             }
