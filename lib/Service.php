@@ -752,6 +752,56 @@ class Service {
         return $result;
     }
     // ------------------------------------------------------------------------
+    public function sleep($time) {
+        sleep($time);
+    }
+    // ------------------------------------------------------------------------
+    public function rfc($number = null) {
+        if ($number == null) {
+            $url = "http://www.rfc-editor.org/in-notes/rfc-index.txt";
+            $page = $this->get($url);
+            $page = preg_replace("/(^[0-9]+)/m", '[[bu;#fff;;rfc]$1]', $page);
+            return $page;
+        } else {
+            $number = preg_replace("/^0+/", "", $number);
+            $url = "https://www.rfc-editor.org/rfc/rfc$number.txt";
+            return $this->get($url);
+        }
+    }
+    // ------------------------------------------------------------------------
+    public function rfc_update() {
+        $path = $this->path . "/rfc";
+        if (!is_dir($path)) {
+            if (!mkdir($path)) {
+                throw new Exception("Couldn't create rfc directory");
+            }
+        }
+        $index = "http://www.rfc-editor.org/in-notes/rfc-index.txt";
+        $page = $this->get($index);
+        preg_match_all("/(^[0-9]+)/m", $page, $matches);
+        $page = preg_replace("/(^[0-9]+)/m", '[[bu;#fff;;rfc]$1]', $page);
+        $file = fopen($path . "/rfc-index.txt", "w");
+        if (!$file) {
+            throw new Exception("Couldn't create file in rfc directory");
+        }
+        fwrite($file, $page);
+        fclose($file);
+        foreach($matches[1] as $number) {
+            $number = preg_replace("/^0+/", "", $number);
+            $fname = "rfc" . $number . ".txt";
+            if (!file_exists($path . "/$fname")) {
+                $url = "https://www.rfc-editor.org/rfc/$fname";
+                $rfc = $this->get($url);
+                $file = fopen($path . "/$fname", "w");
+                if (!$file) {
+                    throw new Exception("Couldn't create file in rfc directory");
+                }
+                fwrite($file, $rfc);
+                fclose($file);
+            }
+        }
+    }
+    // ------------------------------------------------------------------------
     private function curl($url) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);

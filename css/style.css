@@ -38,7 +38,7 @@ body {
 .exec, .jargon {
   cursor: pointer;
 }
-.exec:hover, .jargon:hover, .wiki:hover {
+.exec:hover, .jargon:hover, .wiki:hover, .rfc:hover {
   text-decoration: none !important;
 }
 body, html, #splash, #splash div { height: 100%; }
@@ -96,4 +96,4 @@ body, html, #splash, #splash div { height: 100%; }
     display: inline-block;
     min-width: 100%;
 }
-.wiki { cursor: pointer; }
+.wiki, .rfc { cursor: pointer; }

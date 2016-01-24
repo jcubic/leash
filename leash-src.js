@@ -218,6 +218,9 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
+                try {
+                    error = JSON.parse(error);
+                } catch(e) {}
                 var message;
                 if (error.error) {
                     error = error.error;
@@ -230,6 +233,9 @@ var leash = (function() {
                 if (terminal) {
                     terminal.resume();
                     terminal.error(message);
+                    terminal.leash().then(function(leash) {
+                        leash.animation.stop();
+                    });
                 } else {
                     alert(message);
                 }
@@ -353,6 +359,27 @@ var leash = (function() {
                     banner.push('');
                     return banner.join('\n');
                 },
+                animation: {
+                    animating: false,
+                    start: function(delay) {
+                        var anim = ['/', '-', '\\', '|'], i = 0;
+                        this.animating = true;
+                        this.prompt = leash.terminal.get_prompt();
+                        var self = this;
+                        (function animation() {
+                            leash.terminal.set_prompt(anim[i++]);
+                            if (i > anim.length-1) {
+                                i = 0;
+                            }
+                            self.timer = setTimeout(animation, delay);
+                        })();
+                    },
+                    stop: function() {
+                        clearTimeout(this.timer);
+                        leash.terminal.set_prompt(this.prompt);
+                        this.animating = false;
+                    }
+                },
                 service: service,
                 init: function(term) {
                     term.on('click', '.jargon', function() {
@@ -363,6 +390,10 @@ var leash = (function() {
                         var article = $(this).data('text').replace(/\s/g, ' ');
                         var cmd = $.terminal.split_command('wikipedia ' + article);
                         leash.commands.wikipedia(cmd, term.token(), term);
+                    }).on('click', '.rfc', function() {
+                        var rfc = $(this).data('text');
+                        var cmd = $.terminal.split_command('rfc ' + rfc);
+                        leash.commands.rfc(cmd, term.token(), term);
                     }).on('click', 'a', function(e) {
                         if (!e.ctrlKey) {
                             var token = term.token();
@@ -1156,8 +1187,23 @@ var leash = (function() {
                     }
                 },
                 commands: {
-                    help: function() {
-
+                    sleep: function(cmd, token, term) {
+                        leash.animation.start(400);
+                        leash.service.sleep(cmd.args[0])(function() {
+                            leash.animation.stop();
+                        });
+                    },
+                    rfc: function(cmd, token, term) {
+                        var number = cmd.args.length ? cmd.args[0] : null;
+                        term.pause();
+                        leash.service.rfc(number)(function(err, rfc) {
+                            if (err) {
+                                print_error(err);
+                            } else {
+                                leash.less(rfc, term);
+                            }
+                            term.resume();
+                        });
                     },
                     cat: function(cmd, token, term) {
                         if (cmd.command.match(/cat\s*$/)) {
@@ -1834,7 +1880,6 @@ var leash = (function() {
             var leash_promise = leash();
             self.data('leash', leash_promise);
             leash_promise.then(function(leash) {
-                var animation = false;
                 var defaults = {
                     onInit: leash.init,
                     //maskChar: '',
@@ -1867,13 +1912,16 @@ var leash = (function() {
                     outputLimit: 500,
                     greetings: leash.greetings,
                     keydown: function(e) {
-                        if (animation) {
+                        if (leash.animation.animating) {
+                            if (e.which == 68 && e.ctrlKey) {
+                                leash.animation.stop();
+                            }
                             return false;
                         }
                     }
                 };
-                var terminal = self.terminal(leash.interpreter,
-                                             $.extend(defaults, options || {}));
+                var settings = $.extend(defaults, options || {});
+                var terminal = self.terminal(leash.interpreter, settings);
                 leash.terminal = terminal;
                 terminal.on('drop', function(e) {
                     e.preventDefault();
@@ -1884,26 +1932,6 @@ var leash = (function() {
                     if (!token) {
                         return;
                     }
-                    var anim = {
-                        start: function(delay) {
-                            var anim = ['/', '-', '\\', '|'], i = 0;
-                            animation = true;
-                            this.prompt = terminal.get_prompt();
-                            var self = this;
-                            (function animation() {
-                                terminal.set_prompt(anim[i++]);
-                                if (i > anim.length-1) {
-                                    i = 0;
-                                }
-                                self.timer = setTimeout(animation, delay);
-                            })();
-                        },
-                        stop: function() {
-                            clearTimeout(this.timer);
-                            terminal.set_prompt(this.prompt);
-                            animation = false;
-                        }
-                    };
                     if (files.length) {
                         files = [].slice.call(files);
                         (function upload() {
@@ -1913,12 +1941,12 @@ var leash = (function() {
                                 formData.append('file', file);
                                 formData.append('token', token);
                                 formData.append('path', leash.cwd);
-                                anim.start(400);
+                                leash.animation.start(400);
                                 $.ajax({
                                     url: 'lib/upload.php',
                                     type: 'POST',
                                     success: function(response) {
-                                        anim.stop();
+                                        leash.animation.stop();
                                         if (response.error) {
                                             terminal.error(response.error);
                                         } else {
@@ -1929,7 +1957,7 @@ var leash = (function() {
                                     },
                                     error: function(jxhr, error, status) {
                                         terminal.error(jxhr.statusText);
-                                        anim.stop();
+                                        leash.animation.stop();
                                     },
                                     data: formData,
                                     cache: false,
@@ -1988,7 +2016,7 @@ var leash = (function() {
                                             },
                                             error: function(jxhr, error, status) {
                                                 terminal.error(jxhr.statusText);
-                                                anim.stop();
+                                                leash.animation.stop();
                                             },
                                             data: formData,
                                             cache: false,
@@ -1996,16 +2024,16 @@ var leash = (function() {
                                             processData: false
                                         });
                                     } else {
-                                        anim.stop();
+                                        leash.animation.stop();
                                         terminal.echo('File "' + file.name + '" uploaded.');
                                         upload();
                                     }
                                 }
-                                anim.start(400);
+                                leash.animation.start(400);
                                 leash.service.unlink(token, fname)(function(err, del) {
                                     if (err) {
                                         leash.terminal.error(err.message);
-                                        anim.stop();
+                                        leash.animation.stop();
                                     } else {
                                         process(0, chunk_size);
                                     }
