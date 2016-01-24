@@ -404,7 +404,7 @@ var leash = (function() {
                                         callback(page.trim().split('\n'));
                                     }
                                 });
-                            }, term);
+                            });
                             return false;
                         }
                     });
@@ -584,7 +584,7 @@ var leash = (function() {
                                 print_error(err);
                             } else {
                                 // even if empty
-                                leash.less(res.output, term);
+                                leash.less(res.output);
                             }
                             term.resume();
                         });
@@ -912,7 +912,8 @@ var leash = (function() {
                         replace(/\*(\S)/g, '* $1'); // Fix lists
                     return text;
                 },
-                less: function(text, term, exit) {
+                less: function(text, exit) {
+                    var term = leash.terminal;
                     var export_data = term.export_view();
                     var cols, rows;
                     var pos = 0;
@@ -1200,7 +1201,7 @@ var leash = (function() {
                             if (err) {
                                 print_error(err);
                             } else {
-                                leash.less(rfc, term);
+                                leash.less(rfc.replace(/^[\s\n]+|[\s\n]+$/g, ''));
                             }
                             term.resume();
                         });
@@ -1253,7 +1254,7 @@ var leash = (function() {
                             if (err) {
                                 print_error(err);
                             } else {
-                                leash.less($.terminal.escape_brackets(ret.output), term);
+                                leash.less($.terminal.escape_brackets(ret.output));
                             }
                             term.resume();
                         });
@@ -1454,7 +1455,7 @@ var leash = (function() {
                                                 return '[[bu;#fff;;wiki]' + term + ']\n' +
                                                     data[2][i];
                                             }).join('\n\n');
-                                            leash.less(text, term, exit);
+                                            leash.less(text, exit);
                                             term.resume();
                                         }
                                     }
@@ -1479,7 +1480,7 @@ var leash = (function() {
                                         var re = /(\[\[bu;#fff;;wiki\]Category)/;
                                         wiki(function(article) {
                                             text = article.replace(re, text + '\n\n$1');
-                                            leash.less(text, term, exit);
+                                            leash.less(text, exit);
                                             term.resume();
                                         });
                                     }
@@ -1491,7 +1492,7 @@ var leash = (function() {
                                                                            cols,
                                                                            true);
                                         callback(lines);
-                                    }, term, exit);
+                                    }, exit);
                                     term.resume();
                                 });
                             }
@@ -1534,7 +1535,7 @@ var leash = (function() {
                         term.pause();
                         var command = 'MANWIDTH=' + term.cols() + ' ' + cmd.command;
                         service.shell(token, command, '/')(function(err, ret) {
-                            leash.less($.terminal.overtyping(ret.output), term);
+                            leash.less($.terminal.overtyping(ret.output));
                             term.resume();
                         });
                     },
