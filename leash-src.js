@@ -929,21 +929,8 @@ var leash = (function() {
                         } else {
                             prompt = '[[;;;inverted](END)]';
                         }
-                        var can_left = false;
-                        for (var i = lines.length; i--;) {
-                            if (lines[i].length > cols) {
-                                can_left = true;
-                                break;
-                            }
-                        }
                         term.set_prompt(prompt);
                         var to_print = lines.slice(pos, pos+rows-1);
-                        if (can_left) {
-                            to_print = to_print.map(function(line) {
-                                var ret = line.substring(left, left+cols-1);
-                                return ret;
-                            });
-                        }
                         if (to_print.length < rows-1) {
                             while (rows-1 > to_print.length) {
                                 to_print.push('~');
@@ -1066,15 +1053,6 @@ var leash = (function() {
                                     }
                                 } else if (e.which == 81) { //Q
                                     quit();
-                                } else if (e.which == 39) { // right
-                                    left+=14;
-                                    print();
-                                } else if (e.which == 37) { // left
-                                    left-=14;
-                                    if (left < 0) {
-                                        left = 0;
-                                    }
-                                    print();
                                 } else {
                                     // scroll
                                     if (lines.length > rows) {
