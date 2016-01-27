@@ -931,6 +931,72 @@ var leash = (function() {
                         }
                         term.set_prompt(prompt);
                         var to_print = lines.slice(pos, pos+rows-1);
+                        var format_start_re = /^(\[\[[!gbiuso]*;[^;]*;[^\]]*\])/i;
+                        to_print = to_print.map(function(line, line_index) {
+
+                            if ($.terminal.have_formatting(line)) {
+                                var result, start = -1, format, count = 0,
+                                    formatting = null, in_text = false, beginning = '';
+                                console.log(line);
+                                for (var i=0, len=line.length; i<len; ++i) {
+                                    var m = line.substring(i).match(format_start_re);
+                                    if (m) {
+                                        formatting = m[1];
+                                        in_text = false;
+                                    } else if (formatting && line[i] === ']') {
+                                        if (in_text) {
+                                            formatting = null;
+                                            in_text = false;
+                                        } else {
+                                            in_text = true;
+                                        }
+                                    }
+                                    if (count === left && start == -1) {
+                                        start = i;
+                                        if (formatting && in_text && line[i] != ']') {
+                                            beginning = formatting;
+                                        }
+                                    } else if (i==len-1) {
+                                        if (left > count) {
+                                            result = '';
+                                        } else {
+                                            result = beginning + line.substring(start, len);
+                                            if (formatting && in_text && line[i] != ']') {
+                                                result += ']';
+                                            }
+                                        }
+                                    } else if (count === left+cols-1) {
+                                        result = beginning + line.substring(start, i);
+                                        if (formatting && in_text && line[i] != ']') {
+                                            result += ']';
+                                        }
+                                        break;
+                                    }
+                                    if (((formatting && in_text) || !formatting) &&
+                                        line[i] != ']') {
+                                        // treat entity as one character
+                                        if (line[i] === '&') {
+                                            m = line.substring(i).match(/^(&[^;]+;)/);
+                                            if (!m) {
+                                                throw new Error('Unclosed html entity in' +
+                                                                ' line ' + (line_index+1) +
+                                                                ' at char ' + (i+1));
+                                            }
+                                            i+=m[1].length-2; // because continue adds 1 to i
+                                            continue;
+                                        } else if (line[i] === ']' && line[i-1] === '\\') {
+                                            // escape \] counts as one character
+                                            --count;
+                                        } else {
+                                            ++count;
+                                        }
+                                    }
+                                } // for line
+                                return result;
+                            } else {
+                                return line.substring(left, left+cols-1);
+                            }
+                        });
                         if (to_print.length < rows-1) {
                             while (rows-1 > to_print.length) {
                                 to_print.push('~');
@@ -1053,6 +1119,15 @@ var leash = (function() {
                                     }
                                 } else if (e.which == 81) { //Q
                                     quit();
+                                } else if (e.which == 39) { // right
+                                    left+=Math.round(cols/2);
+                                    print();
+                                } else if (e.which == 37) { // left
+                                    left-=Math.round(cols/2);
+                                    if (left < 0) {
+                                        left = 0;
+                                    }
+                                    print();
                                 } else {
                                     // scroll
                                     if (lines.length > rows) {
@@ -1609,7 +1684,9 @@ var leash = (function() {
                             var prompt = '[[b;#55f;]mysql]> ';
                             function push(err, tables) {
                                 tables = $.map(tables, function(row) {
-                                    return row[0];
+                                    return Object.keys(row).map(function(key) {
+                                        return row[key];
+                                    });
                                 });
                                 term.push(mysql_query, {
                                     prompt: prompt,
