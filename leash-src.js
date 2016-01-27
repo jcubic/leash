@@ -933,11 +933,9 @@ var leash = (function() {
                         var to_print = lines.slice(pos, pos+rows-1);
                         var format_start_re = /^(\[\[[!gbiuso]*;[^;]*;[^\]]*\])/i;
                         to_print = to_print.map(function(line, line_index) {
-
                             if ($.terminal.have_formatting(line)) {
                                 var result, start = -1, format, count = 0,
                                     formatting = null, in_text = false, beginning = '';
-                                console.log(line);
                                 for (var i=0, len=line.length; i<len; ++i) {
                                     var m = line.substring(i).match(format_start_re);
                                     if (m) {
@@ -967,7 +965,7 @@ var leash = (function() {
                                         }
                                     } else if (count === left+cols-1) {
                                         result = beginning + line.substring(start, i);
-                                        if (formatting && in_text && line[i] != ']') {
+                                        if (formatting && in_text) {
                                             result += ']';
                                         }
                                         break;
@@ -1004,6 +1002,13 @@ var leash = (function() {
                         }
                         term.echo(to_print.join('\n'));
                     }
+                    function quit() {
+                        term.pop().import_view(export_data);
+                        //term.off('mousewheel', wheel);
+                        if ($.isFunction(exit)) {
+                            exit();
+                        }
+                    }
                     function refresh_view() {
                         cols = term.cols();
                         rows = term.rows();
@@ -1019,15 +1024,6 @@ var leash = (function() {
                             print();
                         }
                     }
-                    function quit() {
-                        term.pop().import_view(export_data);
-                        $(window).off('resize.less', refresh_view);
-                        //term.off('mousewheel', wheel);
-                        if ($.isFunction(exit)) {
-                            exit();
-                        }
-                    }
-                    $(window).on('resize.less', refresh_view);
                     refresh_view();
                     var scroll_by = 3;
                     //term.on('mousewheel', wheel);
@@ -1087,6 +1083,7 @@ var leash = (function() {
                         return index;
                     }
                     term.push($.noop, {
+                        resize: refresh_view,
                         mousewheel: function(event, delta) {
                             if (delta > 0) {
                                 pos -= scroll_by;
@@ -1172,7 +1169,7 @@ var leash = (function() {
                                         in_search = true;
                                         pos = 0;
                                         search_string = command;
-                                        last_found = search(0);
+                                        last_found = search(0, true);
                                     }
                                     return false;
                                 }
