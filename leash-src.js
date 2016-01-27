@@ -218,6 +218,7 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
+                console.log(error);
                 try {
                     error = JSON.parse(error);
                 } catch(e) {}
@@ -270,11 +271,11 @@ var leash = (function() {
                         result = [Object.keys(result[0])].concat(result.map(function(row) {
                             if (row instanceof Array) {
                                 return row.map(function(item) {
-                                    return $.terminal.escape_brackets(item);
+                                    return $.terminal.escape_brackets(String(item));
                                 });
                             } else {
                                 return Object.keys(row).map(function(key) {
-                                    return $.terminal.escape_brackets(row[key]);
+                                    return $.terminal.escape_brackets(String(row[key]));
                                 });
                             }
                         }));
@@ -752,7 +753,7 @@ var leash = (function() {
                             return '\n' + header + '\n\n';
                         }).
                         replace(/&/g, '&amp;').
-                        replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
+                        //replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
                         replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
                         replace(/\[\.\.\.\]/g, '...').
                         replace(/<code><pre>(.*?)<\/pre><\/code>/g, function(_, str) {
@@ -1553,8 +1554,18 @@ var leash = (function() {
                             var msg = 'This is the Jargon File, a comprehensiv'+
                                 'e compendium of hacker slang illuminating man'+
                                 'y aspects of hackish tradition, folklore, and'+
-                                ' humor.\n\nusage: jargon [QUERY]';
+                                ' humor.\n\nusage: jargon [-s] [QUERY]\n\n-s s'+
+                                'earch jargon file';
                             term.echo(msg, {keepWords: true});
+                        } else if (cmd.args[0] == '-s') {
+                            var term = cmd.rest.replace(/^-s/, '');
+                            leash.service.jargon_search(term)(function(err) {
+                                if (err) {
+                                    print_error(err);
+                                } else {
+                                    
+                                }
+                            });
                         } else {
                             term.pause();
                             // NOTE: when paste using mouse middle rpc jargon

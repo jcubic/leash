@@ -726,6 +726,14 @@ class Service {
             return 'jargon.db';
         }
     }
+    function jargon_search($search_term) {
+        $filename = $this->get_jargon_db_file();
+        $db = new PDO('sqlite:' . $filename);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $search_term = $db->quote($search_term);
+        $res = $db->query("SELECT * FROM terms WHERE term like $search_term or ".
+                          "");
+    }
     // ------------------------------------------------------------------------
     function jargon($search_term) {
         $filename = $this->get_jargon_db_file();
@@ -756,7 +764,7 @@ class Service {
         sleep($time);
     }
     // ------------------------------------------------------------------------
-    public function rfc($number = null) {
+    public function rfc($number) {
         if ($number == null) {
             $url = "http://www.rfc-editor.org/in-notes/rfc-index.txt";
             $page = $this->get($url);
