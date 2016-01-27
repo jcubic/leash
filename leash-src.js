@@ -643,11 +643,11 @@ var leash = (function() {
                         dunno: function() {
                             return '?';
                         },
-                        yes: function() {
-                            return '[[;#0f0;]yes]';
+                        yes: function(content) {
+                            return '[[;#0f0;]' + (content || 'yes') + ']';
                         },
-                        no: function() {
-                            return '[[;#f00;]no]';
+                        no: function(content) {
+                            return '[[;#f00;]' + (content || 'no') + ']';
                         },
                         quote: function(content) {
                             content = content.replace(/^\s*\|/gm, '').split('|');
