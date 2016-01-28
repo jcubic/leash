@@ -790,7 +790,7 @@ var leash = (function() {
                                         return '';
                                     }
                                 }).
-                        replace(/<nowiki>(.*?)<\/nowiki>/g, function(_, wiki) {
+                        replace(/<nowiki>([\s\S]*?)<\/nowiki>/g, function(_, wiki) {
                             return escape(wiki);
                         });
                     var strip = [
