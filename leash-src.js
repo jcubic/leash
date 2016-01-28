@@ -858,7 +858,7 @@ var leash = (function() {
                                                 rep);
                                     return c + '[[!;;;;' + url + ']' + text + ']';
                                 }).
-                        replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
+                        replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, format('i')).
                         replace(/''([^']+(?:'[^']+)*)''/g, format('i')).
                         replace(/{\|.*\n([\s\S]*?)\|}/g, function(_, table) {
                             var head_re = /\|\+(.*)\n/;
