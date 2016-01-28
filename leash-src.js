@@ -218,7 +218,6 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
-                console.log(error);
                 try {
                     error = JSON.parse(error);
                 } catch(e) {}
@@ -637,6 +636,21 @@ var leash = (function() {
                             return !!item;
                         }));
                     }
+                    function word_template(content, color, default_text) {
+                        var re = /\[\[([^\]]+)\]\]/;
+                        if (content.match()) {
+                            return content.split(/(\[\[[^\]]+\]\])/).map(function(text) {
+                                var m = text.match(re);
+                                if (m) {
+                                    return '[[bu;' + color + ';;wiki]' + m[1] + ']';
+                                } else {
+                                    return '[[;' + color + ';]' + text + ']';
+                                }
+                            }).join('');
+                        } else {
+                            return '[[;' + color + ';]' + (content || default_text) + ']';
+                        }
+                    }
                     var templates = {
                         'main': function(content) {
                             return 'Main Article: ' + wiki_list(content) + '\n';
@@ -645,10 +659,13 @@ var leash = (function() {
                             return '?';
                         },
                         yes: function(content) {
-                            return '[[;#0f0;]' + (content || 'yes') + ']';
+                            return word_template(content, '#0f0', 'yes');
                         },
                         no: function(content) {
-                            return '[[;#f00;]' + (content || 'no') + ']';
+                            return word_template(content, '#f00', 'no');
+                        },
+                        partial: function(content) {
+                            return word_template(content, '#ff0', 'partial');
                         },
                         quote: function(content) {
                             content = content.replace(/^\s*\|/gm, '').split('|');
@@ -676,9 +693,6 @@ var leash = (function() {
                                 replace(/\[\[([^\]]+)\]\]/g, function(_, wiki) {
                                     return '][[bui;#fff;;wiki]' + wiki + '][[i;;]';
                                 }) + ']' + (author ? '\n-- ' + author : '');
-                        },
-                        partial: function(text) {
-                            return '[[;#ff0;]' + text + ']';
                         },
                         'Cat main': function(content) {
                             return 'The main article for this [[bu;#fff;;wiki' +
@@ -824,10 +838,10 @@ var leash = (function() {
                             result = '[[bu;#fff;;wiki]' + gr[0] + ']';
                         } else {
                             gr[1] = gr[1].replace(/''([^']+)''/gm, function(_, g) {
-                                return '][[bui;#fff;;wiki;' + gr[0] + ']' + g + ']' +
+                                return '][[bui;#fff;;wiki;'+gr[0]+']'+g+']'+
                                     '[[bu;#fff;;wiki;' + gr[0] + ']';
                             });
-                            result = '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
+                            result = '[[bu;#fff;;wiki;'+gr[0]+']'+gr[1]+']';
                         }
                         return result;
                     }).replace(/'''([^']+(?:'[^']+)*)'''/g, format('b', '#fff')).
@@ -878,6 +892,8 @@ var leash = (function() {
                                         }).filter(function(item, i) {
                                             return i !== 0;
                                         });
+                                    } else {
+                                        return [];
                                     }
                                 }).filter(function(row) {
                                     return row.length;
