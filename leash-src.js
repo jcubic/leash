@@ -778,8 +778,17 @@ var leash = (function() {
                         }).
                         replace(/{{Cite([^}]+)}}(?![\s\n]*<\/ref>)/gi,
                                 function(_, cite) {
-                                    var m = cite.match(/title\s*=\s*([^|]+)/i);
-                                    return m ? m[1] : '';
+                                    var title = cite.match(/title\s*=\s*([^|]+)/i);
+                                    var url = cite.match(/url\s*=\s*([^|]+)/i);
+                                    if (title) {
+                                        if (url) {
+                                            return '[[!;;;;' + url[1] + ']' + title[1] + ']';
+                                        } else {
+                                            return title[1];
+                                        }
+                                    } else {
+                                        return '';
+                                    }
                                 }).
                         replace(/<nowiki>(.*?)<\/nowiki>/g, function(_, wiki) {
                             return escape(wiki);
@@ -917,7 +926,7 @@ var leash = (function() {
                             }).join('') + '\n';
                         }).split(/(<pre[^>]*>[\s\S]*?<\/pre>)/).map(function(text, i) {
                             var m = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
-                            var re = /([^\n])\n(?![\n*|+]|\s*[0-9]|--|\[\[bu;#fff;;wiki\]Category)/gi;
+                            var re = /([^\n])\n(?![\n*|+]|\s*[0-9]|:|--|\[\[bu;#fff;;wiki\]Category)/gi;
                             if (m) {
                                 return m[1];
                             } else {
