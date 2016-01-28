@@ -731,8 +731,9 @@ class Service {
         $db = new PDO('sqlite:' . $filename);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $search_term = $db->quote($search_term);
-        $res = $db->query("SELECT * FROM terms WHERE term like $search_term or ".
-                          "");
+        $res = $db->query("SELECT term FROM terms WHERE term like $search_term or ".
+                          "def like $search_term");
+        return $res->fetchAll(PDO::FETCH_ASSOC);
     }
     // ------------------------------------------------------------------------
     function jargon($search_term) {

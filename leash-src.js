@@ -1574,13 +1574,20 @@ var leash = (function() {
                                 'earch jargon file';
                             term.echo(msg, {keepWords: true});
                         } else if (cmd.args[0] == '-s') {
-                            var term = cmd.rest.replace(/^-s/, '');
-                            leash.service.jargon_search(term)(function(err) {
+                            term.pause();
+                            var search_term = cmd.rest.replace(/^-s/, '').trim();
+                            if (!search_term.match(/%/)) {
+                                search_term = '%' + search_term + '%';
+                            }
+                            leash.service.jargon_search(search_term)(function(err, list) {
                                 if (err) {
                                     print_error(err);
                                 } else {
-                                    
+                                    term.echo(list.map(function(row) {
+                                        return '[[bu;#fff;;jargon]' + row.term + ']';
+                                    }).join('\n'));
                                 }
+                                term.resume();
                             });
                         } else {
                             term.pause();
