@@ -399,7 +399,7 @@ var leash = (function() {
                             var token = term.token();
                             var href = $(this).attr('href');
                             leash.less(function(cols, callback) {
-                                leash.service.html(token, href, cols)(function(err, page) {
+                                leash.service.html(token, href, cols-1)(function(err, page) {
                                     if (!err) {
                                         callback(page.trim().split('\n'));
                                     }
@@ -666,6 +666,61 @@ var leash = (function() {
                         },
                         partial: function(content) {
                             return word_template(content, '#ff0', 'partial');
+                        },
+                        '(?:IPAc-en|IPA-en)': function(content) {
+                            if (!content.match(/\|/)) {
+                                return 'English pronunciation: /' + content + '/';
+                            }
+                            var phonemes = {
+                                'tS': 'tʃ', 'dZ': 'dʒ', 'J\\': 'ɟ', 'p\\': 'ɸ', 'B': 'β', 'T': 'θ', 'D': 'ð', 'S': 'ʃ', 'Z': 'ʒ',
+                                'C': 'ç', 'j\\ (jj)': 'ʝ', 'G': 'ɣ', 'X\\': 'ħ', '?\\': 'ʕ', 'h\\': 'ɦ', 'F': 'ɱ', 'J': 'ɲ', 'N': 'ŋ',
+                                '4 (r)': 'ɾ', 'r (rr)': 'r', 'r\\': 'ɹ', 'R': 'ʀ', 'P': 'ʋ', 'H': 'ɥ', 'I': 'ɪ', 'E': 'ɛ', '{': 'æ',
+                                '2': 'ø', '9': 'œ', '1': 'i', '@': 'ə', '6': 'ɐ', '3': 'ɜ', '}': 'ʉ', '8': 'ɵ', '&': 'ɶ', 'M': 'ɯ',
+                                '7': 'ɤ', 'V': 'ʌ', 'A': 'ɑ', 'U': 'ʊ', 'O': 'ɔ', 'Q': 'ɒ', ',': 'ˌ', '\'': 'ˈ'
+                            };
+                            var keys = {};
+                            var pron = '/' + content.split('|').map(function(text) {
+                                if (!text.match(/^\s*-\s*$|^\s*en-us/)) {
+                                    var m = text.match(/^\s*(us|lang|pron|audio)\s*=?\s*(.*)/i);
+                                    if (m) {
+                                        keys[m[1].toLowerCase().trim()] = m[2] || true;
+                                    } else {
+                                        Object.keys(phonemes).forEach(function(key) {
+                                            text = text.replace(key, phonemes[key]);
+                                        });
+                                        return text;
+                                    }
+                                }
+                            }).filter(Boolean).join('') + '/';
+                            if (keys.pron) {
+                                pron = 'pronunciation: ' + pron;
+                            }
+                            if (keys.lang) {
+                                pron = 'English ' + pron;
+                            }
+                            console.log(keys);
+                            if (keys.us) {
+                                pron = 'US ' + pron;
+                            }
+                            return pron;
+                        },
+                        'quote box': function(content) {
+                            var quote = content.match(/\s*quote\s*=\s*("[^"]+"|[^|]+)/)[1];
+                            var bold_re = /'''([^']+(?:'[^']+)*)'''/g;
+                            quote = quote.replace(bold_re, function(_, bold) {
+                                return '][[bi;#fff;]' + bold + '][[i;;]';
+                            }).replace(/''([^']+(?:'[^']+)*)''/g, '$1').
+                                replace(/\[\[([^\]]+)\]\]/g, function(_, wiki) {
+                                    wiki = wiki.split('|');
+                                    if (wiki.length == 1) {
+                                        return '][[bui;#fff;;wiki]' + wiki[0] + '][[i;;]';
+                                    } else {
+                                        return '][[bui;#fff;;wiki;' + wiki[0] + ']' +
+                                            wiki[1] + '][[i;;]';
+                                    }
+                                });
+                            var author = content.match(/\s*source\s*=\s*([^|]+)/)[1].replace(/^(—|-)/, '').trim();
+                            return '[[i;;]' + quote + ']\n-- ' + author;
                         },
                         quote: function(content) {
                             content = content.replace(/^\s*\|/gm, '').split('|');
