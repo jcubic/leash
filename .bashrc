@@ -23,8 +23,8 @@ export PATH=$PATH:/usr/games
 
 export TERM="ansi" #force colors for dircolors
 alias grep="grep --color=always"
-alias ls="ls --color=always"
 if [ -x /usr/bin/dircolors ]; then
     #Nice colors
     eval "`dircolors -b`"
+    alias ls="ls --color=always"
 fi
