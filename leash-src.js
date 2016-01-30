@@ -397,8 +397,8 @@ var leash = (function() {
                     }).on('click', 'a', function(e) {
                         if (!e.ctrlKey) {
                             var token = term.token();
-                            var href = $(this).attr('href');
-                            if (href.match(/\s*mailto:/)) {
+                            var href = $(this).attr('href').trim();
+                            if (href.match(/^mailto:/)) {
                                 return;
                             }
                             leash.less(function(cols, callback) {
