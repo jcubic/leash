@@ -769,6 +769,10 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function version_message() {
+        $fname = $this->path . '/version';
+        if (!file_exists($fname)) {
+            return null;
+        }
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
         $curl = $this->curl($url);
         $page = curl_exec($curl);
@@ -778,7 +782,7 @@ class Service {
             return "You're running experimental version of leash";
         }
         $master_version = $this->version($page);
-        $version = $this->version(file_get_contents($this->path . '/version'));
+        $version = $this->version(file_get_contents($fname));
         if ($master_version[0] == $version[0]) {
             if ($master_version[1] == $version[1]) {
                 if ($master_version[2] == $version[2]) {
