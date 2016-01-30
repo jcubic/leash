@@ -559,6 +559,9 @@ var leash = (function() {
                                     }
                                     leash.settings = config = result;
                                     leash.cwd = config.home;
+                                    if (result.version_message) {
+                                        term.echo('[[;#ff0;]' + result.version_message + ']');
+                                    }
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
                                         // we can set prompt after we have config

@@ -432,6 +432,7 @@ class Service {
         $settings['upload_max_filesize'] = $upload_limit;
         $post_limit = intval(ini_get('post_max_size')) * 1024 * 1024;
         $settings['post_max_size'] = $post_limit;
+        $settings['version_message'] = $this->version_message();
         return $settings;
     }
 
@@ -761,6 +762,44 @@ class Service {
         return $result;
     }
     // ------------------------------------------------------------------------
+    private function version($version) {
+        return array_map(function($number) {
+            return intval($number);
+        }, explode('.', $version));
+    }
+    // ------------------------------------------------------------------------
+    public function version_message() {
+        $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
+        $curl = $this->curl($url);
+        $page = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        if ($httpCode == 404) {
+            return "You're running experimental version of leash";
+        }
+        $master_version = $this->version($page);
+        $version = $this->version(file_get_contents($this->path . '/version'));
+        if ($master_version[0] == $version[0]) {
+            if ($master_version[1] == $version[1]) {
+                if ($master_version[2] == $version[2]) {
+                    return null;
+                } elseif ($master_version[2] > $version[2]) {
+                    return "New version of leash $page available";
+                } else {
+                    return "You're running experimental version of leash";
+                }
+            } elseif ($master_version[1] > $version[1]) {
+                return "New version of leash $page available";
+            } else {
+                return "You're running experimental version of leash";
+            }
+        } elseif ($master_version[0] > $version[0]) {
+            return "New version of leash $page available";
+        } else {
+            return "You're running experimental version of leash";
+        }
+    }
+    // ------------------------------------------------------------------------
     public function sleep($time) {
         sleep($time);
     }
@@ -828,7 +867,10 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function get($url) {
-        return curl_exec($this->curl($url));
+        $curl = $this->curl($url);
+        $result = curl_exec($curl);
+        curl_close($curl);
+        return $result;
     }
     // ------------------------------------------------------------------------
     public function post($url, $data) {
@@ -841,6 +883,7 @@ class Service {
         if ($code != 200) {
             throw new Exception("URL: $url give error $code");
         }
+        curl_close($ch);
         return $result;
     }
     // ------------------------------------------------------------------------
