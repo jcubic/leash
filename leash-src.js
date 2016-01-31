@@ -301,10 +301,29 @@ var leash = (function() {
                 if (!array.length) {
                     return '';
                 }
+
+                for (var i = array.length - 1; i >= 0; i--) {
+                    var row = array[i];
+                    var stacks = [];
+                    for (var j = 0; j < row.length; j++) {
+                        var new_lines = row[j].toString().split("\n");
+                        row[j] = new_lines.shift();
+                        stacks.push(new_lines);
+                    }
+                    var new_rows_count = Math.max.apply(Math, stacks.map(function(column) {
+                        return column.length;
+                    }));
+                    for (var k = new_rows_count - 1; k >= 0; k--) {
+                        array.splice(i + 1, 0, stacks.map(function(column) {
+                            return column[k] || "";
+                        }));
+                    }
+                }
+
                 var lengths = array[0].map(function(_, i) {
                     var col = array.map(function(row) {
                         if (row[i] != undefined) {
-                            return $.terminal.strip(row[i]).length;
+                            return row[i].length;
                         } else {
                             return 0;
                         }
@@ -313,15 +332,15 @@ var leash = (function() {
                 });
                 array = array.map(function(row) {
                     return '| ' + row.map(function(item, i) {
-                        var size = $.terminal.strip(item).length;
+                        var size = item.length;
                         if (size < lengths[i]) {
-                            item += new Array(lengths[i]-size+1).join(' ');
+                            item += new Array(lengths[i] - size + 1).join(' ');
                         }
                         return item;
                     }).join(' | ') + ' |';
                 });
                 var sep = '+' + lengths.map(function(length) {
-                    return new Array(length+3).join('-');
+                    return new Array(length + 3).join('-');
                 }).join('+') + '+';
                 if (header) {
                     return sep + '\n' + array[0] + '\n' + sep + '\n' +
@@ -330,6 +349,7 @@ var leash = (function() {
                     return sep + '\n' + array.join('\n') + '\n' + sep;
                 }
             }
+            window.ascii_table = ascii_table;
             // used on exit from wikipedia to deterimine if turn onconvertLinks
             var wiki_stack = [];
             var leash = {
