@@ -559,8 +559,11 @@ var leash = (function() {
                                     }
                                     leash.settings = config = result;
                                     leash.cwd = config.home;
-                                    if (result.version_message) {
-                                        term.echo('[[;#ff0;]' + result.version_message + ']');
+                                    if (result.show_messages !== false) {
+                                        var messages = result.messages || [];
+                                        term.echo(messages.map(function(msg) {
+                                            return '[[;#ff0;]' + msg + ']';
+                                        }).join('\n'));
                                     }
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;

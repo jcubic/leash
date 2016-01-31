@@ -409,6 +409,7 @@ class Service {
             $this->config->settings[$key] = $val;
         }
         $this->config->settings['debug'] = false;
+        $this->config->settings['show_messages'] = true;
         $this->new_user('root', $root_password);
         $this->new_user($username, $password);
         if (!file_exists('init.js')) {
@@ -432,7 +433,11 @@ class Service {
         $settings['upload_max_filesize'] = $upload_limit;
         $post_limit = intval(ini_get('post_max_size')) * 1024 * 1024;
         $settings['post_max_size'] = $post_limit;
-        $settings['version_message'] = $this->version_message();
+        $version_message = $this->version_message();
+        $settings['messages'] = array();
+        if ($version_message) {
+            $settings['messages'][] = $version_message;
+        }
         return $settings;
     }
 
@@ -776,9 +781,9 @@ class Service {
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
         $curl = $this->curl($url);
         $page = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-        if ($httpCode == 404) {
+        if ($http_code == 404) {
             return "You're running experimental version of leash";
         }
         $master_version = $this->version($page);
