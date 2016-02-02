@@ -695,6 +695,9 @@ var leash = (function() {
                         partial: function(content) {
                             return word_template(content, '#ff0', 'partial');
                         },
+                        'lang-ar': function(content) {
+                            return '[[bu;#fff;;;Arabic_language]Arabic]: ' + content;
+                        },
                         '(?:IPAc-en|IPA-en)': function(content) {
                             if (!content.match(/\|/)) {
                                 return 'English pronunciation: /' + content + '/';
@@ -710,12 +713,13 @@ var leash = (function() {
                                 'i', '@': 'ə', '6': 'ɐ', '3': 'ɜ', '}': 'ʉ',
                                 '8': 'ɵ', '&': 'ɶ', 'M': 'ɯ', '7': 'ɤ', 'V':
                                 'ʌ', 'A': 'ɑ', 'U': 'ʊ', 'O': 'ɔ', 'Q': 'ɒ',
-                                ',': 'ˌ', '\'': 'ˈ'
+                                ',': 'ˌ', "'": 'ˈ', '_': 'ː'
                             };
                             var keys = {};
                             var pron = '/' + content.split('|').map(function(text) {
                                 if (!text.match(/^\s*-\s*$|^\s*en-us/)) {
-                                    var m = text.match(/^\s*(us|lang|pron|audio)\s*=?\s*(.*)/i);
+                                    var re = /^\s*(us|lang|pron|audio)\s*=?\s*(.*)/i;
+                                    var m = text.match(re);
                                     if (m) {
                                         keys[m[1].toLowerCase().trim()] = m[2] || true;
                                     } else {
@@ -726,13 +730,13 @@ var leash = (function() {
                                     }
                                 }
                             }).filter(Boolean).join('') + '/';
+                            pron = '[[bu;#fff;;wiki;Help:IPA for English]' + pron + ']';
                             if (keys.pron) {
                                 pron = 'pronunciation: ' + pron;
                             }
                             if (keys.lang) {
                                 pron = 'English ' + pron;
                             }
-                            console.log(keys);
                             if (keys.us) {
                                 pron = 'US ' + pron;
                             }
@@ -1595,7 +1599,7 @@ var leash = (function() {
                                 success: function(data) {
                                     var pages = data.query.pages;
                                     var article = Object.keys(pages).map(function(key) {
-                                        var page = data.query.pages[key];
+                                        var page = pages[key];
                                         if (page.revisions) {
                                             return page.revisions[0]['*'];
                                         } else if (typeof page.missing != 'undefined') {
