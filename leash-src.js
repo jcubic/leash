@@ -807,11 +807,15 @@ var leash = (function() {
                         'IMDb name': function(content) {
                             if (title) {
                                 var m = content.match(/id\s*=\s*([^|]+)/);
+                                var id;
                                 if (m) {
-                                    var url = 'http://www.imdb.com/name/nm' + m[1];
-                                    return '[[!;;;;' + url + ']' + title + '] in ' +
-                                        'at the [[Internet Movie Database]]';
+                                    id = m[1];
+                                } else {
+                                    id = content;
                                 }
+                                var url = 'http://www.imdb.com/name/nm' + id;
+                                return '[[!;;;;' + url + ']' + title + '] ' +
+                                    'at the [[Internet Movie Database]]';
                             }
                         },
                         '(?:tlx|tl)': function(content) {
