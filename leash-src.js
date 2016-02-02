@@ -349,7 +349,6 @@ var leash = (function() {
                     return sep + '\n' + array.join('\n') + '\n' + sep;
                 }
             }
-            window.ascii_table = ascii_table;
             // used on exit from wikipedia to deterimine if turn onconvertLinks
             var wiki_stack = [];
             var leash = {
@@ -643,7 +642,7 @@ var leash = (function() {
                         });
                     }
                 },
-                wikipedia: function(text) {
+                wikipedia: function(text, title) {
                     function list(list) {
                         if (list.length == 1) {
                             return list[0]
@@ -701,11 +700,17 @@ var leash = (function() {
                                 return 'English pronunciation: /' + content + '/';
                             }
                             var phonemes = {
-                                'tS': 'tʃ', 'dZ': 'dʒ', 'J\\': 'ɟ', 'p\\': 'ɸ', 'B': 'β', 'T': 'θ', 'D': 'ð', 'S': 'ʃ', 'Z': 'ʒ',
-                                'C': 'ç', 'j\\ (jj)': 'ʝ', 'G': 'ɣ', 'X\\': 'ħ', '?\\': 'ʕ', 'h\\': 'ɦ', 'F': 'ɱ', 'J': 'ɲ', 'N': 'ŋ',
-                                '4 (r)': 'ɾ', 'r (rr)': 'r', 'r\\': 'ɹ', 'R': 'ʀ', 'P': 'ʋ', 'H': 'ɥ', 'I': 'ɪ', 'E': 'ɛ', '{': 'æ',
-                                '2': 'ø', '9': 'œ', '1': 'i', '@': 'ə', '6': 'ɐ', '3': 'ɜ', '}': 'ʉ', '8': 'ɵ', '&': 'ɶ', 'M': 'ɯ',
-                                '7': 'ɤ', 'V': 'ʌ', 'A': 'ɑ', 'U': 'ʊ', 'O': 'ɔ', 'Q': 'ɒ', ',': 'ˌ', '\'': 'ˈ'
+                                'tS': 'tʃ', 'dZ': 'dʒ', 'J\\': 'ɟ', 'p\\': 'ɸ',
+                                'B': 'β', 'T': 'θ', 'D': 'ð', 'S': 'ʃ', 'Z':
+                                'ʒ', 'C': 'ç', 'j\\ (jj)': 'ʝ', 'G': 'ɣ', 'X\\':
+                                'ħ', '?\\': 'ʕ', 'h\\': 'ɦ', 'F': 'ɱ', 'J': 'ɲ',
+                                'N': 'ŋ', '4 (r)': 'ɾ', 'r (rr)': 'r', 'r\\':
+                                'ɹ', 'R': 'ʀ', 'P': 'ʋ', 'H': 'ɥ', 'I': 'ɪ',
+                                'E': 'ɛ', '{': 'æ', '2': 'ø', '9': 'œ', '1':
+                                'i', '@': 'ə', '6': 'ɐ', '3': 'ɜ', '}': 'ʉ',
+                                '8': 'ɵ', '&': 'ɶ', 'M': 'ɯ', '7': 'ɤ', 'V':
+                                'ʌ', 'A': 'ɑ', 'U': 'ʊ', 'O': 'ɔ', 'Q': 'ɒ',
+                                ',': 'ˌ', '\'': 'ˈ'
                             };
                             var keys = {};
                             var pron = '/' + content.split('|').map(function(text) {
@@ -789,6 +794,22 @@ var leash = (function() {
                         tag: function(content) {
                             return escape('<'+content+'>...</' + content + '>');
                         },
+                        official: function(content) {
+                            if (!content.match(/^http:/)) {
+                                content = 'http://' + content;
+                            }
+                            return '[[!;;;;' + content + ']Official Website]';
+                        },
+                        'IMDb name': function(content) {
+                            if (title) {
+                                var m = content.match(/id\s*=\s*([^|]+)/);
+                                if (m) {
+                                    var url = 'http://www.imdb.com/name/nm' + m[1];
+                                    return '[[!;;;;' + url + ']' + title + '] in ' +
+                                        'at the [[Internet Movie Database]]';
+                                }
+                            }
+                        },
                         '(?:tlx|tl)': function(content) {
                             content = content.split('|');
                             var params = '';
@@ -852,7 +873,12 @@ var leash = (function() {
                         }).
                         replace(/&/g, '&amp;').
                         //replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
-                        replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
+                        replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, function(_, _, text) {
+                            text = text.replace(/''([^']+)''/g, function(_, text) {
+                                return '][[bi;#fff;]' + text + '][[b;#fff;]';
+                            });
+                            return '\n[[b;#fff;]' + text + ']\n';
+                        }).
                         replace(/\[\.\.\.\]/g, '...').
                         replace(/<code><pre>(.*?)<\/pre><\/code>/g, function(_, str) {
                             return escape(str);
@@ -866,9 +892,10 @@ var leash = (function() {
                                     var url = cite.match(/url\s*=\s*([^|]+)/i);
                                     if (title) {
                                         if (url) {
-                                            return '[[!;;;;' + url[1] + ']' + title[1] + ']';
+                                            return '[[!;;;;' + url[1].trim() + ']' +
+                                                title[1].trim() + ']';
                                         } else {
-                                            return title[1];
+                                            return title[1].trim();
                                         }
                                     } else {
                                         return '';
@@ -889,7 +916,7 @@ var leash = (function() {
                     for (var template in templates) {
                         re = new RegExp('{{' + template + '\\|?(.*?)}}', 'gi');
                         text = text.replace(re, function(_, content) {
-                            return templates[template](content);
+                            return templates[template](content) || '';
                         });
                     }
                     // strip the rest of the templates
@@ -1014,7 +1041,7 @@ var leash = (function() {
                             if (m) {
                                 return m[1];
                             } else {
-                                return text.replace(re, '$1 ');
+                                return text.replace(re, '$1 ').replace(/ +/g, ' ');
                             }
                         }).join('').
                         replace(/<[^>]+>/gm, ''). // strip rest of html tags
@@ -1279,7 +1306,7 @@ var leash = (function() {
                                         in_search = true;
                                         pos = 0;
                                         search_string = command;
-                                        last_found = search(0, true);
+                                        last_found = search(0);
                                     }
                                     return false;
                                 }
@@ -1575,7 +1602,7 @@ var leash = (function() {
                                             return 'Article Not Found';
                                         }
                                     }).join('\n');
-                                    article = leash.wikipedia(article);
+                                    article = leash.wikipedia(article, cmd.rest);
                                     if ($.isFunction(callback)) {
                                         callback(article);
                                     }
