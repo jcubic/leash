@@ -633,7 +633,6 @@ var leash = (function() {
                                     leash.cwd = res.cwd;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
-                                        console.log(leash.cwd);
                                         term.resume();
                                     });
                                 } else {
