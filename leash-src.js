@@ -633,6 +633,7 @@ var leash = (function() {
                                     leash.cwd = res.cwd;
                                     service.dir(token, leash.cwd)(function(err, result) {
                                         dir = result;
+                                        console.log(leash.cwd);
                                         term.resume();
                                     });
                                 } else {
@@ -1722,8 +1723,6 @@ var leash = (function() {
                             // NOTE: when paste using mouse middle rpc jargon
                             //       function don't return result
                             var word = cmd.args.join(' ').replace(/\s+/g, ' ');
-                            // TODO: echo function that will resize text based
-                            //       on words
                             service.jargon(word)(function(err, result) {
                                 if (err) {
                                     print_error(err);
@@ -2013,13 +2012,12 @@ var leash = (function() {
                     var username;
                     leash.greetings = leash.banner();
                     leash.prompt = function(callback) {
-                        var server;
+                        var server, path;
                         if (config && config.server) {
                             server = config.server;
                         } else {
                             server = 'unknown';
                         }
-                        var path;
                         if (config && leash.cwd) {
                             var home = $.terminal.escape_regex(config.home);
                             var re = new RegExp('^' + home);
@@ -2029,6 +2027,17 @@ var leash = (function() {
                         }
                         username = username || $.terminal.active().login_name();
                         callback(unix_prompt(username, server, path));
+                    };
+                    leash.onImport = function(view) {
+                        console.log(view.cwd);
+                        leash.cwd = view.cwd;
+                        leash.terminal.set_prompt(leash.prompt);
+                    };
+                    leash.onExport = function() {
+                        console.log('export ' + leash.cwd);
+                        return {
+                            cwd: leash.cwd
+                        };
                     };
                     // for use with autologin
                     leash.set_login = function(user) {
@@ -2123,6 +2132,8 @@ var leash = (function() {
                     },
                     prompt: leash.prompt,
                     login: leash.login,
+                    onExport: leash.onExport,
+                    onImport: leash.onImport,
                     name: 'leash',
                     outputLimit: 500,
                     greetings: leash.greetings,
