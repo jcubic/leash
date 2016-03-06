@@ -2029,12 +2029,10 @@ var leash = (function() {
                         callback(unix_prompt(username, server, path));
                     };
                     leash.onImport = function(view) {
-                        console.log(view.cwd);
                         leash.cwd = view.cwd;
                         leash.terminal.set_prompt(leash.prompt);
                     };
                     leash.onExport = function() {
-                        console.log('export ' + leash.cwd);
                         return {
                             cwd: leash.cwd
                         };
