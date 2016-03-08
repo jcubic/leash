@@ -231,10 +231,10 @@ var leash = (function() {
                 }
                 var terminal = $.terminal.active();
                 if (terminal) {
-                    terminal.resume();
                     terminal.error(message);
                     terminal.leash().then(function(leash) {
                         leash.animation.stop();
+                        terminal.resume();
                     });
                 } else {
                     alert(message);
@@ -349,7 +349,7 @@ var leash = (function() {
                     return sep + '\n' + array.join('\n') + '\n' + sep;
                 }
             }
-            // used on exit from wikipedia to deterimine if turn onconvertLinks
+            // used on exit from wikipedia to deterimine if turn on convertLinks
             var wiki_stack = [];
             var leash = {
                 version: '{{VERSION}}',
@@ -629,15 +629,10 @@ var leash = (function() {
                                         replace(/\]\]/g, '&#93;&#93;');
                                     term.echo(output);
                                 }
-                                if (leash.cwd !== res.cwd) {
-                                    leash.cwd = res.cwd;
-                                    service.dir(token, leash.cwd)(function(err, result) {
-                                        dir = result;
-                                        term.resume();
-                                    });
-                                } else {
+                                service.dir(token, leash.cwd)(function(err, result) {
+                                    dir = result;
                                     term.resume();
-                                }
+                                });
                             }
                         });
                     }
