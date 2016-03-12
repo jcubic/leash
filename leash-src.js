@@ -253,7 +253,6 @@ var leash = (function() {
             // -----------------------------------------------------------------
             var home;
             var config;
-            var dir = {};
             function expand_env_vars(command) {
                 var fixed_command = command;
                 $.each(leash.env, function(k, v) {
@@ -355,6 +354,7 @@ var leash = (function() {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
                 jargon: [],
+                dirs: {},
                 env: {},
                 banner: function() {
                     var version = '';
@@ -585,7 +585,7 @@ var leash = (function() {
                                         }).join('\n'));
                                     }
                                     service.dir(token, leash.cwd)(function(err, result) {
-                                        dir = result;
+                                        leash.dir = result;
                                         // we can set prompt after we have config
                                         term.set_prompt(leash.prompt);
                                         setTimeout(function() {
@@ -629,8 +629,9 @@ var leash = (function() {
                                         replace(/\]\]/g, '&#93;&#93;');
                                     term.echo(output);
                                 }
+                                leash.cwd = res.cwd;
                                 service.dir(token, leash.cwd)(function(err, result) {
-                                    dir = result;
+                                    leash.dir = result;
                                     term.resume();
                                 });
                             }
@@ -1340,7 +1341,7 @@ var leash = (function() {
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
                     if (command.match(re) || command === '') {
                         var commands = Object.keys(leash.commands);
-                        callback(commands.concat(dir.execs || []).
+                        callback(commands.concat(leash.dir.execs || []).
                             concat(config.executables));
                     } else {
                         var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
@@ -1355,7 +1356,7 @@ var leash = (function() {
                                     callback(fix_spaces(dirs));
                                 });
                             } else {
-                                callback(fix_spaces(dirs_slash(dir)));
+                                callback(fix_spaces(dirs_slash(leash.dir)));
                             }
                         } else if (cmd.name == 'jargon') {
                             callback(fix_spaces(leash.jargon));
@@ -1371,7 +1372,8 @@ var leash = (function() {
                                     callback(fix_spaces(dirs_files));
                                 });
                             } else {
-                                var dirs_files = (dir.files || []).concat(dirs_slash(dir));
+                                var dirs_files = (leash.dir.files || []).
+                                    concat(dirs_slash(leash.dir));
                                 callback(fix_spaces(dirs_files));
                             }
                         }
@@ -2024,11 +2026,13 @@ var leash = (function() {
                     };
                     leash.onImport = function(view) {
                         leash.cwd = view.cwd;
+                        leash.dir = view.dir;
                         leash.terminal.set_prompt(leash.prompt);
                     };
                     leash.onExport = function() {
                         return {
-                            cwd: leash.cwd
+                            cwd: leash.cwd,
+                            dir: leash.dir
                         };
                     };
                     // for use with autologin
