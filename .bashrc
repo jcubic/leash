@@ -1,5 +1,5 @@
 #  This file is part of Leash (Browser Shell)
-#  Copyright (C) 2013-2015  Jakub Jankiewicz <http://jcubic.pl>
+#  Copyright (C) 2013-2016  Jakub Jankiewicz <http://jcubic.pl>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,10 +22,9 @@ export MAN_KEEP_FORMATTING=1
 export PATH=$PATH:/usr/games
 
 export TERM="ansi" #force colors for dircolors
+alias grep="grep --color=always"
 if [ -x /usr/bin/dircolors ]; then
     #Nice colors
     eval "`dircolors -b`"
-    alias grep="grep --color=always"
     alias ls="ls --color=always"
 fi
-

@@ -28,7 +28,7 @@ var leash = (function() {
         };
     });
     var copyright = [
-        'Copyright (c) 2013-2014 Jakub Jankiewicz <http://jcubic.pl>',
+        'Copyright (c) 2013-2016 Jakub Jankiewicz <http://jcubic.pl>',
         '',
         'This program is free software: you can redistribute it and/or modify',
         'it under the terms of the GNU General Public License as published by',
@@ -218,6 +218,9 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
+                try {
+                    error = JSON.parse(error);
+                } catch(e) {}
                 var message;
                 if (error.error) {
                     error = error.error;
@@ -228,8 +231,11 @@ var leash = (function() {
                 }
                 var terminal = $.terminal.active();
                 if (terminal) {
-                    terminal.resume();
                     terminal.error(message);
+                    terminal.leash().then(function(leash) {
+                        leash.animation.stop();
+                        terminal.resume();
+                    });
                 } else {
                     alert(message);
                 }
@@ -247,7 +253,6 @@ var leash = (function() {
             // -----------------------------------------------------------------
             var home;
             var config;
-            var dir = {};
             function expand_env_vars(command) {
                 var fixed_command = command;
                 $.each(leash.env, function(k, v) {
@@ -264,11 +269,11 @@ var leash = (function() {
                         result = [Object.keys(result[0])].concat(result.map(function(row) {
                             if (row instanceof Array) {
                                 return row.map(function(item) {
-                                    return $.terminal.escape_brackets(item);
+                                    return $.terminal.escape_brackets(String(item));
                                 });
                             } else {
                                 return Object.keys(row).map(function(key) {
-                                    return $.terminal.escape_brackets(row[key]);
+                                    return $.terminal.escape_brackets(String(row[key]));
                                 });
                             }
                         }));
@@ -295,10 +300,29 @@ var leash = (function() {
                 if (!array.length) {
                     return '';
                 }
+
+                for (var i = array.length - 1; i >= 0; i--) {
+                    var row = array[i];
+                    var stacks = [];
+                    for (var j = 0; j < row.length; j++) {
+                        var new_lines = row[j].toString().split("\n");
+                        row[j] = new_lines.shift();
+                        stacks.push(new_lines);
+                    }
+                    var new_rows_count = Math.max.apply(Math, stacks.map(function(column) {
+                        return column.length;
+                    }));
+                    for (var k = new_rows_count - 1; k >= 0; k--) {
+                        array.splice(i + 1, 0, stacks.map(function(column) {
+                            return column[k] || "";
+                        }));
+                    }
+                }
+
                 var lengths = array[0].map(function(_, i) {
                     var col = array.map(function(row) {
                         if (row[i] != undefined) {
-                            return $.terminal.strip(row[i]).length;
+                            return row[i].length;
                         } else {
                             return 0;
                         }
@@ -307,15 +331,15 @@ var leash = (function() {
                 });
                 array = array.map(function(row) {
                     return '| ' + row.map(function(item, i) {
-                        var size = $.terminal.strip(item).length;
+                        var size = item.length;
                         if (size < lengths[i]) {
-                            item += new Array(lengths[i]-size+1).join(' ');
+                            item += new Array(lengths[i] - size + 1).join(' ');
                         }
                         return item;
                     }).join(' | ') + ' |';
                 });
                 var sep = '+' + lengths.map(function(length) {
-                    return new Array(length+3).join('-');
+                    return new Array(length + 3).join('-');
                 }).join('+') + '+';
                 if (header) {
                     return sep + '\n' + array[0] + '\n' + sep + '\n' +
@@ -324,12 +348,13 @@ var leash = (function() {
                     return sep + '\n' + array.join('\n') + '\n' + sep;
                 }
             }
-            // used on exit from wikipedia to deterimine if turn onconvertLinks
+            // used on exit from wikipedia to deterimine if turn on convertLinks
             var wiki_stack = [];
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
                 jargon: [],
+                dirs: {},
                 env: {},
                 banner: function() {
                     var version = '';
@@ -353,6 +378,27 @@ var leash = (function() {
                     banner.push('');
                     return banner.join('\n');
                 },
+                animation: {
+                    animating: false,
+                    start: function(delay) {
+                        var anim = ['/', '-', '\\', '|'], i = 0;
+                        this.animating = true;
+                        this.prompt = leash.terminal.get_prompt();
+                        var self = this;
+                        (function animation() {
+                            leash.terminal.set_prompt(anim[i++]);
+                            if (i > anim.length-1) {
+                                i = 0;
+                            }
+                            self.timer = setTimeout(animation, delay);
+                        })();
+                    },
+                    stop: function() {
+                        clearTimeout(this.timer);
+                        leash.terminal.set_prompt(this.prompt);
+                        this.animating = false;
+                    }
+                },
                 service: service,
                 init: function(term) {
                     term.on('click', '.jargon', function() {
@@ -363,6 +409,26 @@ var leash = (function() {
                         var article = $(this).data('text').replace(/\s/g, ' ');
                         var cmd = $.terminal.split_command('wikipedia ' + article);
                         leash.commands.wikipedia(cmd, term.token(), term);
+                    }).on('click', '.rfc', function() {
+                        var rfc = $(this).data('text');
+                        var cmd = $.terminal.split_command('rfc ' + rfc);
+                        leash.commands.rfc(cmd, term.token(), term);
+                    }).on('click', 'a', function(e) {
+                        if (!e.ctrlKey) {
+                            var token = term.token();
+                            var href = $(this).attr('href').trim();
+                            if (href.match(/^mailto:/)) {
+                                return;
+                            }
+                            leash.less(function(cols, callback) {
+                                leash.service.html(token, href, cols-1)(function(err, page) {
+                                    if (!err) {
+                                        callback(page.trim().split('\n'));
+                                    }
+                                });
+                            });
+                            return false;
+                        }
                     });
                     if (!leash.installed) {
                         leash.install(term);
@@ -512,8 +578,14 @@ var leash = (function() {
                                     }
                                     leash.settings = config = result;
                                     leash.cwd = config.home;
+                                    if (result.show_messages !== false) {
+                                        var messages = result.messages || [];
+                                        term.echo(messages.map(function(msg) {
+                                            return '[[;#ff0;]' + msg + ']';
+                                        }).join('\n'));
+                                    }
                                     service.dir(token, leash.cwd)(function(err, result) {
-                                        dir = result;
+                                        leash.dir = result;
                                         // we can set prompt after we have config
                                         term.set_prompt(leash.prompt);
                                         setTimeout(function() {
@@ -540,7 +612,7 @@ var leash = (function() {
                                 print_error(err);
                             } else {
                                 // even if empty
-                                leash.less(res.output, term);
+                                leash.less(res.output);
                             }
                             term.resume();
                         });
@@ -557,20 +629,16 @@ var leash = (function() {
                                         replace(/\]\]/g, '&#93;&#93;');
                                     term.echo(output);
                                 }
-                                if (leash.cwd !== res.cwd) {
-                                    leash.cwd = res.cwd;
-                                    service.dir(token, leash.cwd)(function(err, result) {
-                                        dir = result;
-                                        term.resume();
-                                    });
-                                } else {
+                                leash.cwd = res.cwd;
+                                service.dir(token, leash.cwd)(function(err, result) {
+                                    leash.dir = result;
                                     term.resume();
-                                }
+                                });
                             }
                         });
                     }
                 },
-                wikipedia: function(text) {
+                wikipedia: function(text, title) {
                     function list(list) {
                         if (list.length == 1) {
                             return list[0]
@@ -592,6 +660,21 @@ var leash = (function() {
                             return !!item;
                         }));
                     }
+                    function word_template(content, color, default_text) {
+                        var re = /\[\[([^\]]+)\]\]/;
+                        if (content.match()) {
+                            return content.split(/(\[\[[^\]]+\]\])/).map(function(text) {
+                                var m = text.match(re);
+                                if (m) {
+                                    return '[[bu;' + color + ';;wiki]' + m[1] + ']';
+                                } else {
+                                    return '[[;' + color + ';]' + text + ']';
+                                }
+                            }).join('');
+                        } else {
+                            return '[[;' + color + ';]' + (content || default_text) + ']';
+                        }
+                    }
                     var templates = {
                         'main': function(content) {
                             return 'Main Article: ' + wiki_list(content) + '\n';
@@ -599,11 +682,79 @@ var leash = (function() {
                         dunno: function() {
                             return '?';
                         },
-                        yes: function() {
-                            return '[[;#0f0;]yes]';
+                        yes: function(content) {
+                            return word_template(content, '#0f0', 'yes');
                         },
-                        no: function() {
-                            return '[[;#f00;]no]';
+                        no: function(content) {
+                            return word_template(content, '#f00', 'no');
+                        },
+                        partial: function(content) {
+                            return word_template(content, '#ff0', 'partial');
+                        },
+                        'lang-ar': function(content) {
+                            return '[[bu;#fff;;;Arabic_language]Arabic]: ' + content;
+                        },
+                        '(?:IPAc-en|IPA-en)': function(content) {
+                            if (!content.match(/\|/)) {
+                                return 'English pronunciation: /' + content + '/';
+                            }
+                            var phonemes = {
+                                'tS': 'tʃ', 'dZ': 'dʒ', 'J\\': 'ɟ', 'p\\': 'ɸ',
+                                'B': 'β', 'T': 'θ', 'D': 'ð', 'S': 'ʃ', 'Z':
+                                'ʒ', 'C': 'ç', 'j\\ (jj)': 'ʝ', 'G': 'ɣ', 'X\\':
+                                'ħ', '?\\': 'ʕ', 'h\\': 'ɦ', 'F': 'ɱ', 'J': 'ɲ',
+                                'N': 'ŋ', '4 (r)': 'ɾ', 'r (rr)': 'r', 'r\\':
+                                'ɹ', 'R': 'ʀ', 'P': 'ʋ', 'H': 'ɥ', 'I': 'ɪ',
+                                'E': 'ɛ', '{': 'æ', '2': 'ø', '9': 'œ', '1':
+                                'i', '@': 'ə', '6': 'ɐ', '3': 'ɜ', '}': 'ʉ',
+                                '8': 'ɵ', '&': 'ɶ', 'M': 'ɯ', '7': 'ɤ', 'V':
+                                'ʌ', 'A': 'ɑ', 'U': 'ʊ', 'O': 'ɔ', 'Q': 'ɒ',
+                                ',': 'ˌ', "'": 'ˈ', '_': 'ː'
+                            };
+                            var keys = {};
+                            var pron = '/' + content.split('|').map(function(text) {
+                                if (!text.match(/^\s*-\s*$|^\s*en-us/)) {
+                                    var re = /^\s*(us|lang|pron|audio)\s*=?\s*(.*)/i;
+                                    var m = text.match(re);
+                                    if (m) {
+                                        keys[m[1].toLowerCase().trim()] = m[2] || true;
+                                    } else {
+                                        Object.keys(phonemes).forEach(function(key) {
+                                            text = text.replace(key, phonemes[key]);
+                                        });
+                                        return text;
+                                    }
+                                }
+                            }).filter(Boolean).join('') + '/';
+                            pron = '[[bu;#fff;;wiki;Help:IPA for English]' + pron + ']';
+                            if (keys.pron) {
+                                pron = 'pronunciation: ' + pron;
+                            }
+                            if (keys.lang) {
+                                pron = 'English ' + pron;
+                            }
+                            if (keys.us) {
+                                pron = 'US ' + pron;
+                            }
+                            return pron;
+                        },
+                        'quote box': function(content) {
+                            var quote = content.match(/\s*quote\s*=\s*("[^"]+"|[^|]+)/)[1];
+                            var bold_re = /'''([^']+(?:'[^']+)*)'''/g;
+                            quote = quote.replace(bold_re, function(_, bold) {
+                                return '][[bi;#fff;]' + bold + '][[i;;]';
+                            }).replace(/''([^']+(?:'[^']+)*)''/g, '$1').
+                                replace(/\[\[([^\]]+)\]\]/g, function(_, wiki) {
+                                    wiki = wiki.split('|');
+                                    if (wiki.length == 1) {
+                                        return '][[bui;#fff;;wiki]' + wiki[0] + '][[i;;]';
+                                    } else {
+                                        return '][[bui;#fff;;wiki;' + wiki[0] + ']' +
+                                            wiki[1] + '][[i;;]';
+                                    }
+                                });
+                            var author = content.match(/\s*source\s*=\s*([^|]+)/)[1].replace(/^(—|-)/, '').trim();
+                            return '[[i;;]' + quote + ']\n-- ' + author;
                         },
                         quote: function(content) {
                             content = content.replace(/^\s*\|/gm, '').split('|');
@@ -632,9 +783,6 @@ var leash = (function() {
                                     return '][[bui;#fff;;wiki]' + wiki + '][[i;;]';
                                 }) + ']' + (author ? '\n-- ' + author : '');
                         },
-                        partial: function(text) {
-                            return '[[;#ff0;]' + text + ']';
-                        },
                         'Cat main': function(content) {
                             return 'The main article for this [[bu;#fff;;wiki' +
                                 ';Help:category]Category] is [[bu;#fff;;wiki]' +
@@ -645,6 +793,26 @@ var leash = (function() {
                         },
                         tag: function(content) {
                             return escape('<'+content+'>...</' + content + '>');
+                        },
+                        official: function(content) {
+                            if (!content.match(/^http:/)) {
+                                content = 'http://' + content;
+                            }
+                            return '[[!;;;;' + content + ']Official Website]';
+                        },
+                        'IMDb name': function(content) {
+                            if (title) {
+                                var m = content.match(/id\s*=\s*([^|]+)/);
+                                var id;
+                                if (m) {
+                                    id = m[1];
+                                } else {
+                                    id = content;
+                                }
+                                var url = 'http://www.imdb.com/name/nm' + id;
+                                return '[[!;;;;' + url + ']' + title + '] ' +
+                                    'at the [[Internet Movie Database]]';
+                            }
                         },
                         '(?:tlx|tl)': function(content) {
                             content = content.split('|');
@@ -708,8 +876,13 @@ var leash = (function() {
                             return '\n' + header + '\n\n';
                         }).
                         replace(/&/g, '&amp;').
-                        replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
-                        replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, '\n[[b;#fff;]$2]\n').
+                        //replace(/(''\[\[[^\]]+\]])(?!'')/, '$1\'\'').
+                        replace(/^\s*(=+)\s*([^=]+)\s*\1/gm, function(_, _, text) {
+                            text = text.replace(/''([^']+)''/g, function(_, text) {
+                                return '][[bi;#fff;]' + text + '][[b;#fff;]';
+                            });
+                            return '\n[[b;#fff;]' + text + ']\n';
+                        }).
                         replace(/\[\.\.\.\]/g, '...').
                         replace(/<code><pre>(.*?)<\/pre><\/code>/g, function(_, str) {
                             return escape(str);
@@ -719,10 +892,20 @@ var leash = (function() {
                         }).
                         replace(/{{Cite([^}]+)}}(?![\s\n]*<\/ref>)/gi,
                                 function(_, cite) {
-                                    var m = cite.match(/title\s*=\s*([^|]+)/i);
-                                    return m ? m[1] : '';
+                                    var title = cite.match(/title\s*=\s*([^|]+)/i);
+                                    var url = cite.match(/url\s*=\s*([^|]+)/i);
+                                    if (title) {
+                                        if (url) {
+                                            return '[[!;;;;' + url[1].trim() + ']' +
+                                                title[1].trim() + ']';
+                                        } else {
+                                            return title[1].trim();
+                                        }
+                                    } else {
+                                        return '';
+                                    }
                                 }).
-                        replace(/<nowiki>(.*?)<\/nowiki>/g, function(_, wiki) {
+                        replace(/<nowiki>([\s\S]*?)<\/nowiki>/g, function(_, wiki) {
                             return escape(wiki);
                         });
                     var strip = [
@@ -737,7 +920,7 @@ var leash = (function() {
                     for (var template in templates) {
                         re = new RegExp('{{' + template + '\\|?(.*?)}}', 'gi');
                         text = text.replace(re, function(_, content) {
-                            return templates[template](content);
+                            return templates[template](content) || '';
                         });
                     }
                     // strip the rest of the templates
@@ -779,10 +962,10 @@ var leash = (function() {
                             result = '[[bu;#fff;;wiki]' + gr[0] + ']';
                         } else {
                             gr[1] = gr[1].replace(/''([^']+)''/gm, function(_, g) {
-                                return '][[bui;#fff;;wiki;' + gr[0] + ']' + g + ']' +
+                                return '][[bui;#fff;;wiki;'+gr[0]+']'+g+']'+
                                     '[[bu;#fff;;wiki;' + gr[0] + ']';
                             });
-                            result = '[[bu;#fff;;wiki;' + gr[0] + ']' + gr[1] + ']';
+                            result = '[[bu;#fff;;wiki;'+gr[0]+']'+gr[1]+']';
                         }
                         return result;
                     }).replace(/'''([^']+(?:'[^']+)*)'''/g, format('b', '#fff')).
@@ -799,7 +982,7 @@ var leash = (function() {
                                                 rep);
                                     return c + '[[!;;;;' + url + ']' + text + ']';
                                 }).
-                        replace(/<blockquote>(.*?)<\/blockquote>/g, format('i')).
+                        replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, format('i')).
                         replace(/''([^']+(?:'[^']+)*)''/g, format('i')).
                         replace(/{\|.*\n([\s\S]*?)\|}/g, function(_, table) {
                             var head_re = /\|\+(.*)\n/;
@@ -833,6 +1016,8 @@ var leash = (function() {
                                         }).filter(function(item, i) {
                                             return i !== 0;
                                         });
+                                    } else {
+                                        return [];
                                     }
                                 }).filter(function(row) {
                                     return row.length;
@@ -856,11 +1041,11 @@ var leash = (function() {
                             }).join('') + '\n';
                         }).split(/(<pre[^>]*>[\s\S]*?<\/pre>)/).map(function(text, i) {
                             var m = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
-                            var re = /([^\n])\n(?![\n*|+]|\s*[0-9]|--|\[\[bu;#fff;;wiki\]Category)/gi;
+                            var re = /([^\n])\n(?![\n*|+]|\s*[0-9]|:|--|\[\[bu;#fff;;wiki\]Category)/gi;
                             if (m) {
                                 return m[1];
                             } else {
-                                return text.replace(re, '$1 ');
+                                return text.replace(re, '$1 ').replace(/ +/g, ' ');
                             }
                         }).join('').
                         replace(/<[^>]+>/gm, ''). // strip rest of html tags
@@ -868,7 +1053,8 @@ var leash = (function() {
                         replace(/\*(\S)/g, '* $1'); // Fix lists
                     return text;
                 },
-                less: function(text, term, exit) {
+                less: function(text, exit) {
+                    var term = leash.terminal;
                     var export_data = term.export_view();
                     var cols, rows;
                     var pos = 0;
@@ -876,6 +1062,7 @@ var leash = (function() {
                     var original_lines;
                     var lines;
                     var prompt;
+                    var left = 0;
                     function print() {
                         term.clear();
                         if (lines.length-pos > rows-1) {
@@ -885,12 +1072,83 @@ var leash = (function() {
                         }
                         term.set_prompt(prompt);
                         var to_print = lines.slice(pos, pos+rows-1);
+                        var format_start_re = /^(\[\[[!gbiuso]*;[^;]*;[^\]]*\])/i;
+                        to_print = to_print.map(function(line, line_index) {
+                            if ($.terminal.have_formatting(line)) {
+                                var result, start = -1, format, count = 0,
+                                    formatting = null, in_text = false, beginning = '';
+                                for (var i=0, len=line.length; i<len; ++i) {
+                                    var m = line.substring(i).match(format_start_re);
+                                    if (m) {
+                                        formatting = m[1];
+                                        in_text = false;
+                                    } else if (formatting && line[i] === ']') {
+                                        if (in_text) {
+                                            formatting = null;
+                                            in_text = false;
+                                        } else {
+                                            in_text = true;
+                                        }
+                                    }
+                                    if (count === left && start == -1) {
+                                        start = i;
+                                        if (formatting && in_text && line[i] != ']') {
+                                            beginning = formatting;
+                                        }
+                                    } else if (i==len-1) {
+                                        if (left > count) {
+                                            result = '';
+                                        } else {
+                                            result = beginning + line.substring(start, len);
+                                            if (formatting && in_text && line[i] != ']') {
+                                                result += ']';
+                                            }
+                                        }
+                                    } else if (count === left+cols-1) {
+                                        result = beginning + line.substring(start, i);
+                                        if (formatting && in_text) {
+                                            result += ']';
+                                        }
+                                        break;
+                                    }
+                                    if (((formatting && in_text) || !formatting) &&
+                                        line[i] != ']') {
+                                        // treat entity as one character
+                                        if (line[i] === '&') {
+                                            m = line.substring(i).match(/^(&[^;]+;)/);
+                                            if (!m) {
+                                                throw new Error('Unclosed html entity in' +
+                                                                ' line ' + (line_index+1) +
+                                                                ' at char ' + (i+1));
+                                            }
+                                            i+=m[1].length-2; // because continue adds 1 to i
+                                            continue;
+                                        } else if (line[i] === ']' && line[i-1] === '\\') {
+                                            // escape \] counts as one character
+                                            --count;
+                                        } else {
+                                            ++count;
+                                        }
+                                    }
+                                } // for line
+                                return result;
+                            } else {
+                                return line.substring(left, left+cols-1);
+                            }
+                        });
                         if (to_print.length < rows-1) {
                             while (rows-1 > to_print.length) {
                                 to_print.push('~');
                             }
                         }
                         term.echo(to_print.join('\n'));
+                    }
+                    function quit() {
+                        term.pop().import_view(export_data);
+                        //term.off('mousewheel', wheel);
+                        if ($.isFunction(exit)) {
+                            exit();
+                        }
                     }
                     function refresh_view() {
                         cols = term.cols();
@@ -899,22 +1157,14 @@ var leash = (function() {
                             text(cols, function(new_lines) {
                                 original_lines = new_lines;
                                 lines = original_lines.slice();
+                                print();
                             });
                         } else {
                             original_lines = text.split('\n');
                             lines = original_lines.slice();
-                        }
-                        print();
-                    }
-                    function quit() {
-                        term.pop().import_view(export_data);
-                        term.off('resize.less', refresh_view);
-                        //term.off('mousewheel', wheel);
-                        if ($.isFunction(exit)) {
-                            exit();
+                            print();
                         }
                     }
-                    term.on('resize.less', refresh_view);
                     refresh_view();
                     var scroll_by = 3;
                     //term.on('mousewheel', wheel);
@@ -974,6 +1224,7 @@ var leash = (function() {
                         return index;
                     }
                     term.push($.noop, {
+                        resize: refresh_view,
                         mousewheel: function(event, delta) {
                             if (delta > 0) {
                                 pos -= scroll_by;
@@ -1006,6 +1257,15 @@ var leash = (function() {
                                     }
                                 } else if (e.which == 81) { //Q
                                     quit();
+                                } else if (e.which == 39) { // right
+                                    left+=Math.round(cols/2);
+                                    print();
+                                } else if (e.which == 37) { // left
+                                    left-=Math.round(cols/2);
+                                    if (left < 0) {
+                                        left = 0;
+                                    }
+                                    print();
                                 } else {
                                     // scroll
                                     if (lines.length > rows) {
@@ -1081,7 +1341,7 @@ var leash = (function() {
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
                     if (command.match(re) || command === '') {
                         var commands = Object.keys(leash.commands);
-                        callback(commands.concat(dir.execs || []).
+                        callback(commands.concat(leash.dir.execs || []).
                             concat(config.executables));
                     } else {
                         var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
@@ -1096,7 +1356,7 @@ var leash = (function() {
                                     callback(fix_spaces(dirs));
                                 });
                             } else {
-                                callback(fix_spaces(dirs_slash(dir)));
+                                callback(fix_spaces(dirs_slash(leash.dir)));
                             }
                         } else if (cmd.name == 'jargon') {
                             callback(fix_spaces(leash.jargon));
@@ -1112,15 +1372,31 @@ var leash = (function() {
                                     callback(fix_spaces(dirs_files));
                                 });
                             } else {
-                                var dirs_files = (dir.files || []).concat(dirs_slash(dir));
+                                var dirs_files = (leash.dir.files || []).
+                                    concat(dirs_slash(leash.dir));
                                 callback(fix_spaces(dirs_files));
                             }
                         }
                     }
                 },
                 commands: {
-                    help: function() {
-
+                    sleep: function(cmd, token, term) {
+                        leash.animation.start(400);
+                        leash.service.sleep(cmd.args[0])(function() {
+                            leash.animation.stop();
+                        });
+                    },
+                    rfc: function(cmd, token, term) {
+                        var number = cmd.args.length ? cmd.args[0] : null;
+                        term.pause();
+                        leash.service.rfc(number)(function(err, rfc) {
+                            if (err) {
+                                print_error(err);
+                            } else {
+                                leash.less(rfc.replace(/^[\s\n]+|[\s\n]+$/g, ''));
+                            }
+                            term.resume();
+                        });
                     },
                     cat: function(cmd, token, term) {
                         if (cmd.command.match(/cat\s*$/)) {
@@ -1170,7 +1446,7 @@ var leash = (function() {
                             if (err) {
                                 print_error(err);
                             } else {
-                                leash.less($.terminal.escape_brackets(ret.output), term);
+                                leash.less($.terminal.escape_brackets(ret.output));
                             }
                             term.resume();
                         });
@@ -1324,14 +1600,14 @@ var leash = (function() {
                                 success: function(data) {
                                     var pages = data.query.pages;
                                     var article = Object.keys(pages).map(function(key) {
-                                        var page = data.query.pages[key];
+                                        var page = pages[key];
                                         if (page.revisions) {
                                             return page.revisions[0]['*'];
                                         } else if (typeof page.missing != 'undefined') {
                                             return 'Article Not Found';
                                         }
                                     }).join('\n');
-                                    article = leash.wikipedia(article);
+                                    article = leash.wikipedia(article, cmd.rest);
                                     if ($.isFunction(callback)) {
                                         callback(article);
                                     }
@@ -1371,7 +1647,7 @@ var leash = (function() {
                                                 return '[[bu;#fff;;wiki]' + term + ']\n' +
                                                     data[2][i];
                                             }).join('\n\n');
-                                            leash.less(text, term, exit);
+                                            leash.less(text, exit);
                                             term.resume();
                                         }
                                     }
@@ -1396,7 +1672,7 @@ var leash = (function() {
                                         var re = /(\[\[bu;#fff;;wiki\]Category)/;
                                         wiki(function(article) {
                                             text = article.replace(re, text + '\n\n$1');
-                                            leash.less(text, term, exit);
+                                            leash.less(text, exit);
                                             term.resume();
                                         });
                                     }
@@ -1408,7 +1684,7 @@ var leash = (function() {
                                                                            cols,
                                                                            true);
                                         callback(lines);
-                                    }, term, exit);
+                                    }, exit);
                                     term.resume();
                                 });
                             }
@@ -1419,15 +1695,30 @@ var leash = (function() {
                             var msg = 'This is the Jargon File, a comprehensiv'+
                                 'e compendium of hacker slang illuminating man'+
                                 'y aspects of hackish tradition, folklore, and'+
-                                ' humor.\n\nusage: jargon [QUERY]';
+                                ' humor.\n\nusage: jargon [-s] [QUERY]\n\n-s s'+
+                                'earch jargon file';
                             term.echo(msg, {keepWords: true});
+                        } else if (cmd.args[0] == '-s') {
+                            term.pause();
+                            var search_term = cmd.rest.replace(/^-s/, '').trim();
+                            if (!search_term.match(/%/)) {
+                                search_term = '%' + search_term + '%';
+                            }
+                            leash.service.jargon_search(search_term)(function(err, list) {
+                                if (err) {
+                                    print_error(err);
+                                } else {
+                                    term.echo(list.map(function(row) {
+                                        return '[[bu;#fff;;jargon]' + row.term + ']';
+                                    }).join('\n'));
+                                }
+                                term.resume();
+                            });
                         } else {
                             term.pause();
                             // NOTE: when paste using mouse middle rpc jargon
                             //       function don't return result
                             var word = cmd.args.join(' ').replace(/\s+/g, ' ');
-                            // TODO: echo function that will resize text based
-                            //       on words
                             service.jargon(word)(function(err, result) {
                                 if (err) {
                                     print_error(err);
@@ -1451,7 +1742,7 @@ var leash = (function() {
                         term.pause();
                         var command = 'MANWIDTH=' + term.cols() + ' ' + cmd.command;
                         service.shell(token, command, '/')(function(err, ret) {
-                            leash.less($.terminal.overtyping(ret.output), term);
+                            leash.less($.terminal.overtyping(ret.output));
                             term.resume();
                         });
                     },
@@ -1547,7 +1838,9 @@ var leash = (function() {
                             var prompt = '[[b;#55f;]mysql]> ';
                             function push(err, tables) {
                                 tables = $.map(tables, function(row) {
-                                    return row[0];
+                                    return Object.keys(row).map(function(key) {
+                                        return row[key];
+                                    });
                                 });
                                 term.push(mysql_query, {
                                     prompt: prompt,
@@ -1715,13 +2008,12 @@ var leash = (function() {
                     var username;
                     leash.greetings = leash.banner();
                     leash.prompt = function(callback) {
-                        var server;
+                        var server, path;
                         if (config && config.server) {
                             server = config.server;
                         } else {
                             server = 'unknown';
                         }
-                        var path;
                         if (config && leash.cwd) {
                             var home = $.terminal.escape_regex(config.home);
                             var re = new RegExp('^' + home);
@@ -1731,6 +2023,17 @@ var leash = (function() {
                         }
                         username = username || $.terminal.active().login_name();
                         callback(unix_prompt(username, server, path));
+                    };
+                    leash.onImport = function(view) {
+                        leash.cwd = view.cwd;
+                        leash.dir = view.dir;
+                        leash.terminal.set_prompt(leash.prompt);
+                    };
+                    leash.onExport = function() {
+                        return {
+                            cwd: leash.cwd,
+                            dir: leash.dir
+                        };
                     };
                     // for use with autologin
                     leash.set_login = function(user) {
@@ -1797,7 +2100,6 @@ var leash = (function() {
             var leash_promise = leash();
             self.data('leash', leash_promise);
             leash_promise.then(function(leash) {
-                var animation = false;
                 var defaults = {
                     onInit: leash.init,
                     //maskChar: '',
@@ -1826,17 +2128,22 @@ var leash = (function() {
                     },
                     prompt: leash.prompt,
                     login: leash.login,
+                    onExport: leash.onExport,
+                    onImport: leash.onImport,
                     name: 'leash',
                     outputLimit: 500,
                     greetings: leash.greetings,
                     keydown: function(e) {
-                        if (animation) {
+                        if (leash.animation.animating) {
+                            if (e.which == 68 && e.ctrlKey) {
+                                leash.animation.stop();
+                            }
                             return false;
                         }
                     }
                 };
-                var terminal = self.terminal(leash.interpreter,
-                                             $.extend(defaults, options || {}));
+                var settings = $.extend(defaults, options || {});
+                var terminal = self.terminal(leash.interpreter, settings);
                 leash.terminal = terminal;
                 terminal.on('drop', function(e) {
                     e.preventDefault();
@@ -1847,26 +2154,6 @@ var leash = (function() {
                     if (!token) {
                         return;
                     }
-                    var anim = {
-                        start: function(delay) {
-                            var anim = ['/', '-', '\\', '|'], i = 0;
-                            animation = true;
-                            this.prompt = terminal.get_prompt();
-                            var self = this;
-                            (function animation() {
-                                terminal.set_prompt(anim[i++]);
-                                if (i > anim.length-1) {
-                                    i = 0;
-                                }
-                                self.timer = setTimeout(animation, delay);
-                            })();
-                        },
-                        stop: function() {
-                            clearTimeout(this.timer);
-                            terminal.set_prompt(this.prompt);
-                            animation = false;
-                        }
-                    };
                     if (files.length) {
                         files = [].slice.call(files);
                         (function upload() {
@@ -1876,12 +2163,12 @@ var leash = (function() {
                                 formData.append('file', file);
                                 formData.append('token', token);
                                 formData.append('path', leash.cwd);
-                                anim.start(400);
+                                leash.animation.start(400);
                                 $.ajax({
                                     url: 'lib/upload.php',
                                     type: 'POST',
                                     success: function(response) {
-                                        anim.stop();
+                                        leash.animation.stop();
                                         if (response.error) {
                                             terminal.error(response.error);
                                         } else {
@@ -1892,7 +2179,7 @@ var leash = (function() {
                                     },
                                     error: function(jxhr, error, status) {
                                         terminal.error(jxhr.statusText);
-                                        anim.stop();
+                                        leash.animation.stop();
                                     },
                                     data: formData,
                                     cache: false,
@@ -1951,7 +2238,7 @@ var leash = (function() {
                                             },
                                             error: function(jxhr, error, status) {
                                                 terminal.error(jxhr.statusText);
-                                                anim.stop();
+                                                leash.animation.stop();
                                             },
                                             data: formData,
                                             cache: false,
@@ -1959,16 +2246,16 @@ var leash = (function() {
                                             processData: false
                                         });
                                     } else {
-                                        anim.stop();
+                                        leash.animation.stop();
                                         terminal.echo('File "' + file.name + '" uploaded.');
                                         upload();
                                     }
                                 }
-                                anim.start(400);
+                                leash.animation.start(400);
                                 leash.service.unlink(token, fname)(function(err, del) {
                                     if (err) {
                                         leash.terminal.error(err.message);
-                                        anim.stop();
+                                        leash.animation.stop();
                                     } else {
                                         process(0, chunk_size);
                                     }

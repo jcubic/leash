@@ -309,7 +309,27 @@ class Service {
             return $session->username == $current->username;
         });
     }
-
+    // ------------------------------------------------------------------------
+    public function command_exists($token, $command) {
+        $command = "which $command > /dev/null && echo true || echo false";
+        $response = $this->shell($token, $command, ".");
+        return json_decode($response['output']);
+    }
+    // ------------------------------------------------------------------------
+    public function html($token, $url, $width) {
+        if (!$this->command_exists($token, "html2text")) {
+            throw new Exception("Command html2text not installed");
+        }
+        $page = $this->get($url);
+        $fname = tempnam($this->path . "/tmp", "html_");
+        $file = fopen($fname, 'w');
+        fwrite($file, $page);
+        fclose($file);
+        $cmd = "html2text -utf8 -width $width < $fname";
+        $response = $this->shell($token, $cmd, ".");
+        unlink($fname);
+        return $response['output'];
+    }
     // ------------------------------------------------------------------------
     public function file($token, $filename) {
         if (!$this->valid_token($token)) {
@@ -389,6 +409,7 @@ class Service {
             $this->config->settings[$key] = $val;
         }
         $this->config->settings['debug'] = false;
+        $this->config->settings['show_messages'] = true;
         $this->new_user('root', $root_password);
         $this->new_user($username, $password);
         if (!file_exists('init.js')) {
@@ -412,6 +433,11 @@ class Service {
         $settings['upload_max_filesize'] = $upload_limit;
         $post_limit = intval(ini_get('post_max_size')) * 1024 * 1024;
         $settings['post_max_size'] = $post_limit;
+        $version_message = $this->version_message();
+        $settings['messages'] = array();
+        if ($version_message) {
+            $settings['messages'][] = $version_message;
+        }
         return $settings;
     }
 
@@ -706,6 +732,15 @@ class Service {
             return 'jargon.db';
         }
     }
+    function jargon_search($search_term) {
+        $filename = $this->get_jargon_db_file();
+        $db = new PDO('sqlite:' . $filename);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $search_term = $db->quote($search_term);
+        $res = $db->query("SELECT term FROM terms WHERE term like $search_term or ".
+                          "def like $search_term");
+        return $res->fetchAll(PDO::FETCH_ASSOC);
+    }
     // ------------------------------------------------------------------------
     function jargon($search_term) {
         $filename = $this->get_jargon_db_file();
@@ -732,6 +767,98 @@ class Service {
         return $result;
     }
     // ------------------------------------------------------------------------
+    private function version($version) {
+        return array_map(function($number) {
+            return intval($number);
+        }, explode('.', $version));
+    }
+    // ------------------------------------------------------------------------
+    public function version_message() {
+        $fname = $this->path . '/version';
+        if (!file_exists($fname)) {
+            return null;
+        }
+        $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
+        $curl = $this->curl($url);
+        $page = curl_exec($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        if ($http_code == 404) {
+            return "You're running experimental version of leash";
+        }
+        $master_version = $this->version($page);
+        $version = $this->version(file_get_contents($fname));
+        if ($master_version[0] == $version[0]) {
+            if ($master_version[1] == $version[1]) {
+                if ($master_version[2] == $version[2]) {
+                    return null;
+                } elseif ($master_version[2] > $version[2]) {
+                    return "New version of leash $page available";
+                } else {
+                    return "You're running experimental version of leash";
+                }
+            } elseif ($master_version[1] > $version[1]) {
+                return "New version of leash $page available";
+            } else {
+                return "You're running experimental version of leash";
+            }
+        } elseif ($master_version[0] > $version[0]) {
+            return "New version of leash $page available";
+        } else {
+            return "You're running experimental version of leash";
+        }
+    }
+    // ------------------------------------------------------------------------
+    public function sleep($time) {
+        sleep($time);
+    }
+    // ------------------------------------------------------------------------
+    public function rfc($number) {
+        if ($number == null) {
+            $url = "http://www.rfc-editor.org/in-notes/rfc-index.txt";
+            $page = $this->get($url);
+            $page = preg_replace("/(^[0-9]+)/m", '[[bu;#fff;;rfc]$1]', $page);
+            return $page;
+        } else {
+            $number = preg_replace("/^0+/", "", $number);
+            $url = "https://www.rfc-editor.org/rfc/rfc$number.txt";
+            return $this->get($url);
+        }
+    }
+    // ------------------------------------------------------------------------
+    public function rfc_update() {
+        $path = $this->path . "/rfc";
+        if (!is_dir($path)) {
+            if (!mkdir($path)) {
+                throw new Exception("Couldn't create rfc directory");
+            }
+        }
+        $index = "http://www.rfc-editor.org/in-notes/rfc-index.txt";
+        $page = $this->get($index);
+        preg_match_all("/(^[0-9]+)/m", $page, $matches);
+        $page = preg_replace("/(^[0-9]+)/m", '[[bu;#fff;;rfc]$1]', $page);
+        $file = fopen($path . "/rfc-index.txt", "w");
+        if (!$file) {
+            throw new Exception("Couldn't create file in rfc directory");
+        }
+        fwrite($file, $page);
+        fclose($file);
+        foreach($matches[1] as $number) {
+            $number = preg_replace("/^0+/", "", $number);
+            $fname = "rfc" . $number . ".txt";
+            if (!file_exists($path . "/$fname")) {
+                $url = "https://www.rfc-editor.org/rfc/$fname";
+                $rfc = $this->get($url);
+                $file = fopen($path . "/$fname", "w");
+                if (!$file) {
+                    throw new Exception("Couldn't create file in rfc directory");
+                }
+                fwrite($file, $rfc);
+                fclose($file);
+            }
+        }
+    }
+    // ------------------------------------------------------------------------
     private function curl($url) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
@@ -749,7 +876,10 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function get($url) {
-        return curl_exec($this->curl($url));
+        $curl = $this->curl($url);
+        $result = curl_exec($curl);
+        curl_close($curl);
+        return $result;
     }
     // ------------------------------------------------------------------------
     public function post($url, $data) {
@@ -762,6 +892,7 @@ class Service {
         if ($code != 200) {
             throw new Exception("URL: $url give error $code");
         }
+        curl_close($ch);
         return $result;
     }
     // ------------------------------------------------------------------------

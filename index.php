@@ -66,7 +66,11 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     </div>
   </div>
   <div id="shell" style="display:none"></div>
-  <script src="lib/jquery-1.11.2.js"></script>
+  <?php if ($service->debug()) { ?>
+      <script src="lib/jquery-1.12.0.js"></script>
+  <?php } else { ?>
+      <script src="lib/jquery-1.12.0.min.js"></script>
+  <?php } ?>
   <script src="lib/json-rpc.js"></script>
   <?php if ($service->debug()) { ?>
     <script src="lib/jquery.terminal-src.js?<?= time() ?>"></script>

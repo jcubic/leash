@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION=0.7.9
+VERSION=0.8.0
 JSCOMPRESS=uglifyjs
 SED=sed
 CP=cp
@@ -22,7 +22,10 @@ CAT=cat
 RM=rm
 DATE=`date -uR`
 
-ALL: leash.min.js README
+ALL: leash.min.js README version
+
+version: Makefile
+	echo $(VERSION) > version
 
 README: README.in .$(VERSION)
 	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" README.in > README
