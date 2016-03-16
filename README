@@ -36,6 +36,7 @@ one of the following:
 * File Drag & Drop upload (using HTML5) you can upload files that are bigger
   then the php limit
 * wikipedia command that display wikipedia articles
+* rfc command where you can read RFC documents
 
 ----------------------------------------------------------------------------
 :: License
