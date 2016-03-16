@@ -37,7 +37,8 @@ one of the following:
   then the php limit
 * wikipedia command that display wikipedia articles
 * rfc command where you can read RFC documents
-
+* record command where you can save commands in hash and rerun them when you
+  refresh
 ----------------------------------------------------------------------------
 :: License
 ----------------------------------------------------------------------------
