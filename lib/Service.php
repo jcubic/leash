@@ -780,14 +780,14 @@ class Service {
         }
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
         $curl = $this->curl($url);
-        $page = curl_exec($curl);
+        $page = trim(curl_exec($curl));
         $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
         if ($http_code == 404) {
             return "You're running experimental version of leash";
         }
         $master_version = $this->version($page);
-        $version = $this->version(file_get_contents($fname));
+        $version = $this->version(trim(file_get_contents($fname)));
         if ($master_version[0] == $version[0]) {
             if ($master_version[1] == $version[1]) {
                 if ($master_version[2] == $version[2]) {
