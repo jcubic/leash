@@ -1380,12 +1380,6 @@ var leash = (function() {
                     }
                 },
                 commands: {
-                    sleep: function(cmd, token, term) {
-                        leash.animation.start(400);
-                        leash.service.sleep(cmd.args[0])(function() {
-                            leash.animation.stop();
-                        });
-                    },
                     rfc: function(cmd, token, term) {
                         var number = cmd.args.length ? cmd.args[0] : null;
                         term.pause();
