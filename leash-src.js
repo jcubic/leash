@@ -1722,7 +1722,11 @@ var leash = (function() {
                                         if (entry.abbr) {
                                             text += ' ('+entry.abbr.join(', ')+')';
                                         }
-                                        return text + '\n' + entry.def + '\n';
+                                        var re = /((?:https?|ftps?):\/\/\S+)|\.(?!\s|\])/g;
+                                        var def = entry.def.replace(re, function(text, g) {
+                                            return g ? g : '. ';
+                                        });
+                                        return text + '\n' + def + '\n';
                                     }).join('\n');
                                     term.echo(def.replace(/\n$/, ''), {
                                         keepWords: true
