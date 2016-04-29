@@ -1069,6 +1069,9 @@ class Service {
             }
             $post = ";echo -n \"$marker\";pwd";
             $command = escapeshellarg($pre . $command . $post);
+            if (!method_exists($this, $shell_fn)) {
+                throw new Exception("Invalid shell '$shell_fn'");
+            }
             $result = $this->$shell_fn($token, '/bin/bash -c ' . $command . ' 2>&1');
             if ($result) {
                 // work wth `set` that return BASH_EXECUTION_STRING
