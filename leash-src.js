@@ -402,9 +402,15 @@ var leash = (function() {
                 service: service,
                 init: function(term) {
                     term.on('click', '.jargon', function() {
-                        term.exec('jargon ' + $(this).data('text').replace(/\s/g, ' '));
+                        var command = 'jargon ' + $(this).data('text').replace(/\s/g, ' ');
+                        term.exec(command).then(function() {
+                            term.save_state(command);
+                        });
                     }).on('click', '.exec', function() {
-                        term.exec($(this).data('text'));
+                        var command = $(this).data('text');
+                        term.exec(command).then(function() {
+                            term.save_state(command);
+                        });
                     }).on('click', '.wiki', function() {
                         var article = $(this).data('text').replace(/\s/g, ' ');
                         var cmd = $.terminal.split_command('wikipedia ' + article);
