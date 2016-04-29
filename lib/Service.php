@@ -87,7 +87,7 @@ function root() {
     if ($_SERVER["REQUEST_URI"][strlen($_SERVER["REQUEST_URI"])-1] == "/") {
         $root .= $_SERVER["REQUEST_URI"];
     } else {
-        $root .= pre_replace("/\/[^\/]+$/", "/", $_SERVER["REQUEST_URI"]);
+        $root .= preg_replace("/\/[^\/]+$/", "/", $_SERVER["REQUEST_URI"]);
     }
     return $root;
 }
