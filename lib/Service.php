@@ -585,6 +585,7 @@ class Service {
             return strlen($command) > 1; // filter out . : [
         }));
     }
+    
     // ------------------------------------------------------------------------
     // :: Remove all user sessions
     // ------------------------------------------------------------------------
@@ -767,6 +768,97 @@ class Service {
         return $result;
     }
     // ------------------------------------------------------------------------
+    public function copy_dir($token, $src, $dest) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $dir = opendir($src);
+        if (!is_dir($dest)) {
+            mkdir($dest);
+        }
+        while (false !== ($file = readdir($dir))) {
+            if ($file != '.' && $file != '..') {
+                if (is_dir($src . '/' . $file)) {
+                    $this->copy_dir($token, $src . '/' . $file, $dest . '/' . $file);
+                } else {
+                    copy($src . '/' . $file, $dest . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
+    }
+    // ------------------------------------------------------------------------
+    public function delete_dir($token, $dir) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        if (!is_dir($dir)) {
+            throw new Exception("$dir must be a directory");
+        }
+        if (substr($dir, strlen($dir)-1, 1) != '/') {
+            $dir .= '/';
+        }
+        foreach (scandir($dir) as $file_dir) {
+            $full_path = $dir . $file_dir;
+            if ($file_dir != "." && $file_dir != "..") {
+                if (is_dir($full_path)) {
+                    $this->delete_dir($token, $full_path);
+                } else {
+                    unlink($full_path);
+                }
+            }
+        }
+        rmdir($dir);
+    }
+    // ------------------------------------------------------------------------
+    public function update($token) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
+        $curl = $this->curl($url);
+        $page = trim(curl_exec($curl));
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        if ($http_code == 200) {
+            $fname = $page . '.zip';
+            $master_version = $this->version($page);
+            $version = $this->version(trim(file_get_contents('version')));
+            if (($master_version[0] == $version[0] && $master_version[1] == $version[1] &&
+                 $master_version[2] > $version[2]) ||
+                ($master_version[0] == $version[0] && $master_version[1] > $version[1]) ||
+                ($master_version[0] > $version[0])) {
+                $url = 'https://github.com/jcubic/leash/archive/' . $fname;
+                $curl = $this->curl($url);
+                $data = curl_exec($curl);
+                $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                curl_close($curl);
+                if ($http_code != 200) {
+                    throw new Exception(" archive '$page' not found");
+                }
+                $file = fopen($fname, 'w');
+                fclose($file);
+                $zip = new ZipArchive();
+                $res = $zip->open($fname);
+                if ($res === true) {
+                    $temp_dir = sys_get_temp_dir();
+                    $zip->extractTo($temp_dir);
+                    $zip->close();
+                    unlink($fname);
+                    $this->copy_dir($token, $temp_dir . '/leash-' . $page, $this->path);
+                    $this->delete_dir($token, $temp_dir . '/leash-' . $page);
+                } else {
+                    throw new Exception("Can't open zip file");
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    // ------------------------------------------------------------------------
     private function version($version) {
         return array_map(function($number) {
             return intval($number);
@@ -793,17 +885,20 @@ class Service {
                 if ($master_version[2] == $version[2]) {
                     return null;
                 } elseif ($master_version[2] > $version[2]) {
-                    return "New version of leash $page available";
+                    return "New version of leash $page available. Run update command to " .
+                           "get new version";
                 } else {
                     return "You're running experimental version of leash";
                 }
             } elseif ($master_version[1] > $version[1]) {
-                return "New version of leash $page available";
+                return "New version of leash $page available. Run update command to get " .
+                       "new version";
             } else {
                 return "You're running experimental version of leash";
             }
         } elseif ($master_version[0] > $version[0]) {
-            return "New version of leash $page available";
+            return "New version of leash $page available. Run update command to get new " .
+                   "version";
         } else {
             return "You're running experimental version of leash";
         }

@@ -1386,6 +1386,17 @@ var leash = (function() {
                     }
                 },
                 commands: {
+                    update: function(cmd, token, term) {
+                        leash.service.update(token)(function(err, result) {
+                            if (err) {
+                                print_error(err);
+                            } else if (result) {
+                                term.echo('Leash updated, you can now refresh the browser');
+                            } else {
+                                term.echo('No new version avaible');
+                            }
+                        });
+                    },
                     rfc: function(cmd, token, term) {
                         var number = cmd.args.length ? cmd.args[0] : null;
                         term.pause();
