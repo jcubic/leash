@@ -394,9 +394,11 @@ var leash = (function() {
                         })();
                     },
                     stop: function() {
-                        clearTimeout(this.timer);
-                        leash.terminal.set_prompt(this.prompt);
-                        this.animating = false;
+                        if (this.animating) {
+                            clearTimeout(this.timer);
+                            leash.terminal.set_prompt(this.prompt);
+                            this.animating = false;
+                        }
                     }
                 },
                 service: service,

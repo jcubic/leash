@@ -1009,38 +1009,21 @@ class Service {
         }
         $test = "echo -n x";
         $response = "x";
-        switch ($name) {
-            case 'exec':
-                if (function_exists($name)) {
-                    return $this->exec($token, $test) == $response;
-                } else {
-                    return false;
-                }
-                break;
-            case 'shell_exec':
-                if (function_exists($name)) {
-                    return $this->shell_exec($token, $test) == $response;
-                } else {
-                    return false;
-                }
-                break;
-            case 'cgi_python':
-                try {
-                    return $this->cgi_python($token, $test) == $response;
-                } catch (Exception $e) {
-                    return false;
-                }
-                break;
-            case 'cgi_perl':
-                try {
-                    return $this->cgi_perl($token, $test) == $response;
-                } catch (Exception $e) {
-                    return false;
-                }
-                break;
-            default:
-                throw new Exception("Invalid shell type");
-                break;
+        if ($name == 'system' || $name == 'exec' || $name == 'shell_exec') {
+            if (function_exists($name)) {
+                return $this->$name($token, $test) == $response;
+            } else {
+                return false;
+            }
+            break;
+        } else if ($name == 'cgi_perl' || $name == 'cgi_python') {
+            try {
+                return $this->$name($token, $test) == $response;
+            } catch (Exception $e) {
+                return false;
+            }
+        } else {
+            throw new Exception("Invalid shell type");
         }
     }
     // ------------------------------------------------------------------------
@@ -1099,6 +1082,14 @@ class Service {
     private function exec($token, $code) {
         exec($code, $result);
         return implode("\n", $result);
+    }
+    // ------------------------------------------------------------------------
+    private function system($token, $code) {
+        ob_start();
+        system($code);
+        $result = ob_get_contents();
+        ob_end_clean();
+        return $result;
     }
     // ------------------------------------------------------------------------
     private function cgi_perl($token, $code) {
