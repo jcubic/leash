@@ -1726,6 +1726,10 @@ var leash = (function() {
                                         var def = entry.def.replace(re, function(text, g) {
                                             return g ? g : '. ';
                                         });
+                                        re = /\[(?![^;\]]*;[^;\]]*;[^\]]*\])[^\]]+\]/g;
+                                        def = def.replace(re, function(text) {
+                                            return text.replace(/\]/g, '\\]');
+                                        });
                                         return text + '\n' + def + '\n';
                                     }).join('\n');
                                     term.echo(def.replace(/\n$/, ''), {
