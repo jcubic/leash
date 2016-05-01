@@ -1865,6 +1865,7 @@ var leash = (function() {
                                 });
                                 term.push(mysql_query, {
                                     prompt: prompt,
+                                    name: 'mysql',
                                     onExit: function() {
                                         mysql_close(db);
                                     },
