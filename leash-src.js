@@ -1389,14 +1389,17 @@ var leash = (function() {
                 },
                 commands: {
                     update: function(cmd, token, term) {
+                        term.pause();
                         leash.service.update(token)(function(err, result) {
                             if (err) {
                                 print_error(err);
                             } else if (result) {
-                                term.echo('Leash updated, you can now refresh the browser');
+                                term.echo('[[;#ff0;]Leash updated, you can now refresh ' +
+                                          'the browser]');
                             } else {
-                                term.echo('No new version avaible');
+                                term.error('No new version avaible');
                             }
+                            term.resume();
                         });
                     },
                     rfc: function(cmd, token, term) {

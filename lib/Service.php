@@ -834,19 +834,26 @@ class Service {
                 $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
                 curl_close($curl);
                 if ($http_code != 200) {
-                    throw new Exception(" archive '$page' not found");
+                    throw new Exception("archive '$page' not found");
                 }
                 $file = fopen($fname, 'w');
+                fwrite($file, $data);
                 fclose($file);
                 $zip = new ZipArchive();
                 $res = $zip->open($fname);
                 if ($res === true) {
                     $temp_dir = sys_get_temp_dir();
-                    $zip->extractTo($temp_dir);
+                    if (!$zip->extractTo($temp_dir)) {
+                        throw new Exception("Have problem extracting files to '$temp_dir'");
+                    }
                     $zip->close();
                     unlink($fname);
-                    $this->copy_dir($token, $temp_dir . '/leash-' . $page, $this->path);
-                    $this->delete_dir($token, $temp_dir . '/leash-' . $page);
+                    if (is_dir($temp_dir . '/leash-' . $page)) {
+                        $this->copy_dir($token, $temp_dir . '/leash-' . $page, $this->path);
+                        $this->delete_dir($token, $temp_dir . '/leash-' . $page);
+                    } else {
+                        throw new Exception("Directory '$temp_dir/leash-$page' not created");
+                    }
                 } else {
                     throw new Exception("Can't open zip file");
                 }
