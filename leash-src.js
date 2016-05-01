@@ -394,17 +394,25 @@ var leash = (function() {
                         })();
                     },
                     stop: function() {
-                        clearTimeout(this.timer);
-                        leash.terminal.set_prompt(this.prompt);
-                        this.animating = false;
+                        if (this.animating) {
+                            clearTimeout(this.timer);
+                            leash.terminal.set_prompt(this.prompt);
+                            this.animating = false;
+                        }
                     }
                 },
                 service: service,
                 init: function(term) {
                     term.on('click', '.jargon', function() {
-                        term.exec('jargon ' + $(this).data('text').replace(/\s/g, ' '));
+                        var command = 'jargon ' + $(this).data('text').replace(/\s/g, ' ');
+                        term.exec(command).then(function() {
+                            term.save_state(command);
+                        });
                     }).on('click', '.exec', function() {
-                        term.exec($(this).data('text'));
+                        var command = $(this).data('text');
+                        term.exec(command).then(function() {
+                            term.save_state(command);
+                        });
                     }).on('click', '.wiki', function() {
                         var article = $(this).data('text').replace(/\s/g, ' ');
                         var cmd = $.terminal.split_command('wikipedia ' + article);
@@ -1380,10 +1388,15 @@ var leash = (function() {
                     }
                 },
                 commands: {
-                    sleep: function(cmd, token, term) {
-                        leash.animation.start(400);
-                        leash.service.sleep(cmd.args[0])(function() {
-                            leash.animation.stop();
+                    update: function(cmd, token, term) {
+                        leash.service.update(token)(function(err, result) {
+                            if (err) {
+                                print_error(err);
+                            } else if (result) {
+                                term.echo('Leash updated, you can now refresh the browser');
+                            } else {
+                                term.echo('No new version avaible');
+                            }
                         });
                     },
                     rfc: function(cmd, token, term) {
@@ -1728,7 +1741,15 @@ var leash = (function() {
                                         if (entry.abbr) {
                                             text += ' ('+entry.abbr.join(', ')+')';
                                         }
-                                        return text + '\n' + entry.def + '\n';
+                                        var re = /((?:https?|ftps?):\/\/\S+)|\.(?!\s|\])/g;
+                                        var def = entry.def.replace(re, function(text, g) {
+                                            return g ? g : '. ';
+                                        });
+                                        re = /\[(?![^;\]]*;[^;\]]*;[^\]]*\])[^\]]+\]/g;
+                                        def = def.replace(re, function(text) {
+                                            return text.replace(/\]/g, '\\]');
+                                        });
+                                        return text + '\n' + def + '\n';
                                     }).join('\n');
                                     term.echo(def.replace(/\n$/, ''), {
                                         keepWords: true
@@ -1844,6 +1865,7 @@ var leash = (function() {
                                 });
                                 term.push(mysql_query, {
                                     prompt: prompt,
+                                    name: 'mysql',
                                     onExit: function() {
                                         mysql_close(db);
                                     },
