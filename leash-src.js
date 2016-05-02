@@ -765,13 +765,18 @@ var leash = (function() {
                             return '[[i;;]' + quote + ']\n-- ' + author;
                         },
                         quote: function(content) {
-                            content = content.replace(/^\s*\|/gm, '').split('|');
+                            content = content.replace(/^\s*\|/gm, '').
+                                split(/|(?![^\]]+\])/);
                             var keys = {};
                             content = content.map(function(item) {
                                 var m = item.match(/\s*(\w+)\s*=\s*(.*)/);
                                 if (m) {
-                                    keys[m[1].toLowerCase()] = m[2];
-                                    return '';
+                                    if (!isNaN(m[1])) {
+                                        return m[2];
+                                    } else {
+                                        keys[m[1].toLowerCase()] = m[2];
+                                        return '';
+                                    }
                                 } else {
                                     return item;
                                 }
@@ -788,7 +793,13 @@ var leash = (function() {
                                 }).
                                 replace(/''([^']+(?:'[^']+)*)''/g, '$1').
                                 replace(/\[\[([^\]]+)\]\]/g, function(_, wiki) {
-                                    return '][[bui;#fff;;wiki]' + wiki + '][[i;;]';
+                                    wiki = wiki.split('|');
+                                    if (wiki.length == 1) {
+                                        return '][[bui;#fff;;wiki]' + wiki + '][[i;;]';
+                                    } else {
+                                        return '][[bui;#fff;;wiki;' + wiki[0] + ']' +
+                                            wiki[1] + '][[i;;]';
+                                    }
                                 }) + ']' + (author ? '\n-- ' + author : '');
                         },
                         'Cat main': function(content) {
