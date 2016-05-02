@@ -813,7 +813,7 @@ var leash = (function() {
                         tag: function(content) {
                             return escape('<'+content+'>...</' + content + '>');
                         },
-                        official: function(content) {
+                        '(?:official website|official)': function(content) {
                             if (!content.match(/^http:/)) {
                                 content = 'http://' + content;
                             }
