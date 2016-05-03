@@ -75,7 +75,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <?php if ($service->debug()) { ?>
     <script src="lib/jquery.terminal-src.js?<?= time() ?>"></script>
   <?php } else { ?>
-    <script src="lib/jquery.terminal-min.js"></script>
+    <script src="lib/jquery.terminal.min.js"></script>
   <?php } ?>
   <script src="lib/unix_formatting.js"></script>
   <script src="lib/jquery.mousewheel-min.js"></script>
