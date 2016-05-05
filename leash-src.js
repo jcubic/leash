@@ -1408,7 +1408,7 @@ var leash = (function() {
                                 term.echo('[[;#ff0;]Leash updated, you can now refresh ' +
                                           'the browser]');
                             } else {
-                                term.error('No new version avaible');
+                                term.error('No new version available');
                             }
                             term.resume();
                         });

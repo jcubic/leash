@@ -1022,7 +1022,6 @@ class Service {
             } else {
                 return false;
             }
-            break;
         } else if ($name == 'cgi_perl' || $name == 'cgi_python') {
             try {
                 return $this->$name($token, $test) == $response;
