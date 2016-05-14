@@ -104,7 +104,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
            $win.resize(function() {
                var height = $win.height();
                terminal.innerHeight(height);
-               $('#micro').height(height);
            }).resize();
            terminal.resize();
        });

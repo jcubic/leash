@@ -702,7 +702,7 @@ class Service {
         }
         $db = $this->mysql_connection_from_session($session->mysql->$res_id);
         $query = trim($query);
-        if (preg_match("/^(delete|insert|create)/i", $query)) {
+        if (preg_match("/^(delete|insert|create|alter)/i", $query)) {
             $db->query($query); // will throw exception on false
             return $db->affected_rows();
         } else {
@@ -733,6 +733,7 @@ class Service {
             return 'jargon.db';
         }
     }
+    // ------------------------------------------------------------------------
     function jargon_search($search_term) {
         $filename = $this->get_jargon_db_file();
         $db = new PDO('sqlite:' . $filename);
