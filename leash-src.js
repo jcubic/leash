@@ -260,7 +260,7 @@ var leash = (function() {
                 });
                 return fixed_command;
             }
-            function print_sql_result(err, result) {
+            function prn_sql_result(err, result) {
                 if (err) {
                     print_error(err);
                 } else {
@@ -1755,9 +1755,10 @@ var leash = (function() {
                                         if (entry.abbr) {
                                             text += ' ('+entry.abbr.join(', ')+')';
                                         }
-                                        var re = /((?:https?|ftps?):\/\/\S+)|\.(?!\s|\]\s)/g;
+                                        var re = new RegExp("((?:https?|ftps?)://\\S+)|" +
+                                                            "\\.(?!\\s|\\]\\s)\\)?", "g");
                                         var def = entry.def.replace(re, function(text, g) {
-                                            return g ? g : '. ';
+                                            return g ? g : (text == '.)' ? '.) ' : '. ');
                                         });
                                         re = /\[(?![^;\]]*;[^;\]]*;[^\]]*\])[^\]]+\]/g;
                                         def = def.replace(re, function(text) {
@@ -1801,7 +1802,7 @@ var leash = (function() {
                                               'e:\n\tPRAGMA table_info([TABLE NAME])');
                                 } else {
                                     term.pause();
-                                    leash.service.sqlite_query(token, fn, q)(print_sql_result);
+                                    leash.service.sqlite_query(token, fn, q)(prn_sql_result);
                                 }
                             }, {
                                 name: 'sqlite',
@@ -1867,7 +1868,7 @@ var leash = (function() {
                             var db;
                             function mysql_query(query) {
                                 term.pause();
-                                service.mysql_query(token, db, query)(print_sql_result);
+                                service.mysql_query(token, db, query)(prn_sql_result);
                             }
                             function mysql_close(db) {
                                 service.mysql_close(token, db)(function() {
