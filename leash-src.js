@@ -1795,11 +1795,18 @@ var leash = (function() {
                         }
                         function push(tables) {
                             term.push(function(q) {
-                                leash.service.sqlite_query(token, fn, q)(print_sql_result);
+                                if (q.match(/^\s*help\s*$/)) {
+                                    term.echo('show tables:\n\tSELECT name FROM sqlite_m'+
+                                              'aster WHERE type = "table"\ndescribe tabl'+
+                                              'e:\n\tPRAGMA table_info([TABLE NAME])');
+                                } else {
+                                    term.pause();
+                                    leash.service.sqlite_query(token, fn, q)(print_sql_result);
+                                }
                             }, {
                                 name: 'sqlite',
                                 prompt: 'sqlite> ',
-                                completion: sqlite_keywords().concat(tables)
+                                completion: ['help'].concat(sqlite_keywords()).concat(tables)
                             });
                         }
                         var query = 'SELECT name FROM sqlite_master WHERE type = "table"';
