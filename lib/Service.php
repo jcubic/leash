@@ -317,18 +317,26 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function html($token, $url, $width) {
-        if (!$this->command_exists($token, "html2text")) {
-            throw new Exception("Command html2text not installed");
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
         }
+        require('html2text/src/Html2Text.php');
         $page = $this->get($url);
-        $fname = tempnam($this->path . "/tmp", "html_");
-        $file = fopen($fname, 'w');
-        fwrite($file, $page);
-        fclose($file);
-        $cmd = "html2text -utf8 -width $width < $fname";
-        $response = $this->shell($token, $cmd, ".");
-        unlink($fname);
-        return $response['output'];
+        $html = new \Html2Text\Html2Text($page, array(
+            'width' => $width
+        ));
+        $base = preg_replace("~(?<!/)/(?!/).*$~", "", $url);
+        $rel = preg_replace("~(?<!/)/(?!/)[^/]+$~", "/", $url);
+        return preg_replace_callback("/\\[([^\\]]+)\\]/", function($matches) use ($base,$rel) {
+                if (preg_match("~^/~", $matches[1])) {
+                    $url = $base . $matches[1];
+                } else if (preg_match("/^(http|mailto)/", $matches[1])) {
+                    $url = $matches[1];
+                } else {
+                    $url = $rel . $matches[1];
+                }
+                return '&#91;[[!;;;;' . $url . ']' . $url . ']&#93;';
+            }, $html->getText());
     }
     // ------------------------------------------------------------------------
     public function file($token, $filename) {
