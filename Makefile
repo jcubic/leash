@@ -32,7 +32,7 @@ README: README.in .$(VERSION)
 
 leash.min.js: leash-src.js .$(VERSION) Makefile
 	$(SED) -e "s/{{VERSION}}/$(VERSION)/g" -e "s/{{DATE}}/$(DATE)/g" leash-src.js > leash.js
-	$(JSCOMPRESS) -o leash.min.js --comments -- leash.js
+	$(JSCOMPRESS) -o leash.min.js --comments --mangle -- leash.js
 	$(RM) leash.js
 
 .$(VERSION):

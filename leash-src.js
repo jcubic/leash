@@ -1358,13 +1358,20 @@ var leash = (function() {
                     }
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
+                    var token = term.token()
                     if (command.match(re) || command === '') {
                         var commands = Object.keys(leash.commands);
                         callback(commands.concat(leash.dir.execs || []).
                             concat(config.executables));
+                    } else if (string.match(/^\$/)) {
+                        service.shell(token, 'env', '/')(function(err, result) {
+                            callback(result.output.split('\n').map(function(pair) {
+                                return '$' + pair.split(/=/)[0];
+                            }));
+                        });
                     } else {
                         var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
-                        var token = term.token(), path;
+                        var path;
                         if (cmd.name == 'cd') {
                             if (m) {
                                 path = leash.cwd + '/' + m[1];
