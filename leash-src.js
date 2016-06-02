@@ -1502,7 +1502,7 @@ var leash = (function() {
                     },
                     timer: function(cmd, token, term) {
                         function usage() {
-                            term.echo('timer time\ntime - number [smh]');
+                            term.echo('timer time [command]\ntime - number [smh]');
                         }
                         if (cmd.args.length > 1) {
                             var time = cmd.args[0];
@@ -1511,13 +1511,14 @@ var leash = (function() {
                                 var command = cmd.rest.trim().replace(/^[0-9.]+[smh]?/, '');
                                 var time = parseFloat(m[1]);
                                 switch(m[2]) {
-                                case 'h':
-                                    time *= 24
-                                case 'm':
-                                    time *= 60;
-                                case 's':
-                                    time *= 1000;
+                                    case 'h':
+                                        time *= 24
+                                    case 'm':
+                                        time *= 60;
+                                    case 's':
+                                        time *= 1000;
                                 }
+                                term.pause();
                                 setTimeout(function() {
                                     leash.interpreter(command, term);
                                 }, time);
