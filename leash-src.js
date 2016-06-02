@@ -350,6 +350,20 @@ var leash = (function() {
             }
             // used on exit from wikipedia to deterimine if turn on convertLinks
             var wiki_stack = [];
+            function less_command(cat) {
+                return function(cmd, token, term) {
+                    var shell_cmd = cat + ' ' + cmd.args[0];
+                    term.pause();
+                    service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
+                        if (err) {
+                            print_error(err);
+                        } else {
+                            leash.less($.terminal.escape_brackets(ret.output));
+                        }
+                        term.resume();
+                    });
+                };
+            }
             var leash = {
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
@@ -1473,18 +1487,10 @@ var leash = (function() {
                     copyright: function(cmd, token, term) {
                         term.echo(copyright);
                     },
-                    less: function(cmd, token, term) {
-                        var shell_cmd = 'cat ' + cmd.args[0];
-                        term.pause();
-                        service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
-                            if (err) {
-                                print_error(err);
-                            } else {
-                                leash.less($.terminal.escape_brackets(ret.output));
-                            }
-                            term.resume();
-                        });
-                    },
+                    bzless: less_command('bzcat'),
+                    zless: less_command('zcat'),
+                    xzless: less_command('xzcat'),
+                    less: less_command('cat'),
                     record: function(cmd, token, term) {
                         if (cmd.args[0] == 'start') {
                             term.history_state(true);
