@@ -350,6 +350,7 @@ var leash = (function() {
             }
             // used on exit from wikipedia to deterimine if turn on convertLinks
             var wiki_stack = [];
+            var dir_stack = [];
             function less_command(cat) {
                 return function(cmd, token, term) {
                     var shell_cmd = cat + ' ' + cmd.args[0];
@@ -626,6 +627,7 @@ var leash = (function() {
                 },
                 shell: function(command, token, term) {
                     var re = /\|\s*less\s*$/;
+                    var deferr = $.Deferred();
                     term.pause();
                     if (command.match(re)) {
                         command = command.replace(re, '');
@@ -637,6 +639,7 @@ var leash = (function() {
                                 leash.less(res.output);
                             }
                             term.resume();
+                            deferr.resolve();
                         });
                     } else {
                         service.shell(token, command, leash.cwd)(function(err, res) {
@@ -655,10 +658,12 @@ var leash = (function() {
                                 service.dir(token, leash.cwd)(function(err, result) {
                                     leash.dir = result;
                                     term.resume();
+                                    deferr.resolve();
                                 });
                             }
                         });
                     }
+                    return deferr.promise();
                 },
                 wikipedia: function(text, title) {
                     function list(list) {
@@ -1420,6 +1425,28 @@ var leash = (function() {
                     }
                 },
                 commands: {
+                    pushd: function(cmd, token, term) {
+                        var dir = leash.cwd;
+                        if (dir_stack.length == 0) {
+                            dir_stack.push(dir);
+                        }
+                        leash.shell('cd ' + cmd.args[0], token, term).then(function() {
+                            dir_stack.push(leash.cwd);
+                            term.echo(dir_stack.slice().reverse().join(' '));
+                        });
+                    },
+                    popd: function(cmd, token, term) {
+                        if (dir_stack.length > 1) {
+                            dir_stack.pop();
+                            var dir = dir_stack[dir_stack.length-1];
+                            leash.shell('cd ' + dir, token, term).then(function() {
+                                term.echo(dir_stack.slice().reverse().join(' '));
+                            });
+                        } else {
+                            term.echo('popd: directory stack empty');
+                            dir_stack = [];
+                        }
+                    },
                     update: function(cmd, token, term) {
                         term.pause();
                         leash.service.update(token)(function(err, result) {
