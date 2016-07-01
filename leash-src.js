@@ -421,12 +421,16 @@ var leash = (function() {
                     term.on('click', '.jargon', function() {
                         var command = 'jargon ' + $(this).data('text').replace(/\s/g, ' ');
                         term.exec(command).then(function() {
-                            term.save_state(command);
+                            if (term.settings().historyState) {
+                                term.save_state(command);
+                            }
                         });
                     }).on('click', '.exec', function() {
                         var command = $(this).data('text');
                         term.exec(command).then(function() {
-                            term.save_state(command);
+                            if (term.settings().historyState) {
+                                term.save_state(command);
+                            }
                         });
                     }).on('click', '.wiki', function() {
                         var article = $(this).data('text').replace(/\s/g, ' ');
