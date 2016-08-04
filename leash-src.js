@@ -265,23 +265,26 @@ var leash = (function() {
                     print_error(err);
                 } else {
                     switch ($.type(result)) {
-                    case 'array':
-                        result = [Object.keys(result[0])].concat(result.map(function(row) {
-                            if (row instanceof Array) {
-                                return row.map(function(item) {
-                                    return $.terminal.escape_brackets(String(item));
-                                });
-                            } else {
-                                return Object.keys(row).map(function(key) {
-                                    return $.terminal.escape_brackets(String(row[key]));
-                                });
+                        case 'array':
+                            if (result.length) {
+                                var keys = Object.keys(result[0]);
+                                result = [keys].concat(result.map(function(row) {
+                                    if (row instanceof Array) {
+                                        return row.map(function(item) {
+                                            return $.terminal.escape_brackets(String(item));
+                                        });
+                                    } else {
+                                        return Object.keys(row).map(function(key) {
+                                            return $.terminal.escape_brackets(String(row[key]));
+                                        });
+                                    }
+                                }));
+                                leash.terminal.echo(ascii_table(result, true));
                             }
-                        }));
-                        leash.terminal.echo(ascii_table(result, true));
-                        break;
-                    case 'number':
-                        leash.terminal.echo('Query OK, ' + result +
-                                            ' row affected');
+                            break;
+                        case 'number':
+                            leash.terminal.echo('Query OK, ' + result +
+                                                ' row affected');
                     }
                 }
                 leash.terminal.resume();
