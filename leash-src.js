@@ -1432,6 +1432,17 @@ var leash = (function() {
                     }
                 },
                 commands: {
+                    download: function(cmd, token, term) {
+                        if (cmd.args.length == 1) {
+                            var filename = leash.cwd + '/' + cmd.args[0];
+                            var iframe = $('<iframe/>').hide().appendTo('body');
+                            iframe.load(function() {
+                                iframe.remove();
+                            });
+                            var params = $.param({filename: filename, token: token});
+                            iframe.attr('src', 'lib/download.php?' + params);
+                        }
+                    },
                     pushd: function(cmd, token, term) {
                         var dir = leash.cwd;
                         if (dir_stack.length == 0) {
