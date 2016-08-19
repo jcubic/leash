@@ -332,10 +332,15 @@ var leash = (function() {
                     });
                     return Math.max.apply(Math, col);
                 });
+                // column padding
                 array = array.map(function(row) {
                     return '| ' + row.map(function(item, i) {
                         var size = item.length;
                         if (size < lengths[i]) {
+                            if (item.match(/\t/g)) {
+                                // tab have 4 spaces
+                                size += item.match(/\t/g).length*3;
+                            }
                             item += new Array(lengths[i] - size + 1).join(' ');
                         }
                         return item;
