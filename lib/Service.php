@@ -310,10 +310,8 @@ class Service {
             throw new Exception("Access Denied: Invalid Token");
         }
         require('html2text/src/Html2Text.php');
-        $page = $this->get($url);
-        $html = new \Html2Text\Html2Text($page, array(
-            'width' => $width
-        ));
+        $html = $this->get($url);
+        $text = Html2Text\Html2Text::convert($html);
         $base = preg_replace("~(?<!/)/(?!/).*$~", "", $url);
         $rel = preg_replace("~(?<!/)/(?!/)[^/]+$~", "/", $url);
         return preg_replace_callback("/\\[([^\\]]+)\\]/", function($matches) use ($base,$rel) {
@@ -325,7 +323,7 @@ class Service {
                     $url = $rel . $matches[1];
                 }
                 return '&#91;[[!;;;;' . $url . ']' . $url . ']&#93;';
-            }, $html->getText());
+            }, $text);
     }
     // ------------------------------------------------------------------------
     public function file($token, $filename) {

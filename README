@@ -31,7 +31,8 @@ one of the following:
 * javascript interpreter
 * jargon command (will display definitions from jargon file)
 * ymacs editor (Emacs clone for the web)
-* vi editor (using jsvi)
+* vi editor (using jsvi) to use it you need to get https://github.com/jcubic/jsvi-app
+  and clone to lib/apps directory
 * tab completion
 * File Drag & Drop upload (using HTML5) you can upload files that are bigger
   then the php limit
@@ -44,4 +45,4 @@ one of the following:
 ----------------------------------------------------------------------------
 
 Copyright (C) 2013-2016 Jakub Jankiewicz
-Licensed under GNU GPL Version 3 license
+Licensed under MIT license
