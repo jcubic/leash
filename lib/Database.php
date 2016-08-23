@@ -3,7 +3,7 @@
  *  This file is part of Leash (Browser Shell)
  *  Copyright (C) 2013-2016  Jakub Jankiewicz <http://jcubic.pl>
  *
- *  Licensed under MIT license
+ *  Released under the MIT license
  *
  */
 
