@@ -224,7 +224,7 @@ class Service {
 
     // ------------------------------------------------------------------------
     public function valid_token($token) {
-        return $token ? $this->get_session($token) != null : false;
+        return !$this->installed() || ($token ? $this->get_session($token) != null : false);
     }
     // ------------------------------------------------------------------------
     public function valid_password($token, $password) {
@@ -311,7 +311,13 @@ class Service {
         }
         require('html2text/src/Html2Text.php');
         $html = $this->get($url);
-        $text = Html2Text\Html2Text::convert($html);
+        if (!$html) {
+            throw new Exception("$url return no results");
+        }
+        $html = new \Html2Text\Html2Text($html, array(
+            'width' => $width
+        ));
+        $text = $html->getText();
         $base = preg_replace("~(?<!/)/(?!/).*$~", "", $url);
         $rel = preg_replace("~(?<!/)/(?!/)[^/]+$~", "/", $url);
         return preg_replace_callback("/\\[([^\\]]+)\\]/", function($matches) use ($base,$rel) {
@@ -387,7 +393,7 @@ class Service {
     // executed when config file don't exists
     public function configure($settings) {
         if ($this->installed()) {
-            throw new Exception("You can't call this function, root already installed");
+            throw new Exception("You can't call this function, leash already installed");
         }
         $settings = (array)$settings;
 
@@ -405,11 +411,17 @@ class Service {
         }
         $this->config->settings['debug'] = false;
         $this->config->settings['show_messages'] = true;
+
+        // get external libraries
+        $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
+        $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
+
         $this->new_user('root', $root_password);
         $this->new_user($username, $password);
         if (!file_exists('init.js')) {
             copy('init.js.src', 'init.js');
         }
+
     }
     // ------------------------------------------------------------------------
     public function get_settings($token) {
@@ -580,7 +592,7 @@ class Service {
             return strlen($command) > 1; // filter out . : [
         }));
     }
-    
+
     // ------------------------------------------------------------------------
     // :: Remove all user sessions
     // ------------------------------------------------------------------------
@@ -807,6 +819,62 @@ class Service {
         rmdir($dir);
     }
     // ------------------------------------------------------------------------
+    public function random_string($length) {
+        $key = '';
+        $keys = array_merge(range(0, 9), range('a', 'z'));
+
+        for ($i = 0; $i < $length; $i++) {
+            $key .= $keys[array_rand($keys)];
+        }
+
+        return $key;
+    }
+    // ------------------------------------------------------------------------
+    public function unzip_url($token, $url, $dir, $desc) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $curl = $this->curl($url);
+        $data = curl_exec($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        if ($http_code != 200) {
+            throw new Exception("archive '$page' not found");
+        }
+        $fname = $this->random_string(5) . ".zip";
+        $file = fopen($fname, 'w');
+        $ret = fwrite($file, $data);
+        fclose($file);
+        $zip = new ZipArchive();
+        $res = $zip->open($fname);
+        if ($res === true) {
+            $temp_dir = sys_get_temp_dir();
+            if (!$zip->extractTo($temp_dir)) {
+                throw new Exception("Have problem extracting files to '$temp_dir'");
+            }
+            $zip->close();
+            unlink($fname);
+            if (is_dir($temp_dir . '/' . $dir)) {
+                $this->copy_dir($token, $temp_dir . '/' . $dir, $desc);
+                $this->delete_dir($token, $temp_dir . '/' . $dir);
+            } else {
+                throw new Exception("Directory '$temp_dir/$dir' not created");
+            }
+        } else {
+            throw new Exception("Can't open zip file");
+        }
+    }
+    // ------------------------------------------------------------------------
+    public function get_repo($token, $user, $repo, $desc) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $url = "https://github.com/$user/$repo/archive/master.zip";
+        $dir = $repo . "-master";
+        $desc = $this->path . "/" . $desc;
+        return $this->unzip_url($token, $url, $dir, $desc);
+    }
+    // ------------------------------------------------------------------------
     public function update($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -825,34 +893,7 @@ class Service {
                 ($master_version[0] == $version[0] && $master_version[1] > $version[1]) ||
                 ($master_version[0] > $version[0])) {
                 $url = 'https://github.com/jcubic/leash/archive/' . $fname;
-                $curl = $this->curl($url);
-                $data = curl_exec($curl);
-                $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-                curl_close($curl);
-                if ($http_code != 200) {
-                    throw new Exception("archive '$page' not found");
-                }
-                $file = fopen($fname, 'w');
-                fwrite($file, $data);
-                fclose($file);
-                $zip = new ZipArchive();
-                $res = $zip->open($fname);
-                if ($res === true) {
-                    $temp_dir = sys_get_temp_dir();
-                    if (!$zip->extractTo($temp_dir)) {
-                        throw new Exception("Have problem extracting files to '$temp_dir'");
-                    }
-                    $zip->close();
-                    unlink($fname);
-                    if (is_dir($temp_dir . '/leash-' . $page)) {
-                        $this->copy_dir($token, $temp_dir . '/leash-' . $page, $this->path);
-                        $this->delete_dir($token, $temp_dir . '/leash-' . $page);
-                    } else {
-                        throw new Exception("Directory '$temp_dir/leash-$page' not created");
-                    }
-                } else {
-                    throw new Exception("Can't open zip file");
-                }
+                $this->unzip_url($token, $url, 'leash-' . $page, $this->path);
                 return true;
             } else {
                 return false;

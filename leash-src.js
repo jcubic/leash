@@ -426,7 +426,7 @@ var leash = (function() {
                         var rfc = $(this).data('text');
                         var cmd = $.terminal.split_command('rfc ' + rfc);
                         leash.commands.rfc(cmd, term.token(), term);
-                    });/*.on('click', 'a', function(e) {
+                    }).on('click', 'a', function(e) {
                         if (!e.ctrlKey) {
                             var token = term.token();
                             var href = $(this).attr('href').trim();
@@ -442,7 +442,7 @@ var leash = (function() {
                             });
                             return false;
                         }
-                    });*/
+                    });
                     if (!leash.installed) {
                         leash.install(term);
                     } else {
