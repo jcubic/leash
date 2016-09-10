@@ -303,7 +303,12 @@ var leash = (function() {
                 var lengths = array[0].map(function(_, i) {
                     var col = array.map(function(row) {
                         if (row[i] != undefined) {
-                            return row[i].length;
+                            var len = row[i].length;
+                            if (row[i].match(/\t/g)) {
+                                // tab have 4 spaces
+                                len += row[i].match(/\t/g).length*3;
+                            }
+                            return len;
                         } else {
                             return 0;
                         }
@@ -314,11 +319,11 @@ var leash = (function() {
                 array = array.map(function(row) {
                     return '| ' + row.map(function(item, i) {
                         var size = item.length;
+                        if (item.match(/\t/g)) {
+                            // tab have 4 spaces
+                            size += item.match(/\t/g).length*3;
+                        }
                         if (size < lengths[i]) {
-                            if (item.match(/\t/g)) {
-                                // tab have 4 spaces
-                                size += item.match(/\t/g).length*3;
-                            }
                             item += new Array(lengths[i] - size + 1).join(' ');
                         }
                         return item;
@@ -427,6 +432,9 @@ var leash = (function() {
                         var cmd = $.terminal.split_command('rfc ' + rfc);
                         leash.commands.rfc(cmd, term.token(), term);
                     }).on('click', 'a', function(e) {
+                        if ($(this).parents().is('.exception')) {
+                            return;
+                        }
                         if (!e.ctrlKey) {
                             var token = term.token();
                             var href = $(this).attr('href').trim();
@@ -1447,6 +1455,10 @@ var leash = (function() {
                             term.echo('popd: directory stack empty');
                             dir_stack = [];
                         }
+                    },
+                    test: function(cmd, token, term) {
+                        var data = [["id","date","nick","email","www","comment","ip","avatar"],["1384","2016-09-03 20:38:17","dude\t","","","how do you invoke from the command line?","1250739991","avatars/default.png"],["1380","2016-09-02 11:19:37","test","","","nice and beautiful","2945095022","avatars/default.png"],["1378","2016-09-01 11:44:40","irshad","irshadpi77@gmail.com","","Woah,  this is just so cool!","244039142","avatars/default.png"]];
+                        term.echo(ascii_table(data, true));
                     },
                     update: function(cmd, token, term) {
                         term.pause();
