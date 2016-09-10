@@ -31,7 +31,7 @@ one of the following:
 * javascript interpreter
 * jargon command (will display definitions from jargon file)
 * ymacs editor (Emacs clone for the web)
-* vi editor (using jsvi) to use it you need to get https://github.com/jcubic/jsvi-app
+* vi editor (using jsvi)
   and clone to lib/apps directory
 * tab completion
 * File Drag & Drop upload (using HTML5) you can upload files that are bigger
@@ -40,6 +40,7 @@ one of the following:
 * rfc command where you can read RFC documents
 * record command where you can save commands in hash and rerun them when you
   refresh
+* view html pages as text on the terminal, when clicking on the link
 ----------------------------------------------------------------------------
 :: License
 ----------------------------------------------------------------------------
