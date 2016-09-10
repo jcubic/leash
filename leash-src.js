@@ -1456,10 +1456,6 @@ var leash = (function() {
                             dir_stack = [];
                         }
                     },
-                    test: function(cmd, token, term) {
-                        var data = [["id","date","nick","email","www","comment","ip","avatar"],["1384","2016-09-03 20:38:17","dude\t","","","how do you invoke from the command line?","1250739991","avatars/default.png"],["1380","2016-09-02 11:19:37","test","","","nice and beautiful","2945095022","avatars/default.png"],["1378","2016-09-01 11:44:40","irshad","irshadpi77@gmail.com","","Woah,  this is just so cool!","244039142","avatars/default.png"]];
-                        term.echo(ascii_table(data, true));
-                    },
                     update: function(cmd, token, term) {
                         term.pause();
                         leash.service.update(token)(function(err, result) {
