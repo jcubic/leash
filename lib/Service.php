@@ -300,6 +300,9 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function command_exists($token, $command) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
         $command = "which $command > /dev/null && echo true || echo false";
         $response = $this->shell($token, $command, ".");
         return json_decode($response['output']);
