@@ -1091,7 +1091,7 @@ class Service {
             );
         } else {
             $marker = 'XXXX' . md5(time());
-            if ($shell_fn == 'exec' || $shell_fn == 'shell_exec') {
+            if ($shell_fn == 'exec' || $shell_fn == 'shell_exec' || $shell_fn == 'system') {
                 $pre = ". .bashrc\ncd $path\n";
             } else {
                 $pre = ". ../.bashrc\ncd $path\n";
