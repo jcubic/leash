@@ -61,6 +61,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
       <script src="lib/jquery-1.12.0.min.js"></script>
   <?php } ?>
   <script src="lib/json-rpc.js"></script>
+  <script src="lib/wcwidth.js"></script>
   <?php if ($service->debug()) { ?>
     <script src="lib/jquery.terminal-src.js?<?= time() ?>"></script>
   <?php } else { ?>
