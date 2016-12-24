@@ -291,7 +291,7 @@ var leash = (function() {
                         stacks.push(new_lines);
                     }
                     var new_rows_count = Math.max.apply(Math, stacks.map(function(column) {
-                        return column.length;
+                        return wcwidth(column);
                     }));
                     for (var k = new_rows_count - 1; k >= 0; k--) {
                         array.splice(i + 1, 0, stacks.map(function(column) {
@@ -303,7 +303,12 @@ var leash = (function() {
                 var lengths = array[0].map(function(_, i) {
                     var col = array.map(function(row) {
                         if (row[i] != undefined) {
-                            return row[i].length;
+                            var len = wcwidth(row[i]);
+                            if (row[i].match(/\t/g)) {
+                                // tab is 4 spaces
+                                len += row[i].match(/\t/g).length*3;
+                            }
+                            return len;
                         } else {
                             return 0;
                         }
@@ -313,12 +318,12 @@ var leash = (function() {
                 // column padding
                 array = array.map(function(row) {
                     return '| ' + row.map(function(item, i) {
-                        var size = item.length;
+                        var size = wcwidth(item);
+                        if (item.match(/\t/g)) {
+                            // tab is 4 spaces
+                            size += item.match(/\t/g).length*3;
+                        }
                         if (size < lengths[i]) {
-                            if (item.match(/\t/g)) {
-                                // tab have 4 spaces
-                                size += item.match(/\t/g).length*3;
-                            }
                             item += new Array(lengths[i] - size + 1).join(' ');
                         }
                         return item;
@@ -426,7 +431,10 @@ var leash = (function() {
                         var rfc = $(this).data('text');
                         var cmd = $.terminal.split_command('rfc ' + rfc);
                         leash.commands.rfc(cmd, term.token(), term);
-                    });/*.on('click', 'a', function(e) {
+                    }).on('click', 'a', function(e) {
+                        if ($(this).parents().is('.exception')) {
+                            return;
+                        }
                         if (!e.ctrlKey) {
                             var token = term.token();
                             var href = $(this).attr('href').trim();
@@ -442,7 +450,7 @@ var leash = (function() {
                             });
                             return false;
                         }
-                    });*/
+                    });
                     if (!leash.installed) {
                         leash.install(term);
                     } else {
@@ -545,6 +553,8 @@ var leash = (function() {
                                 term.error("Not valid shell found");
                                 term.error("You will not able to use Leash ful"+
                                            "ly");
+                                settings.shell = null;
+                                continuation();
                             }
                         }
                         term.echo("Detect Shell");
@@ -552,9 +562,13 @@ var leash = (function() {
                             test_shells(shells, function() {
                                 service.configure(settings)(function(err) {
                                     term.resume();
-                                    term.echo("Your instalation is complete no"+
-                                              "w you can refresh the page and "+
-                                              "login");
+                                    if (err) {
+                                        term.error(err.message);
+                                    } else {
+                                        term.echo("Your instalation is complete no"+
+                                                  "w you can refresh the page and "+
+                                                  "login");
+                                    }
                                 });
                             });
                         });

@@ -7,3 +7,5 @@ config.json
 tmp/*
 cgi-bin/*.pyc
 www
+lib/html2text
+lib/apps/vi
