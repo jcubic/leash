@@ -3,7 +3,7 @@
 #
 #  Released under the MIT license
 
-VERSION=0.11.0
+VERSION=0.12.0
 JSCOMPRESS=uglifyjs
 SED=sed
 CP=cp
