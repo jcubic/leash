@@ -436,9 +436,14 @@ class Service {
         if (!isset($settings['home'])) {
             $settings['home'] = $this->path;
         }
-        $path = $this->shell($token, 'echo -n $PATH', '/');
-        $settings['path'] = $path['output'];
-        $settings['executables'] = $this->executables($token, '/');
+        try {
+            $path = $this->shell($token, 'echo -n $PATH', '/');
+            $settings['path'] = $path['output'];
+            $settings['executables'] = $this->executables($token, '/');
+        } catch(Exception $e) {
+            $settings['path'] = '';
+            $settings['executables'] = array();
+        }
         $upload_limit = intval(ini_get('upload_max_filesize')) * 1024 * 1024;
         $settings['upload_max_filesize'] = $upload_limit;
         $post_limit = intval(ini_get('post_max_size')) * 1024 * 1024;
@@ -840,9 +845,10 @@ class Service {
         $curl = $this->curl($url);
         $data = curl_exec($curl);
         $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
         curl_close($curl);
         if ($http_code != 200) {
-            throw new Exception("archive '$page' not found");
+            throw new Exception("curl error " . $error);
         }
         $fname = $this->random_string(5) . ".zip";
         $file = fopen($fname, 'w');
@@ -1044,6 +1050,7 @@ class Service {
         }
         return array(
             "exec",
+            "system",
             "shell_exec",
             "cgi_python",
             "cgi_perl"

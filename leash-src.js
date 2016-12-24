@@ -553,6 +553,8 @@ var leash = (function() {
                                 term.error("Not valid shell found");
                                 term.error("You will not able to use Leash ful"+
                                            "ly");
+                                settings.shell = null;
+                                continuation();
                             }
                         }
                         term.echo("Detect Shell");
@@ -560,9 +562,13 @@ var leash = (function() {
                             test_shells(shells, function() {
                                 service.configure(settings)(function(err) {
                                     term.resume();
-                                    term.echo("Your instalation is complete no"+
-                                              "w you can refresh the page and "+
-                                              "login");
+                                    if (err) {
+                                        term.error(err.message);
+                                    } else {
+                                        term.echo("Your instalation is complete no"+
+                                                  "w you can refresh the page and "+
+                                                  "login");
+                                    }
                                 });
                             });
                         });
