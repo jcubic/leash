@@ -291,7 +291,7 @@ var leash = (function() {
                         stacks.push(new_lines);
                     }
                     var new_rows_count = Math.max.apply(Math, stacks.map(function(column) {
-                        return wcwidth(column);
+                        return column.length;
                     }));
                     for (var k = new_rows_count - 1; k >= 0; k--) {
                         array.splice(i + 1, 0, stacks.map(function(column) {
