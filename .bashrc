@@ -1,5 +1,5 @@
 #  This file is part of Leash (Browser Shell)
-#  Copyright (C) 2013-2016  Jakub Jankiewicz <http://jcubic.pl>
+#  Copyright (C) 2013-2017  Jakub Jankiewicz <http://jcubic.pl>
 #
 #  Released under the MIT license
 
