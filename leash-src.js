@@ -6,6 +6,222 @@
  *
  *  Date: {{DATE}}
  */
+function Uploader(leash) {
+    this.token = leash.terminal.token();
+    this.leash = leash;
+}
+
+Uploader.prototype.upload_tree = function upload_tree(tree, path) {
+    var defered = $.Deferred();
+    var self = this;
+    path = path || self.leash.cwd;
+    function process(entries, callback) {
+        entries = entries.slice();
+        (function recur() {
+            var entry = entries.shift();
+            if (entry) {
+                callback(entry).then(recur).fail(function() {
+                    defered.reject();
+                });
+            } else {
+                defered.resolve();
+            }
+        })();
+    }
+    function upload_files(entries) {
+        process(entries, function(entry) {
+            return self.upload_tree(entry, path + "/" + tree.name);
+        });
+    }
+    function upload_file(file) {
+        self.upload(file, path).then(function() {
+            defered.resolve();
+        }).fail(function() {
+            defered.reject();
+        });
+    }
+    if (typeof Directory != 'undefined' && tree instanceof Directory) { // firefox
+        tree.getFilesAndDirectories().then(function(entries) {
+            upload_files(entries);
+        });
+    } else if (typeof File != 'undefined' && tree instanceof File) { // firefox
+        upload_file(tree);
+    } else if (tree.isFile) { // chrome
+        tree.file(upload_file);
+    } else if (tree.isDirectory) { // chrome
+        var dirReader = tree.createReader();
+        dirReader.readEntries(function(entries) {
+            upload_files(entries);
+        });
+    }
+    return defered.promise();
+};
+
+Uploader.prototype.upload = function upload(file, path) {
+    var self = this;
+    var defered = $.Deferred();
+    var file_name = path + '/' + file.name;
+    if (file.size > self.leash.settings.upload_max_filesize) {
+        if (!(file.slice || file.webkitSlice)) {
+            self.leash.terminal.error('Exceeded filesize limit.');
+            defered.resolve();
+            self.leash.animation.stop();
+        } else {
+            self.maybe_ask(file_name).then(function() {
+                self.leash.animation.start(400);
+                self.upload_by_chunks(file, path).then(function() {
+                    defered.resolve();
+                    self.leash.animation.stop();
+                }).fail(function() {
+                    defered.reject();
+                    self.leash.animation.stop();
+                });
+            }).fail(function() {
+                // will process next file
+                defered.resolve();
+                self.leash.animation.stop();
+            });
+        }
+    } else {
+        self.maybe_ask(file_name).then(function() {
+            self.upload_file(file, path).then(function() {
+                defered.resolve();
+                self.leash.animation.stop();
+            }).fail(function() {
+                defered.reject();
+                self.leash.animation.stop();
+            });
+        }).fail(function() {
+            // will process next file
+            defered.resolve();
+            self.leash.animation.stop();
+        });
+    }
+    return defered.promise();
+};
+
+Uploader.prototype.upload_by_chunks = function upload_by_chunks(file, path, chunk_size) {
+    var self = this;
+    chunk_size = chunk_size || 1048576; // 1MB
+    var defered = $.Deferred();
+    function slice(start, end) {
+        if (file.slice) {
+            return file.slice(start, end);
+        } else if (file.webkitSlice) {
+            return file.webkitSlice(start, end);
+        }
+    }
+    var i = 0;
+    function process(start, end) {
+        if (start < file.size) {
+            var chunk = slice(start, end);
+            var formData = new FormData();
+            formData.append('file', chunk, file.name);
+            formData.append('token', self.token);
+            formData.append('path', path);
+            $.ajax({
+                url: 'lib/upload.php?append=1',
+                type: 'POST',
+                success: function(response) {
+                    if (response.error) {
+                        self.leash.terminal.error(response.error);
+                        defered.reject();
+                    } else {
+                        process(end, end+chunk_size);
+                    }
+                },
+                error: function(jxhr, error, status) {
+                    self.leash.terminal.error(jxhr.statusText);
+                    defered.reject();
+                },
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false
+            });
+        } else {
+            self.leash.terminal.echo('File "' + file.name + '" uploaded.');
+            defered.resolve();
+        }
+    }
+    var fname = path + '/' + file.name;
+    console.log(self.token);
+    this.leash.service.unlink(self.token, fname)(function(err, del) {
+        if (err) {
+            self.leash.terminal.error(err.message);
+            defered.reject();
+        } else {
+            process(0, chunk_size);
+        }
+    });
+    return defered.promise();
+};
+
+Uploader.prototype.maybe_ask = function maybe_ask(fname) {
+    var self = this;
+    var defered = $.Deferred();
+    if (self.answer) {
+        defered.resolve();
+    } else {
+        self.leash.service.file_exists(fname)(function(err, exists) {
+            if (exists) {
+                var msg = 'File "' + fname + '" exis'+
+                    'ts do you want to overwrite it (Y/N/A)? ';
+                self.leash.terminal.history().disable();
+                self.leash.terminal.push(function(answer) {
+                    if (answer.match(/^(y|n|a)$/i)) {
+                        self.leash.terminal.pop().history().enable();
+                        if (answer.match(/^a$/i)) {
+                            defered.resolve();
+                            self.answer = true;
+                        } else if (answer.match(/^y$/i)) {
+                            defered.resolve();
+                        } else if (answer.match(/^n$/i)) {
+                            defered.reject();
+                        }
+                    }
+                }, {
+                    prompt: msg
+                });
+            } else {
+                defered.resolve();
+            }
+        });
+    }
+    return defered.promise();
+}
+
+Uploader.prototype.upload_file = function upload_file(file, path) {
+    var self = this;
+    var defered = $.Deferred();
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('token', self.token);
+    formData.append('path', path);
+    $.ajax({
+        url: 'lib/upload.php',
+        type: 'POST',
+        success: function(response) {
+            self.leash.animation.stop();
+            if (response.error) {
+                self.leash.terminal.error(response.error);
+                defered.reject();
+            } else {
+                self.leash.terminal.echo('File "' + file.name + '" ' + 'uploaded.');
+                defered.resolve();
+            }
+        },
+        error: function(jxhr, error, status) {
+            self.leash.terminal.error(jxhr.statusText);
+            defered.reject();
+        },
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false
+    });
+    return defered.promise();
+};
 var leash = (function() {
     var colors = $.omap({
         blue:  '#55f',
@@ -2184,6 +2400,7 @@ var leash = (function() {
     };
 })();
 
+
 (function($) {
     $.fn.leash = function(options) {
         if (!$.terminal || !$.fn.terminal) {
@@ -2247,134 +2464,45 @@ var leash = (function() {
                 leash.terminal = terminal;
                 terminal.on('drop', function(e) {
                     e.preventDefault();
-                    var prompt;
-                    var org = e.originalEvent;
-                    var files = org.dataTransfer.files || org.target.files;
-                    var token = terminal.token();
-                    if (!token) {
+                                        var org = e.originalEvent;
+                    if (!terminal.token()) {
                         return;
                     }
-                    if (files.length) {
+                    var uploader = new Uploader(leash);
+                    var items;
+                    if (org.dataTransfer.items) {
+                        items = [].slice.call(org.dataTransfer.items);
+                    }
+                    var files = (org.dataTransfer.files || org.target.files);
+                    if (files) {
                         files = [].slice.call(files);
+                    }
+                    if (items && items.length) {
+                        if (items[0].webkitGetAsEntry) {
+                            (function upload() {
+                                var item = items.shift();
+                                if (item) {
+                                    item = item.webkitGetAsEntry();
+                                    uploader.upload_tree(item).then(upload)
+                                }
+                            })();
+                        }
+                    } else if (files.length) {
                         (function upload() {
                             var file = files.shift();
-                            function uploadFile() {
-                                var formData = new FormData();
-                                formData.append('file', file);
-                                formData.append('token', token);
-                                formData.append('path', leash.cwd);
-                                leash.animation.start(400);
-                                $.ajax({
-                                    url: 'lib/upload.php',
-                                    type: 'POST',
-                                    success: function(response) {
-                                        leash.animation.stop();
-                                        if (response.error) {
-                                            terminal.error(response.error);
-                                        } else {
-                                            terminal.echo('File "' + file.name + '" ' +
-                                                          'uploaded.');
-                                        }
-                                        upload();
-                                    },
-                                    error: function(jxhr, error, status) {
-                                        terminal.error(jxhr.statusText);
-                                        leash.animation.stop();
-                                    },
-                                    data: formData,
-                                    cache: false,
-                                    contentType: false,
-                                    processData: false
-                                });
-                            }
-                            function maybe_ask(callback) {
-                                leash.service.file_exists(fname)(function(err, exists) {
-                                    if (exists) {
-                                        var msg = 'File "' + file.name + '" exis'+
-                                            'ts do you want to overwrite (Y/N)? ';
-                                        terminal.history().disable();
-                                        terminal.push(function(yesno) {
-                                            if (yesno.match(/^(y|n)$/i)) {
-                                                terminal.pop().history().enable();
-                                                if (yesno.match(/^y$/i)) {
-                                                    callback(); // upload
-                                                } else if (yesno.match(/^n$/i)) {
-                                                    upload(); // next file
-                                                }
-                                            }
-                                        }, {
-                                            prompt: msg
-                                        });
-                                    } else {
-                                        callback();
-                                    }
-                                });
-                            }
-                            function upload_by_chunks() {
-                                var chunk_size = 1048576; // 1MB
-                                function slice(start, end) {
-                                    if (file.slice) {
-                                        return file.slice(start, end);
-                                    } else if (file.webkitSlice) {
-                                        return file.webkitSlice(start, end);
-                                    }
-                                }
-                                var i = 0;
-                                function process(start, end) {
-                                    if (start < file.size) {
-                                        var chunk = slice(start, end);
-                                        var formData = new FormData();
-                                        formData.append('file', chunk, file.name);
-                                        formData.append('token', token);
-                                        formData.append('path', leash.cwd);
-                                        $.ajax({
-                                            url: 'lib/upload.php?append=1',
-                                            type: 'POST',
-                                            success: function(response) {
-                                                if (response.error) {
-                                                    terminal.error(response.error);
-                                                }
-                                                process(end, end+chunk_size);
-                                            },
-                                            error: function(jxhr, error, status) {
-                                                terminal.error(jxhr.statusText);
-                                                leash.animation.stop();
-                                            },
-                                            data: formData,
-                                            cache: false,
-                                            contentType: false,
-                                            processData: false
-                                        });
-                                    } else {
-                                        leash.animation.stop();
-                                        terminal.echo('File "' + file.name + '" uploaded.');
-                                        upload();
-                                    }
-                                }
-                                leash.animation.start(400);
-                                leash.service.unlink(token, fname)(function(err, del) {
-                                    if (err) {
-                                        leash.terminal.error(err.message);
-                                        leash.animation.stop();
-                                    } else {
-                                        process(0, chunk_size);
-                                    }
-                                });
-                            }
                             if (file) {
-                                var fname = leash.cwd + '/' + file.name;
-                                if (file.size > leash.settings.upload_max_filesize) {
-                                    if (!(file.slice || file.webkitSlice)) {
-                                        terminal.error('Exceeded filesize limit.');
-                                        upload();
-                                    } else {
-                                        maybe_ask(upload_by_chunks);
-                                    }
-                                } else {
-                                    maybe_ask(uploadFile);
-                                }
+                                uploader.upload(file).then(upload)
                             }
-                        })();
+                        });
+                    } else if (org.dataTransfer.getFilesAndDirectories) {
+                        org.dataTransfer.getFilesAndDirectories().then(function(items) {
+                            (function upload() {
+                                var item = items.shift();
+                                if (item) {
+                                    uploader.upload_tree(item).then(upload);
+                                }
+                            })();
+                        });
                     }
                 }).on('dragover', function(e) {
                     e.preventDefault();

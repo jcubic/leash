@@ -13,7 +13,7 @@ error_reporting(E_ALL);
 require('Service.php');
 header('Content-type: application/json');
 
-$service = new Service('config.json', preg_replace("/\/[^\/]+$/", "", getcwd()));
+$service = new Service('config.json', preg_replace("/\/[^\/]+\/?$/", "", getcwd()));
 
 if (isset($_POST['token']) && isset($_POST['path'])) {
     if ($service->valid_token($_POST['token'])) {
@@ -25,9 +25,19 @@ if (isset($_POST['token']) && isset($_POST['path'])) {
 
         switch ($_FILES['file']['error']) {
             case UPLOAD_ERR_OK:
+                $path = '';
+                // path from js is unix like
+                foreach (explode("/", $_POST['path']) as $folder) {
+                    if (!is_dir($path . DIRECTORY_SEPARATOR . $folder)) {
+                        mkdir($path . DIRECTORY_SEPARATOR . $folder);
+                    }
+                    $path .= DIRECTORY_SEPARATOR . $folder;
+                }
                 $full_name = $_POST['path'] . '/' . $fname;
                 if (file_exists($full_name) && !is_writable($full_name)) {
-                    echo json_encode(array('error' => 'File "'.$fname.'" is not writable'));
+                    echo json_encode(array(
+                        'error' => 'File "'. $fname . '" is not writable'
+                    ));
                 } else {
                     if (isset($_GET['append'])) {
                         $contents = file_get_contents($_FILES['file']['tmp_name']);
@@ -53,7 +63,7 @@ if (isset($_POST['token']) && isset($_POST['path'])) {
                 echo json_encode(array('error' => 'Exceeded filesize limit.'));
                 break;
             default:
-                echo json_encode(array('error' => 'Unknown errors.'));
+                echo json_encode(array('error' => 'Unknown error.'));
         }
     } else {
         echo json_encode(array('error' => 'Invalid Token'));
