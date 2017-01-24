@@ -145,7 +145,6 @@ Uploader.prototype.upload_by_chunks = function upload_by_chunks(file, path, chun
         }
     }
     var fname = path + '/' + file.name;
-    console.log(self.token);
     this.leash.service.unlink(self.token, fname)(function(err, del) {
         if (err) {
             self.leash.terminal.error(err.message);
@@ -189,7 +188,7 @@ Uploader.prototype.maybe_ask = function maybe_ask(fname) {
         });
     }
     return defered.promise();
-}
+};
 
 Uploader.prototype.upload_file = function upload_file(file, path) {
     var self = this;
@@ -2464,7 +2463,7 @@ var leash = (function() {
                 leash.terminal = terminal;
                 terminal.on('drop', function(e) {
                     e.preventDefault();
-                                        var org = e.originalEvent;
+                    var org = e.originalEvent;
                     if (!terminal.token()) {
                         return;
                     }
@@ -2487,7 +2486,7 @@ var leash = (function() {
                                 }
                             })();
                         }
-                    } else if (files.length) {
+                    } else if (files && files.length) {
                         (function upload() {
                             var file = files.shift();
                             if (file) {
