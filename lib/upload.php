@@ -41,10 +41,15 @@ if (isset($_POST['token']) && isset($_POST['path'])) {
                 } else {
                     if (isset($_GET['append'])) {
                         $contents = file_get_contents($_FILES['file']['tmp_name']);
-                        $f = fopen($full_name, 'a+');
-                        fwrite($f, $contents);
-                        fclose($f);
-                        echo json_encode(array('success' => true));
+                        $file = fopen($full_name, 'a+');
+                        if (!$file) {
+                            echo json_encode(array('error' => 'Can\'t save file.'));
+                        } else if (fwrite($file, $contents) != strlen($contents)) {
+                            echo json_encode(array('error' => 'Not all bytes saved.'));
+                        } else {
+                            echo json_encode(array('success' => true));
+                        }
+                        fclose($file);
                     } else {
                         if (!move_uploaded_file($_FILES['file']['tmp_name'],
                                                 $full_name)) {
