@@ -8,6 +8,7 @@
  */
 
 require('Database.php');
+require('Logger.php');
 
 class User {
     function __construct($username, $password) {
@@ -95,30 +96,45 @@ function h($str) {
     return sha1(str_rot13($str) . $str) . substr(md5($str), 0, 24);
 }
 
+
+
+// ----------------------------------------------------------------------------
+// :: Main JSON-RPC service class
+// ----------------------------------------------------------------------------
+require_once('json-rpc.php');
+
 class Service {
     protected $config_file;
     protected $config;
     const password_hash = 'h'; // function use for password on installation
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]*):(.*)/';
+    private $safe_to_save = false;
 
     function __construct($config_file, $path) {
+        $this->logger = new Logger($path . "/debug.log");
+        $this->logger->log('constructor: ' . get_raw_post_data());
         $this->path = $path;
         $this->config_file = $config_file;
         $full_path = $path . "/" . $this->config_file;
+        $corrupted = false;
+        $this->config = new stdClass();
         if (file_exists($full_path)) {
             try {
                 $this->config = json_decode(file_get_contents($full_path));
             } catch (Exception $e) {
                 $this->config = new stdClass();
+                $corrupted = true;
+                $this->logger->log('file corupted: ' . file_get_contents($full_path));
             }
             // it had no write permission when first created while testing
             if (!is_writable($full_path)) {
                 chmod($full_path, 0664);
             }
         } else {
-            $this->config = new stdClass();
+            $this->logger->log("constructor file don't exists");
         }
         if (!isset($this->config->sessions) || !is_array($this->config->sessions)) {
+            $this->logger->log("no sessions " . json_encode($this->config));
             $this->config->sessions = array();
         } else {
             $this->config->sessions = array_map(function($session) {
@@ -130,11 +146,20 @@ class Service {
         if (!isset($this->config->users) || !is_array($this->config->sessions)) {
             $this->config->users = array();
         }
+        if (!$corrupted) {
+            $this->safe_to_save = true;
+        }
+        $this->logger->log("constructor end ");
     }
     // ------------------------------------------------------------------------
     function __destruct() {
-        $path = $this->path . "/" . $this->config_file;
-        $this->__write($path, json_encode($this->config));
+        if ($this->safe_to_save) {
+            $this->logger->log("destructor save to write: " . json_encode($this->config));
+            $path = $this->path . "/" . $this->config_file;
+            $this->__write($path, json_encode($this->config));
+        } else {
+            $this->logger->log("destructor not safe");
+        }
     }
 
     // ------------------------------------------------------------------------

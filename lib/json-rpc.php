@@ -83,12 +83,17 @@ function json_error() {
 }
 
 // ----------------------------------------------------------------------------
+$raw_post_data = null;
 function get_raw_post_data() {
-    if (isset($GLOBALS['HTTP_RAW_POST_DATA'])) {
-        return $GLOBALS['HTTP_RAW_POST_DATA'];
-    } else {
-        return file_get_contents('php://input');
+    global $raw_post_data;
+    if (!$raw_post_data) {
+        if (isset($GLOBALS['HTTP_RAW_POST_DATA'])) {
+            $raw_post_data = $GLOBALS['HTTP_RAW_POST_DATA'];
+        } else {
+            $raw_post_data = file_get_contents('php://input');
+        }
     }
+    return $raw_post_data;
 }
 
 // ----------------------------------------------------------------------------
@@ -176,7 +181,7 @@ function service_description($object) {
 // ----------------------------------------------------------------------------
 function get_json_request() {
     $request = get_raw_post_data();
-	if ($request == "") {
+    if ($request == "") {
         throw new JsonRpcExeption(101, "Parse Error: no data");
     }
     $encoding = mb_detect_encoding($request, 'auto');
