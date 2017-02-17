@@ -830,9 +830,6 @@ var leash = (function() {
                                         leash.dir = result;
                                         // we can set prompt after we have config
                                         term.set_prompt(leash.prompt);
-                                        leash.prompt(function(string) {
-                                            console.log(string);
-                                        });
                                         setTimeout(function() {
                                             term.resume();
                                         }, 100);
