@@ -830,6 +830,9 @@ var leash = (function() {
                                         leash.dir = result;
                                         // we can set prompt after we have config
                                         term.set_prompt(leash.prompt);
+                                        leash.prompt(function(string) {
+                                            console.log(string);
+                                        });
                                         setTimeout(function() {
                                             term.resume();
                                         }, 100);
@@ -1576,8 +1579,8 @@ var leash = (function() {
                         prompt: prompt
                     });
                 },
-                completion: function(term, string, callback) {
-                    var command = term.get_command();
+                completion: function(string, callback) {
+                    var command = this.get_command();
                     function dirs_slash(dir) {
                         return (dir.dirs || []).map(function(dir) {
                             return dir + '/';
@@ -1596,7 +1599,7 @@ var leash = (function() {
                     }
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
-                    var token = term.token()
+                    var token = this.token()
                     if (string.match(/^\$/)) {
                         service.shell(token, 'env', '/')(function(err, result) {
                             callback(result.output.split('\n').map(function(pair) {
@@ -2449,7 +2452,7 @@ var leash = (function() {
                     name: 'leash',
                     outputLimit: 500,
                     greetings: leash.greetings,
-                    keydown: function(e) {
+                    keypress: function(e) {
                         if (leash.animation.animating) {
                             if (e.which == 68 && e.ctrlKey) {
                                 leash.animation.stop();

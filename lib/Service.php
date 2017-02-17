@@ -131,7 +131,7 @@ class Service {
                 chmod($full_path, 0664);
             }
         } else {
-            $this->logger->log("constructor file don't exists");
+            $this->logger->log("constructor: file don't exists");
         }
         if (!isset($this->config->sessions) || !is_array($this->config->sessions)) {
             $this->logger->log("no sessions " . json_encode($this->config));
