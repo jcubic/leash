@@ -1605,7 +1605,7 @@ var leash = (function() {
                             });
                         } else {
                             return array.map(function(item) {
-                                return item.replace(/ /g, '\\ ');
+                                return item.replace(/([() ])/g, '\\$1');
                             });
                         }
                     }
@@ -1623,7 +1623,7 @@ var leash = (function() {
                         callback(commands.concat(leash.dir.execs || []).
                             concat(config.executables));
                     } else {
-                        var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
+                        var m = string.match(/(.*)\/([^\/]+)/);
                         var path;
                         if (cmd.name == 'cd') {
                             if (m) {
@@ -1632,13 +1632,13 @@ var leash = (function() {
                                     var dirs = (result.dirs || []).map(function(dir) {
                                         return m[1] + '/' + dir + '/';
                                     });
-                                    callback(fix_spaces(dirs));
+                                    callback(dirs);
                                 });
                             } else {
-                                callback(fix_spaces(dirs_slash(leash.dir)));
+                                callback(dirs_slash(leash.dir));
                             }
                         } else if (cmd.name == 'jargon') {
-                            callback(fix_spaces(leash.jargon));
+                            callback(leash.jargon);
                         } else {
                             if (m) {
                                 path = leash.cwd + '/' + m[1];
@@ -1648,12 +1648,12 @@ var leash = (function() {
                                         map(function(file_dir) {
                                             return m[1] + '/' + file_dir;
                                         });
-                                    callback(fix_spaces(dirs_files));
+                                    callback(dirs_files);
                                 });
                             } else {
                                 var dirs_files = (leash.dir.files || []).
                                     concat(dirs_slash(leash.dir));
-                                callback(fix_spaces(dirs_files));
+                                callback(dirs_files);
                             }
                         }
                     }
