@@ -327,6 +327,20 @@ var leash = (function() {
             'WITH', 'WITHOUT'];
         return keywords(uppercase);
     }
+    function sql_formatter(keywords, tables, color) {
+        var re = new RegExp('^' + tables.map($.terminal.escape_regex).join('|') + '$', 'i');
+        return function(string) {
+            return string.split(/((?:\s|&nbsp;|\)|\()+)/).map(function(string) {
+                if (keywords.indexOf(string) != -1) {
+                    return '[[b;' + color + ';]' + string + ']';
+                } else if (string.match(re)) {
+                    return '[[u;;]' + string + ']';
+                } else {
+                    return string;
+                }
+            }).join('');
+        }
+    }
     // -------------------------------------------------------------------------
     // :: PYTHON INTERPRETER RPC HANDLER
     // -------------------------------------------------------------------------
@@ -446,6 +460,7 @@ var leash = (function() {
             // -----------------------------------------------------------------
             var home;
             var config;
+            var formatters_stack = [$.terminal.defaults.formatters];
             function expand_env_vars(command) {
                 var fixed_command = command;
                 $.each(leash.env, function(k, v) {
@@ -472,7 +487,7 @@ var leash = (function() {
                                         });
                                     }
                                 }));
-                                leash.terminal.echo(ascii_table(result, true));
+                                leash.terminal.echo(ascii_table(result, true), {formatters: false});
                             }
                             break;
                         case 'number':
@@ -1643,6 +1658,19 @@ var leash = (function() {
                         }
                     }
                 },
+                onPush: function(before, after) {
+                    formatters_stack.push(after.formatters);
+                    if (after.formatters) {
+                        $.terminal.defaults.formatters = after.formatters;
+                    }
+                },
+                onPop: function(before, after) {
+                    formatters_stack.pop();
+                    if (formatters_stack.length > 0) {
+                        var last = formatters_stack[formatters_stack.length-1];
+                        $.terminal.defaults.formatters = last;
+                    }
+                },
                 commands: {
                     download: function(cmd, token, term) {
                         if (cmd.args.length == 1) {
@@ -2066,6 +2094,7 @@ var leash = (function() {
                             fn = leash.cwd + '/' + cmd.args[0];
                         }
                         function push(tables) {
+                            var keywords = sqlite_keywords();
                             term.push(function(q) {
                                 if (q.match(/^\s*help\s*$/)) {
                                     term.echo('show tables:\n\tSELECT name FROM sqlite_m'+
@@ -2078,7 +2107,8 @@ var leash = (function() {
                             }, {
                                 name: 'sqlite',
                                 prompt: 'sqlite> ',
-                                completion: ['help'].concat(sqlite_keywords()).concat(tables)
+                                completion: ['help'].concat(keywords).concat(tables),
+                                formatters: [sql_formatter(keywords, tables, 'white')]
                             });
                         }
                         var query = 'SELECT name FROM sqlite_master WHERE type = "table"';
@@ -2156,13 +2186,15 @@ var leash = (function() {
                                         return row[key];
                                     });
                                 });
+                                var keywords = mysql_keywords();
                                 term.push(mysql_query, {
                                     prompt: prompt,
                                     name: 'mysql',
                                     onExit: function() {
                                         mysql_close(db);
                                     },
-                                    completion: mysql_keywords().concat(tables)
+                                    completion: keywords.concat(tables),
+                                    formatters: [sql_formatter(keywords, tables, 'white')]
                                 }).resume();
                             }
                             function mysql_storage() {
@@ -2446,6 +2478,8 @@ var leash = (function() {
                     login: leash.login,
                     onExport: leash.onExport,
                     onImport: leash.onImport,
+                    onPop: leash.onPop,
+                    onPush: leash.onPush,
                     name: 'leash',
                     outputLimit: 500,
                     greetings: leash.greetings,
