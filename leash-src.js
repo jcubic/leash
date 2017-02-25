@@ -511,7 +511,6 @@ var leash = (function() {
                 if (!array.length) {
                     return '';
                 }
-
                 for (var i = array.length - 1; i >= 0; i--) {
                     var row = array[i];
                     var stacks = [];
@@ -1659,10 +1658,8 @@ var leash = (function() {
                     }
                 },
                 onPush: function(before, after) {
-                    formatters_stack.push(after.formatters);
-                    if (after.formatters) {
-                        $.terminal.defaults.formatters = after.formatters;
-                    }
+                    $.terminal.defaults.formatters = after.formatters || [];
+                    formatters_stack.push($.terminal.defaults.formatters);
                 },
                 onPop: function(before, after) {
                     formatters_stack.pop();
@@ -1672,6 +1669,161 @@ var leash = (function() {
                     }
                 },
                 commands: {
+                    github: function(cmd, token, term) {
+                        var parser = new optparse.OptionParser([
+                            ['-u', '--username USER', 'owner of the repo'],
+                            ['-r', '--repo REPO', 'repo to open']
+                        ]);
+                        var user, repo, branch = 'master';
+                        parser.on('username', function(opt, value) {
+                            user = value;
+                        });
+                        parser.on('repo', function(opt, value) {
+                            repo = value;
+                        });
+                        parser.parse(cmd.args);
+                        var base = 'https://api.github.com/repos';
+                        var base_content;
+                        var base_defer;
+                        function dir(path, callback) {
+                            var url = base + '/' + user + '/' + repo + '/contents/' + path
+                            
+                            $.ajax({
+                                url: url,
+                                type: 'GET',
+                                success: function(data){
+                                    callback({
+                                        dirs: data.filter(function(object) {
+                                            return object.type == 'dir';
+                                        }),
+                                        files: data.filter(function(object) {
+                                            return object.type == 'file';
+                                        })
+                                    });
+                                },
+                                error: function(data) {
+                                    term.error('wrong directory').resume();
+                                }
+                            });
+                        }
+                        function file(path, callback) {
+                            var url = 'https://raw.githubusercontent.com/' + user + '/' + repo +
+                                '/master/' + path;
+                            $.ajax({
+                                url: url,
+                                type: 'GET',
+                                success: callback,
+                                error: function(data) {
+                                    term.error('file not found').resume();
+                                }
+                            });
+                        }
+                        function list(data) {
+                            term.echo(data.dirs.map(function(object) {
+                                return colors.blue(object.name);
+                            }).concat(data.files.map(function(object) {
+                                return object.name;
+                            })).join('\n'));
+                        }
+                        function show(path, callback) {
+                            term.pause();
+                            file(cwd + path, function(contents) {
+                                callback(contents);
+                                term.resume();
+                            });
+                        }
+                        if (user && repo) {
+                            var cwd = '/';
+                            base_defer = $.Deferred();
+                            dir('', function(data) {
+                                base_content = data;
+                                base_defer.resolve();
+                            });
+                            term.push(function(command) {
+                                var cmd = $.terminal.parse_command(command);
+                                if (cmd.name == 'cd') {
+                                    path = cmd.args[0];
+                                    if (cmd.args[0] == '..') {
+                                        path = cwd.replace(/[^\/]+\/$/, '');
+                                    } else {
+                                        path = (cwd == '/' ? '' : cwd) + cmd.args[0];
+                                    }
+                                    term.pause();
+                                    base_defer = $.Deferred();
+                                    dir(path, function(data) {
+                                        base_content = data;
+                                        cwd = path;
+                                        if (!cwd.match(/\/$/)) {
+                                            cwd += '/';
+                                        }
+                                        term.resume();
+                                        base_defer.resolve();
+                                    });
+                                } else if (cmd.name == 'less') {
+                                    show(cmd.args[0], leash.less);
+                                } else if (cmd.name == 'cat') {
+                                    show(cmd.args[0], term.echo);
+                                } else if (cmd.name == 'ls') {
+                                    if (cmd.args == 0) {
+                                        list(base_content);
+                                    } else {
+                                        term.pause();
+                                        dir(cmd.args[0], function(data) {
+                                            list(data);
+                                            term.resume();
+                                        });
+                                    }
+                                } else {
+                                    term.echo('unknown command ' + cmd.name);
+                                }
+                            }, {
+                                prompt: function(callback) {
+                                    var name = colors.green(user + '&#64;' + repo);
+                                    var path = cwd;
+                                    if (path != '/') {
+                                        path = '/' + path.replace(/\/$/, '');
+                                    }
+                                    callback(name + colors.grey(':') + colors.blue(path) + '$ ');
+                                },
+                                name: 'github',
+                                completion: function(string, callback) {
+                                    var command = $.terminal.parse_command(this.get_command());
+                                    var m = string.match(/(.*)\/([^\/]+)/);
+                                    if (m) {
+                                        dir(m[1], function(data) {
+                                            if (command.name == 'cd') {
+                                                callback(data.dirs.map(function(object) {
+                                                    return m[1] + '/' + object.name + '/';
+                                                }));
+                                            } else {
+                                                callback(data.files.map(function(object) {
+                                                    return m[1] + '/' + object.name + '/';
+                                                }).concat(data.dirs.map(function(object) {
+                                                    return m[1] + '/' + object.name;
+                                                })));
+                                            }
+                                        });
+                                    } else {
+                                        base_defer.then(function() {
+                                            if (command.name == 'cd') {
+                                                callback(base_content.dirs.map(function(object) {
+                                                    return object.name + '/';
+                                                }));
+                                            } else {
+                                                callback(base_content.files.map(function(object) {
+                                                    return object.name;
+                                                }).concat(base_content.dirs.map(function(object) {
+                                                    return object.name + '/';
+                                                })));
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        } else {
+                            term.echo(parser);
+                        }
+                    },
                     download: function(cmd, token, term) {
                         if (cmd.args.length == 1) {
                             var filename = leash.cwd + '/' + cmd.args[0];
