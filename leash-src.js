@@ -6,6 +6,221 @@
  *
  *  Date: {{DATE}}
  */
+function Uploader(leash) {
+    this.token = leash.terminal.token();
+    this.leash = leash;
+}
+
+Uploader.prototype.upload_tree = function upload_tree(tree, path) {
+    var defered = $.Deferred();
+    var self = this;
+    path = path || self.leash.cwd;
+    function process(entries, callback) {
+        entries = entries.slice();
+        (function recur() {
+            var entry = entries.shift();
+            if (entry) {
+                callback(entry).then(recur).fail(function() {
+                    defered.reject();
+                });
+            } else {
+                defered.resolve();
+            }
+        })();
+    }
+    function upload_files(entries) {
+        process(entries, function(entry) {
+            return self.upload_tree(entry, path + "/" + tree.name);
+        });
+    }
+    function upload_file(file) {
+        self.upload(file, path).then(function() {
+            defered.resolve();
+        }).fail(function() {
+            defered.reject();
+        });
+    }
+    if (typeof Directory != 'undefined' && tree instanceof Directory) { // firefox
+        tree.getFilesAndDirectories().then(function(entries) {
+            upload_files(entries);
+        });
+    } else if (typeof File != 'undefined' && tree instanceof File) { // firefox
+        upload_file(tree);
+    } else if (tree.isFile) { // chrome
+        tree.file(upload_file);
+    } else if (tree.isDirectory) { // chrome
+        var dirReader = tree.createReader();
+        dirReader.readEntries(function(entries) {
+            upload_files(entries);
+        });
+    }
+    return defered.promise();
+};
+
+Uploader.prototype.upload = function upload(file, path) {
+    var self = this;
+    var defered = $.Deferred();
+    var file_name = path + '/' + file.name;
+    if (file.size > self.leash.settings.upload_max_filesize) {
+        if (!(file.slice || file.webkitSlice)) {
+            self.leash.terminal.error('Exceeded filesize limit.');
+            defered.resolve();
+            self.leash.animation.stop();
+        } else {
+            self.maybe_ask(file_name).then(function() {
+                self.leash.animation.start(400);
+                self.upload_by_chunks(file, path).then(function() {
+                    defered.resolve();
+                    self.leash.animation.stop();
+                }).fail(function() {
+                    defered.reject();
+                    self.leash.animation.stop();
+                });
+            }).fail(function() {
+                // will process next file
+                defered.resolve();
+                self.leash.animation.stop();
+            });
+        }
+    } else {
+        self.maybe_ask(file_name).then(function() {
+            self.upload_file(file, path).then(function() {
+                defered.resolve();
+                self.leash.animation.stop();
+            }).fail(function() {
+                defered.reject();
+                self.leash.animation.stop();
+            });
+        }).fail(function() {
+            // will process next file
+            defered.resolve();
+            self.leash.animation.stop();
+        });
+    }
+    return defered.promise();
+};
+
+Uploader.prototype.upload_by_chunks = function upload_by_chunks(file, path, chunk_size) {
+    var self = this;
+    chunk_size = chunk_size || 1048576; // 1MB
+    var defered = $.Deferred();
+    function slice(start, end) {
+        if (file.slice) {
+            return file.slice(start, end);
+        } else if (file.webkitSlice) {
+            return file.webkitSlice(start, end);
+        }
+    }
+    var i = 0;
+    function process(start, end) {
+        if (start < file.size) {
+            var chunk = slice(start, end);
+            var formData = new FormData();
+            formData.append('file', chunk, file.name);
+            formData.append('token', self.token);
+            formData.append('path', path);
+            $.ajax({
+                url: 'lib/upload.php?append=1',
+                type: 'POST',
+                success: function(response) {
+                    if (response.error) {
+                        self.leash.terminal.error(response.error);
+                        defered.reject();
+                    } else {
+                        process(end, end+chunk_size);
+                    }
+                },
+                error: function(jxhr, error, status) {
+                    self.leash.terminal.error(jxhr.statusText);
+                    defered.reject();
+                },
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false
+            });
+        } else {
+            self.leash.terminal.echo('File "' + file.name + '" uploaded.');
+            defered.resolve();
+        }
+    }
+    var fname = path + '/' + file.name;
+    this.leash.service.unlink(self.token, fname)(function(err, del) {
+        if (err) {
+            self.leash.terminal.error(err.message);
+            defered.reject();
+        } else {
+            process(0, chunk_size);
+        }
+    });
+    return defered.promise();
+};
+
+Uploader.prototype.maybe_ask = function maybe_ask(fname) {
+    var self = this;
+    var defered = $.Deferred();
+    if (self.answer) {
+        defered.resolve();
+    } else {
+        self.leash.service.file_exists(fname)(function(err, exists) {
+            if (exists) {
+                var msg = 'File "' + fname + '" exis'+
+                    'ts do you want to overwrite it (Y/N/A)? ';
+                self.leash.terminal.history().disable();
+                self.leash.terminal.push(function(answer) {
+                    if (answer.match(/^(y|n|a)$/i)) {
+                        self.leash.terminal.pop().history().enable();
+                        if (answer.match(/^a$/i)) {
+                            defered.resolve();
+                            self.answer = true;
+                        } else if (answer.match(/^y$/i)) {
+                            defered.resolve();
+                        } else if (answer.match(/^n$/i)) {
+                            defered.reject();
+                        }
+                    }
+                }, {
+                    prompt: msg
+                });
+            } else {
+                defered.resolve();
+            }
+        });
+    }
+    return defered.promise();
+};
+
+Uploader.prototype.upload_file = function upload_file(file, path) {
+    var self = this;
+    var defered = $.Deferred();
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('token', self.token);
+    formData.append('path', path);
+    $.ajax({
+        url: 'lib/upload.php',
+        type: 'POST',
+        success: function(response) {
+            self.leash.animation.stop();
+            if (response.error) {
+                self.leash.terminal.error(response.error);
+                defered.reject();
+            } else {
+                self.leash.terminal.echo('File "' + file.name + '" ' + 'uploaded.');
+                defered.resolve();
+            }
+        },
+        error: function(jxhr, error, status) {
+            self.leash.terminal.error(jxhr.statusText);
+            defered.reject();
+        },
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false
+    });
+    return defered.promise();
+};
 var leash = (function() {
     var colors = $.omap({
         blue:  '#55f',
@@ -111,6 +326,20 @@ var leash = (function() {
             'USING', 'VACUUM', 'VALUES', 'VIEW', 'VIRTUAL', 'WHEN', 'WHERE',
             'WITH', 'WITHOUT'];
         return keywords(uppercase);
+    }
+    function sql_formatter(keywords, tables, color) {
+        var re = new RegExp('^' + tables.map($.terminal.escape_regex).join('|') + '$', 'i');
+        return function(string) {
+            return string.split(/((?:\s|&nbsp;|\)|\()+)/).map(function(string) {
+                if (keywords.indexOf(string) != -1) {
+                    return '[[b;' + color + ';]' + string + ']';
+                } else if (string.match(re)) {
+                    return '[[u;;]' + string + ']';
+                } else {
+                    return string;
+                }
+            }).join('');
+        }
     }
     // -------------------------------------------------------------------------
     // :: PYTHON INTERPRETER RPC HANDLER
@@ -231,6 +460,7 @@ var leash = (function() {
             // -----------------------------------------------------------------
             var home;
             var config;
+            var formatters_stack = [$.terminal.defaults.formatters];
             function expand_env_vars(command) {
                 var fixed_command = command;
                 $.each(leash.env, function(k, v) {
@@ -257,7 +487,7 @@ var leash = (function() {
                                         });
                                     }
                                 }));
-                                leash.terminal.echo(ascii_table(result, true));
+                                leash.terminal.echo(ascii_table(result, true), {formatters: false});
                             }
                             break;
                         case 'number':
@@ -281,7 +511,6 @@ var leash = (function() {
                 if (!array.length) {
                     return '';
                 }
-
                 for (var i = array.length - 1; i >= 0; i--) {
                     var row = array[i];
                     var stacks = [];
@@ -1361,8 +1590,8 @@ var leash = (function() {
                         prompt: prompt
                     });
                 },
-                completion: function(term, string, callback) {
-                    var command = term.get_command();
+                completion: function(string, callback) {
+                    var command = this.get_command();
                     function dirs_slash(dir) {
                         return (dir.dirs || []).map(function(dir) {
                             return dir + '/';
@@ -1375,13 +1604,13 @@ var leash = (function() {
                             });
                         } else {
                             return array.map(function(item) {
-                                return item.replace(/ /g, '\\ ');
+                                return item.replace(/([() ])/g, '\\$1');
                             });
                         }
                     }
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
-                    var token = term.token()
+                    var token = this.token()
                     if (string.match(/^\$/)) {
                         service.shell(token, 'env', '/')(function(err, result) {
                             callback(result.output.split('\n').map(function(pair) {
@@ -1393,7 +1622,7 @@ var leash = (function() {
                         callback(commands.concat(leash.dir.execs || []).
                             concat(config.executables));
                     } else {
-                        var m = string.replace(/^"/, '').match(/(.*)\/([^\/]+)/);
+                        var m = string.match(/(.*)\/([^\/]+)/);
                         var path;
                         if (cmd.name == 'cd') {
                             if (m) {
@@ -1402,13 +1631,13 @@ var leash = (function() {
                                     var dirs = (result.dirs || []).map(function(dir) {
                                         return m[1] + '/' + dir + '/';
                                     });
-                                    callback(fix_spaces(dirs));
+                                    callback(dirs);
                                 });
                             } else {
-                                callback(fix_spaces(dirs_slash(leash.dir)));
+                                callback(dirs_slash(leash.dir));
                             }
                         } else if (cmd.name == 'jargon') {
-                            callback(fix_spaces(leash.jargon));
+                            callback(leash.jargon);
                         } else {
                             if (m) {
                                 path = leash.cwd + '/' + m[1];
@@ -1418,17 +1647,182 @@ var leash = (function() {
                                         map(function(file_dir) {
                                             return m[1] + '/' + file_dir;
                                         });
-                                    callback(fix_spaces(dirs_files));
+                                    callback(dirs_files);
                                 });
                             } else {
                                 var dirs_files = (leash.dir.files || []).
                                     concat(dirs_slash(leash.dir));
-                                callback(fix_spaces(dirs_files));
+                                callback(dirs_files);
                             }
                         }
                     }
                 },
+                onPush: function(before, after) {
+                    $.terminal.defaults.formatters = after.formatters || [];
+                    formatters_stack.push($.terminal.defaults.formatters);
+                },
+                onPop: function(before, after) {
+                    formatters_stack.pop();
+                    if (formatters_stack.length > 0) {
+                        var last = formatters_stack[formatters_stack.length-1];
+                        $.terminal.defaults.formatters = last;
+                    }
+                },
                 commands: {
+                    github: function(cmd, token, term) {
+                        var parser = new optparse.OptionParser([
+                            ['-u', '--username USER', 'owner of the repo'],
+                            ['-r', '--repo REPO', 'repo to open']
+                        ]);
+                        var user, repo, branch = 'master';
+                        parser.on('username', function(opt, value) {
+                            user = value;
+                        });
+                        parser.on('repo', function(opt, value) {
+                            repo = value;
+                        });
+                        parser.parse(cmd.args);
+                        var base = 'https://api.github.com/repos';
+                        var base_content;
+                        var base_defer;
+                        function dir(path, callback) {
+                            var url = base + '/' + user + '/' + repo + '/contents/' + path;
+                            $.ajax({
+                                url: url,
+                                type: 'GET',
+                                success: function(data){
+                                    callback({
+                                        dirs: data.filter(function(object) {
+                                            return object.type == 'dir';
+                                        }),
+                                        files: data.filter(function(object) {
+                                            return object.type == 'file';
+                                        })
+                                    });
+                                },
+                                error: function(data) {
+                                    term.error('wrong directory').resume();
+                                }
+                            });
+                        }
+                        function file(path, callback) {
+                            var url = 'https://raw.githubusercontent.com/' + user + '/' + repo +
+                                '/master/' + path;
+                            $.ajax({
+                                url: url,
+                                type: 'GET',
+                                success: callback,
+                                error: function(data) {
+                                    term.error('file not found').resume();
+                                }
+                            });
+                        }
+                        function list(data) {
+                            term.echo(data.dirs.map(function(object) {
+                                return colors.blue(object.name);
+                            }).concat(data.files.map(function(object) {
+                                return object.name;
+                            })).join('\n'));
+                        }
+                        function show(path, callback) {
+                            term.pause();
+                            file(cwd + path, function(contents) {
+                                callback(contents);
+                                term.resume();
+                            });
+                        }
+                        if (user && repo) {
+                            var cwd = '/';
+                            base_defer = $.Deferred();
+                            dir('', function(data) {
+                                base_content = data;
+                                base_defer.resolve();
+                            });
+                            term.push(function(command) {
+                                var cmd = $.terminal.parse_command(command);
+                                if (cmd.name == 'cd') {
+                                    path = cmd.args[0];
+                                    if (cmd.args[0] == '..') {
+                                        path = cwd.replace(/[^\/]+\/$/, '');
+                                    } else {
+                                        path = (cwd == '/' ? '' : cwd) + cmd.args[0];
+                                    }
+                                    term.pause();
+                                    base_defer = $.Deferred();
+                                    dir(path, function(data) {
+                                        base_content = data;
+                                        cwd = path;
+                                        if (!cwd.match(/\/$/)) {
+                                            cwd += '/';
+                                        }
+                                        term.resume();
+                                        base_defer.resolve();
+                                    });
+                                } else if (cmd.name == 'less') {
+                                    show(cmd.args[0], leash.less);
+                                } else if (cmd.name == 'cat') {
+                                    show(cmd.args[0], term.echo);
+                                } else if (cmd.name == 'ls') {
+                                    if (cmd.args == 0) {
+                                        list(base_content);
+                                    } else {
+                                        term.pause();
+                                        dir(cmd.args[0], function(data) {
+                                            list(data);
+                                            term.resume();
+                                        });
+                                    }
+                                } else {
+                                    term.echo('unknown command ' + cmd.name);
+                                }
+                            }, {
+                                prompt: function(callback) {
+                                    var name = colors.green(user + '&#64;' + repo);
+                                    var path = cwd;
+                                    if (path != '/') {
+                                        path = '/' + path.replace(/\/$/, '');
+                                    }
+                                    callback(name + colors.grey(':') + colors.blue(path) + '$ ');
+                                },
+                                name: 'github',
+                                completion: function(string, callback) {
+                                    var command = $.terminal.parse_command(this.get_command());
+                                    var m = string.match(/(.*)\/([^\/]+)/);
+                                    if (m) {
+                                        dir(m[1], function(data) {
+                                            if (command.name == 'cd') {
+                                                callback(data.dirs.map(function(object) {
+                                                    return m[1] + '/' + object.name + '/';
+                                                }));
+                                            } else {
+                                                callback(data.files.map(function(object) {
+                                                    return m[1] + '/' + object.name + '/';
+                                                }).concat(data.dirs.map(function(object) {
+                                                    return m[1] + '/' + object.name;
+                                                })));
+                                            }
+                                        });
+                                    } else {
+                                        base_defer.then(function() {
+                                            if (command.name == 'cd') {
+                                                callback(base_content.dirs.map(function(object) {
+                                                    return object.name + '/';
+                                                }));
+                                            } else {
+                                                callback(base_content.files.map(function(object) {
+                                                    return object.name;
+                                                }).concat(base_content.dirs.map(function(object) {
+                                                    return object.name + '/';
+                                                })));
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        } else {
+                            term.echo(parser);
+                        }
+                    },
                     download: function(cmd, token, term) {
                         if (cmd.args.length == 1) {
                             var filename = leash.cwd + '/' + cmd.args[0];
@@ -1851,6 +2245,7 @@ var leash = (function() {
                             fn = leash.cwd + '/' + cmd.args[0];
                         }
                         function push(tables) {
+                            var keywords = sqlite_keywords();
                             term.push(function(q) {
                                 if (q.match(/^\s*help\s*$/)) {
                                     term.echo('show tables:\n\tSELECT name FROM sqlite_m'+
@@ -1863,7 +2258,8 @@ var leash = (function() {
                             }, {
                                 name: 'sqlite',
                                 prompt: 'sqlite> ',
-                                completion: ['help'].concat(sqlite_keywords()).concat(tables)
+                                completion: ['help'].concat(keywords).concat(tables),
+                                formatters: [sql_formatter(keywords, tables, 'white')]
                             });
                         }
                         var query = 'SELECT name FROM sqlite_master WHERE type = "table"';
@@ -1941,13 +2337,15 @@ var leash = (function() {
                                         return row[key];
                                     });
                                 });
+                                var keywords = mysql_keywords();
                                 term.push(mysql_query, {
                                     prompt: prompt,
                                     name: 'mysql',
                                     onExit: function() {
                                         mysql_close(db);
                                     },
-                                    completion: mysql_keywords().concat(tables)
+                                    completion: keywords.concat(tables),
+                                    formatters: [sql_formatter(keywords, tables, 'white')]
                                 }).resume();
                             }
                             function mysql_storage() {
@@ -2184,6 +2582,7 @@ var leash = (function() {
     };
 })();
 
+
 (function($) {
     $.fn.leash = function(options) {
         if (!$.terminal || !$.fn.terminal) {
@@ -2230,10 +2629,12 @@ var leash = (function() {
                     login: leash.login,
                     onExport: leash.onExport,
                     onImport: leash.onImport,
+                    onPop: leash.onPop,
+                    onPush: leash.onPush,
                     name: 'leash',
                     outputLimit: 500,
                     greetings: leash.greetings,
-                    keydown: function(e) {
+                    keypress: function(e) {
                         if (leash.animation.animating) {
                             if (e.which == 68 && e.ctrlKey) {
                                 leash.animation.stop();
@@ -2247,134 +2648,45 @@ var leash = (function() {
                 leash.terminal = terminal;
                 terminal.on('drop', function(e) {
                     e.preventDefault();
-                    var prompt;
                     var org = e.originalEvent;
-                    var files = org.dataTransfer.files || org.target.files;
-                    var token = terminal.token();
-                    if (!token) {
+                    if (!terminal.token()) {
                         return;
                     }
-                    if (files.length) {
+                    var uploader = new Uploader(leash);
+                    var items;
+                    if (org.dataTransfer.items) {
+                        items = [].slice.call(org.dataTransfer.items);
+                    }
+                    var files = (org.dataTransfer.files || org.target.files);
+                    if (files) {
                         files = [].slice.call(files);
+                    }
+                    if (items && items.length) {
+                        if (items[0].webkitGetAsEntry) {
+                            (function upload() {
+                                var item = items.shift();
+                                if (item) {
+                                    item = item.webkitGetAsEntry();
+                                    uploader.upload_tree(item).then(upload)
+                                }
+                            })();
+                        }
+                    } else if (files && files.length) {
                         (function upload() {
                             var file = files.shift();
-                            function uploadFile() {
-                                var formData = new FormData();
-                                formData.append('file', file);
-                                formData.append('token', token);
-                                formData.append('path', leash.cwd);
-                                leash.animation.start(400);
-                                $.ajax({
-                                    url: 'lib/upload.php',
-                                    type: 'POST',
-                                    success: function(response) {
-                                        leash.animation.stop();
-                                        if (response.error) {
-                                            terminal.error(response.error);
-                                        } else {
-                                            terminal.echo('File "' + file.name + '" ' +
-                                                          'uploaded.');
-                                        }
-                                        upload();
-                                    },
-                                    error: function(jxhr, error, status) {
-                                        terminal.error(jxhr.statusText);
-                                        leash.animation.stop();
-                                    },
-                                    data: formData,
-                                    cache: false,
-                                    contentType: false,
-                                    processData: false
-                                });
-                            }
-                            function maybe_ask(callback) {
-                                leash.service.file_exists(fname)(function(err, exists) {
-                                    if (exists) {
-                                        var msg = 'File "' + file.name + '" exis'+
-                                            'ts do you want to overwrite (Y/N)? ';
-                                        terminal.history().disable();
-                                        terminal.push(function(yesno) {
-                                            if (yesno.match(/^(y|n)$/i)) {
-                                                terminal.pop().history().enable();
-                                                if (yesno.match(/^y$/i)) {
-                                                    callback(); // upload
-                                                } else if (yesno.match(/^n$/i)) {
-                                                    upload(); // next file
-                                                }
-                                            }
-                                        }, {
-                                            prompt: msg
-                                        });
-                                    } else {
-                                        callback();
-                                    }
-                                });
-                            }
-                            function upload_by_chunks() {
-                                var chunk_size = 1048576; // 1MB
-                                function slice(start, end) {
-                                    if (file.slice) {
-                                        return file.slice(start, end);
-                                    } else if (file.webkitSlice) {
-                                        return file.webkitSlice(start, end);
-                                    }
-                                }
-                                var i = 0;
-                                function process(start, end) {
-                                    if (start < file.size) {
-                                        var chunk = slice(start, end);
-                                        var formData = new FormData();
-                                        formData.append('file', chunk, file.name);
-                                        formData.append('token', token);
-                                        formData.append('path', leash.cwd);
-                                        $.ajax({
-                                            url: 'lib/upload.php?append=1',
-                                            type: 'POST',
-                                            success: function(response) {
-                                                if (response.error) {
-                                                    terminal.error(response.error);
-                                                }
-                                                process(end, end+chunk_size);
-                                            },
-                                            error: function(jxhr, error, status) {
-                                                terminal.error(jxhr.statusText);
-                                                leash.animation.stop();
-                                            },
-                                            data: formData,
-                                            cache: false,
-                                            contentType: false,
-                                            processData: false
-                                        });
-                                    } else {
-                                        leash.animation.stop();
-                                        terminal.echo('File "' + file.name + '" uploaded.');
-                                        upload();
-                                    }
-                                }
-                                leash.animation.start(400);
-                                leash.service.unlink(token, fname)(function(err, del) {
-                                    if (err) {
-                                        leash.terminal.error(err.message);
-                                        leash.animation.stop();
-                                    } else {
-                                        process(0, chunk_size);
-                                    }
-                                });
-                            }
                             if (file) {
-                                var fname = leash.cwd + '/' + file.name;
-                                if (file.size > leash.settings.upload_max_filesize) {
-                                    if (!(file.slice || file.webkitSlice)) {
-                                        terminal.error('Exceeded filesize limit.');
-                                        upload();
-                                    } else {
-                                        maybe_ask(upload_by_chunks);
-                                    }
-                                } else {
-                                    maybe_ask(uploadFile);
-                                }
+                                uploader.upload(file).then(upload)
                             }
-                        })();
+                        });
+                    } else if (org.dataTransfer.getFilesAndDirectories) {
+                        org.dataTransfer.getFilesAndDirectories().then(function(items) {
+                            (function upload() {
+                                var item = items.shift();
+                                if (item) {
+                                    uploader.upload_tree(item).then(upload);
+                                }
+                            })();
+                        });
                     }
                 }).on('dragover', function(e) {
                     e.preventDefault();

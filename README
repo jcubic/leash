@@ -1,7 +1,7 @@
    __   _______   ______ __
   / /  / __/ _ | / __/ // /
  / /__/ _// __ |_\ \/ _  /
-/____/___/_/ |_/___/_//_/ v. 0.12.1
+/____/___/_/ |_/___/_//_/ v. 0.13.0
 
 ----------------------------------------------------------------------------
 
@@ -41,6 +41,7 @@ one of the following:
 * record command where you can save commands in hash and rerun them when you
   refresh
 * view html pages as text on the terminal, when clicking on the link
+* github repos browser (with cat/less/cd/ls sub commands)
 ----------------------------------------------------------------------------
 :: License
 ----------------------------------------------------------------------------

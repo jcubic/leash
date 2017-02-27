@@ -6,12 +6,14 @@
  *  Released under the MIT license
  *
  */
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+ini_set('display_errors', 'On');
 
 require('lib/Service.php');
 $service = new Service('config.json', getcwd());
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
-    require('lib/json-rpc.php');
+    require_once('lib/json-rpc.php');
     if ($service->debug()) {
         error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
         ini_set('display_errors', 'On');
