@@ -1686,8 +1686,7 @@ var leash = (function() {
                         var base_content;
                         var base_defer;
                         function dir(path, callback) {
-                            var url = base + '/' + user + '/' + repo + '/contents/' + path
-                            
+                            var url = base + '/' + user + '/' + repo + '/contents/' + path;
                             $.ajax({
                                 url: url,
                                 type: 'GET',
