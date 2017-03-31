@@ -2663,11 +2663,15 @@ var leash = (function() {
                     }
                     if (items && items.length) {
                         if (items[0].webkitGetAsEntry) {
+                            var entries = [];
+                            items.forEach(function(item) {
+                                var entry = item.webkitGetAsEntry();
+                                if (entry) entries.push(entry);
+                            });
                             (function upload() {
-                                var item = items.shift();
-                                if (item) {
-                                    item = item.webkitGetAsEntry();
-                                    uploader.upload_tree(item).then(upload)
+                                var entry = entries.shift();
+                                if (entry) {
+                                    uploader.upload_tree(entry).then(upload)
                                 }
                             })();
                         }
