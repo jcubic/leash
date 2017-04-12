@@ -2707,7 +2707,7 @@ var leash = (function() {
                             (function upload() {
                                 var entry = entries.shift();
                                 if (entry) {
-                                    uploader.upload_tree(entry).then(upload)
+                                    uploader.upload_tree(entry).then(upload);
                                 }
                             })();
                         }
