@@ -1,7 +1,7 @@
 <?php
 /**
  *  This file is part of Leash (Browser Shell)
- *  Copyright (C) 2013-2017  Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (C) 2013-2017  Jakub Jankiewicz <http://jcubic.pl/me>
  *
  *  Released under the MIT license
  *
@@ -11,9 +11,12 @@ require('Database.php');
 require('Logger.php');
 
 class User {
-    function __construct($username, $password) {
+    function __construct($username, $password, $home) {
         $this->username = $username;
         $this->password = $password;
+        if ($home != '') {
+            $this->home = $home;
+        }
     }
 }
 
@@ -458,8 +461,16 @@ class Service {
         }
         $settings = (array)$this->config->settings;
         // allow to overwrite HOME if user want to have different directory
-        if (!isset($settings['home'])) {
-            $settings['home'] = $this->path;
+        if (isset($settings['sudo']) && $settings['sudo']) {
+            $username = $this->get_username($token);
+            $current_user = $this->get_user($username);
+            if (isset($current_user->home)) {
+                $settings['home'] = $current_user->home;
+            } else {
+                $settings['home'] = "/home/$username";
+            }
+        } else if (!isset($settings['home'])) {
+            $settings['home'] = "/home/$username";
         }
         try {
             $path = $this->shell($token, 'echo -n $PATH', '/');
@@ -496,13 +507,16 @@ class Service {
         return self::password_hash . ':' . $hash;
     }
     // ------------------------------------------------------------------------
-    private function new_user($username, $password) {
-        $this->config->users[] = new User($username, $this->hash($password));
+    private function new_user($username, $password, $home) {
+        $this->config->users[] = new User($username, $this->hash($password), $home);
     }
     // ------------------------------------------------------------------------
-    public function add_user($token, $username, $password) {
+    public function add_user($token, $username, $password, $home) {
         $this->validate_root($token);
-        $this->new_user($username, $password);
+        if ($this->get_user($username)) {
+            throw new Exception("User '$username' already exists");
+        }
+        $this->new_user($username, $password, $home);
     }
     // ------------------------------------------------------------------------
     public function remove_user($token, $username, $password) {
@@ -1108,6 +1122,14 @@ class Service {
     public function cwd() {
         return getcwd();
     }
+    private function sudo($token, $command) {
+        if (isset($this->config->settings->sudo) && $this->config->settings->sudo) {
+            $user = $this->get_username($token);
+            return "/usr/bin/sudo -u '$user' $command";
+        } else {
+            return $command;
+        }
+    }
     // ------------------------------------------------------------------------
     public function shell($token, $command, $path) {
         if (!$this->valid_token($token)) {
@@ -1116,7 +1138,8 @@ class Service {
         $shell_fn = $this->config->settings->shell;
         if (preg_match("/&\s*$/", $command)) {
             $command = preg_replace("/&\s*$/", ' >/dev/null & echo $!', $command);
-            $result = $this->$shell_fn($token, '/bin/bash -c ' . escapeshellarg($command));
+            $command = '/bin/bash -c ' . escapeshellarg($command);
+            $result = $this->$shell_fn($token, $this->sudo($token, $command));
             return array(
                 'output' => '[1] ' . $result,
                 'cwd' => $path
@@ -1134,7 +1157,8 @@ class Service {
             if (!method_exists($this, $shell_fn)) {
                 throw new Exception("Invalid shell '$shell_fn'");
             }
-            $result = $this->$shell_fn($token, '/bin/bash -c ' . $command . ' 2>&1');
+            $command = $this->sudo($token, '/bin/bash -c ' . $command . ' 2>&1');
+            $result = $this->$shell_fn($token, $command);
             if ($result) {
                 // work wth `set` that return BASH_EXECUTION_STRING
                 $output = preg_split('/'.$marker.'(?!")/', $result);

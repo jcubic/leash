@@ -1,6 +1,6 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl/me>
  *
  *  Released under the MIT license
  *
@@ -232,7 +232,7 @@ var leash = (function() {
         };
     });
     var copyright = [
-        'Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl>',
+        'Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl/me>',
         '',
         'Licensed under MIT license'
     ].map(function(line) {
@@ -339,7 +339,7 @@ var leash = (function() {
                     return string;
                 }
             }).join('');
-        }
+        };
     }
     // -------------------------------------------------------------------------
     // :: PYTHON INTERPRETER RPC HANDLER
@@ -425,6 +425,7 @@ var leash = (function() {
         rpc({
             url: url || '',
             error: function(error) {
+                console.log(error);
                 try {
                     error = JSON.parse(error);
                 } catch(e) {}
@@ -1447,7 +1448,6 @@ var leash = (function() {
                             regex = new RegExp(escape, flag),
                             index = -1,
                             prev_format = '',
-                            start,
                             formatting = false,
                             in_text = false;
                         lines = original_lines.slice();
@@ -1610,7 +1610,7 @@ var leash = (function() {
                     }
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
-                    var token = this.token()
+                    var token = this.token();
                     if (string.match(/^\$/)) {
                         service.shell(token, 'env', '/')(function(err, result) {
                             callback(result.output.split('\n').map(function(pair) {
@@ -1668,6 +1668,42 @@ var leash = (function() {
                         $.terminal.defaults.formatters = last;
                     }
                 },
+                execRead: function(array, fn, options) {
+                    var settings = $.extend({
+                        history: true,
+                        context: null,
+                        token: false
+                    }, options);
+                    var term = leash.terminal;
+                    var history = term.history();
+                    if (!settings.history) {
+                        history.disable();
+                    }
+                    var args = [];
+                    if (settings.token) {
+                        args.push(term.token());
+                    }
+                    (function recur() {
+                        var spec = array.shift();
+                        if (spec) {
+                            if (typeof spec === 'object') {
+                                if (spec.mask === true) {
+                                    term.set_mask(true);
+                                }
+                                prompt = spec.prompt;
+                            } else {
+                                prompt = spec;
+                            }
+                            term.read(prompt, function(string) {
+                                args.push(string);
+                                term.set_mask(false);
+                                recur();
+                            });
+                        } else {
+                            fn.apply(settings.context, args);
+                        }
+                    })();
+                },
                 commands: {
                     github: function(cmd, token, term) {
                         var parser = new optparse.OptionParser([
@@ -1706,8 +1742,8 @@ var leash = (function() {
                             });
                         }
                         function file(path, callback) {
-                            var url = 'https://raw.githubusercontent.com/' + user + '/' + repo +
-                                '/master/' + path;
+                            var url = 'https://raw.githubusercontent.com/' + user +
+                                '/'+ repo + '/master/' + path;
                             $.ajax({
                                 url: url,
                                 type: 'GET',
@@ -1945,10 +1981,10 @@ var leash = (function() {
                             var m = time.match(/^([0-9.]+)([smh])$/);
                             if (m) {
                                 var command = cmd.rest.trim().replace(/^[0-9.]+[smh]?/, '');
-                                var time = parseFloat(m[1]);
+                                time = parseFloat(m[1]);
                                 switch(m[2]) {
                                     case 'h':
-                                        time *= 24
+                                        time *= 24;
                                     case 'm':
                                         time *= 60;
                                     case 's':
@@ -2006,7 +2042,7 @@ var leash = (function() {
                     rpc: function(cmd, token, term) {
                         var name = cmd.args[0] || '', completion;
                         if (name === '') {
-                            completion = function(term, string, callback) {
+                            completion = function(string, callback) {
                                 callback(Object.keys(service));
                             };
                         } else {
@@ -2023,7 +2059,7 @@ var leash = (function() {
                                 }
                                 defer.reject();
                             });
-                            completion = function(term, string, callback) {
+                            completion = function(string, callback) {
                                 defer.then(callback).fail(function() {
                                     callback([]);
                                 });
@@ -2265,9 +2301,7 @@ var leash = (function() {
                         var query = 'SELECT name FROM sqlite_master WHERE type = "table"';
                         leash.service.sqlite_query(token, fn, query)(function(err, res) {
                             if (err) {
-                                print_error(err);
-                            } else {
-                                push(res.map(function(assoc) {
+                                term.push(res.map(function(assoc) {
                                     return assoc['name'];
                                 }));
                             }
@@ -2478,26 +2512,28 @@ var leash = (function() {
                         });
                     },
                     adduser: function(cmd, token, term) {
-                        var user;
-                        var password;
-                        var history = term.history();
-                        history.disable();
-                        term.push(function(command) {
-                            if (!user) {
-                                user = command;
-                                term.set_mask(true).set_prompt('password: ');
-                            } else {
-                                password = command;
-                                term.set_mask(false).pop();
-                                service.add_user(token, user, password)(function() {
-                                    history.enable();
-                                });
-                            }
-                        }, {prompt: 'name: '});
+                        var password = {
+                            prompt: 'password: ',
+                            mask: true
+                        };
+                        var specs = ['user: ', password, 'home: '];
+                        function add_user(token, username, password, home) {
+                            service.add_user(token, username, password, home)(function(err) {
+                                if (err) {
+                                    term.error(err.message);
+                                } else {
+                                    term.echo('user ' + username + ' added to leash');
+                                }
+                            });
+                        }
+                        leash.execRead(specs, add_user, {
+                            history: false,
+                            token: true
+                        });
                     },
                     purge: function(cmd, token, term) {
                         term.logout().purge();
-                    },
+                    }
                 } // commands
             }; // leash
             service.installed()(function(err, installed) {
@@ -2667,7 +2703,7 @@ var leash = (function() {
                                 var item = items.shift();
                                 if (item) {
                                     item = item.webkitGetAsEntry();
-                                    uploader.upload_tree(item).then(upload)
+                                    uploader.upload_tree(item).then(upload);
                                 }
                             })();
                         }
@@ -2675,7 +2711,7 @@ var leash = (function() {
                         (function upload() {
                             var file = files.shift();
                             if (file) {
-                                uploader.upload(file).then(upload)
+                                uploader.upload(file).then(upload);
                             }
                         });
                     } else if (org.dataTransfer.getFilesAndDirectories) {

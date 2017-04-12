@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  JSON-RPC Implementation
-#  Copyright (c) 2007 Jakub Jankiewicz <http://jcubic.pl>
+#  Copyright (c) 2007 Jakub Jankiewicz <http://jcubic.pl/me>
 #
 #  Released under the MIT license
 

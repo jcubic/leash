@@ -1,7 +1,7 @@
 <?php
 /**
  *  This file is part of Leash (Browser Shell)
- *  Copyright (C) 2013-2017  Jakub Jankiewicz <http://jcubic.pl>
+ *  Copyright (C) 2013-2017  Jakub Jankiewicz <http://jcubic.pl/me>
  *
  *  Released under the MIT license
  *

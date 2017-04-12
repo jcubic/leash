@@ -1,7 +1,7 @@
 <?php
 /*
   JSON-RPC Server implemenation
-  Copyright (C) 2009 Jakub Jankiewicz <http://jcubic.pl>
+  Copyright (C) 2009 Jakub Jankiewicz <http://jcubic.pl/me>
 
   Released under the MIT license
 */
