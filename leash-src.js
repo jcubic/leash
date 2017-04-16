@@ -2707,7 +2707,7 @@ var leash = (function() {
                             (function upload() {
                                 var entry = entries.shift();
                                 if (entry) {
-                                    uploader.upload_tree(entry).then(upload);
+                                    uploader.upload_tree(entry, leash.cwd).then(upload);
                                 }
                             })();
                         }
@@ -2723,7 +2723,7 @@ var leash = (function() {
                             (function upload() {
                                 var item = items.shift();
                                 if (item) {
-                                    uploader.upload_tree(item).then(upload);
+                                    uploader.upload_tree(item, leash.cwd).then(upload);
                                 }
                             })();
                         });
