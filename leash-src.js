@@ -2715,9 +2715,9 @@ var leash = (function() {
                         (function upload() {
                             var file = files.shift();
                             if (file) {
-                                uploader.upload(file).then(upload);
+                                uploader.upload(file, leash.cwd).then(upload);
                             }
-                        });
+                        })();
                     } else if (org.dataTransfer.getFilesAndDirectories) {
                         org.dataTransfer.getFilesAndDirectories().then(function(items) {
                             (function upload() {
