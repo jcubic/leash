@@ -268,22 +268,31 @@ class Service {
     }
     // ------------------------------------------------------------------------
     function login($username, $password) {
-        $user = $this->get_user($username);
-        if (!$user) {
-            throw new Exception("'$username' is invalid username");
-        }
-        if (!$user->password) {
-            throw new Exception("Password for user '$username' not set");
-        }
-        preg_match(self::password_regex, $user->password, $match);
-        if (!$match) {
-            throw new Exception("Password for user '$username' have invalid format");
-        }
-        if ($match[2] == call_user_func($match[1], $password)) {
-            $session = $this->new_session($username);
-            return $session->token;
+        if ($username == 'guest' && $password == 'guest') {
+            if ($this->config->settings->guest) {
+                $session = $this->new_session($username);
+                return $session->token;
+            } else {
+                throw new Exception("guest sessions are disabled");
+            }
         } else {
-            throw new Exception("Password for user '$username' is invalid");
+            $user = $this->get_user($username);
+            if (!$user) {
+                throw new Exception("'$username' is invalid username");
+            }
+            if (!$user->password) {
+                throw new Exception("Password for user '$username' not set");
+            }
+            preg_match(self::password_regex, $user->password, $match);
+            if (!$match) {
+                throw new Exception("Password for user '$username' have invalid format");
+            }
+            if ($match[2] == call_user_func($match[1], $password)) {
+                $session = $this->new_session($username);
+                return $session->token;
+            } else {
+                throw new Exception("Password for user '$username' is invalid");
+            }
         }
     }
 
@@ -372,11 +381,14 @@ class Service {
         }
         return file_get_contents($filename);
     }
-
     // ------------------------------------------------------------------------
     public function unlink($token, $filename) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
+        }
+        $username = $this->get_username($token);
+        if ($username == 'guest') {
+            throw new Exception("guest users can't delete files");
         }
         if (file_exists($filename)) {
             return unlink($filename);
@@ -388,6 +400,10 @@ class Service {
     public function write($token, $filename, $content) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
+        }
+        $username = $this->get_username($token);
+        if ($username == 'guest') {
+            throw new Exception("guest users can't write files");
         }
         if (!$this->__write($filename, $content)) {
             return false;
@@ -403,6 +419,10 @@ class Service {
     public function append($token, $filename, $content) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
+        }
+        $username = $this->get_username($token);
+        if ($username == 'guest') {
+            throw new Exception("guest users can't write files");
         }
         if (file_exists($filename) && !is_writable($filename)) {
             return false;
@@ -425,6 +445,10 @@ class Service {
     public function configure($settings) {
         if ($this->installed()) {
             throw new Exception("You can't call this function, leash already installed");
+        }
+        if ($settings['username'] == 'guest' || $settings['username'] == 'root') {
+            throw new Exception("You can't use " . $settings['username'] . " as userna".
+                                "me because it's special account");
         }
         $settings = (array)$settings;
 
@@ -461,8 +485,8 @@ class Service {
         }
         $settings = (array)$this->config->settings;
         // allow to overwrite HOME if user want to have different directory
-        if (isset($settings['sudo']) && $settings['sudo']) {
-            $username = $this->get_username($token);
+        $username = $this->get_username($token);
+        if (isset($settings['sudo']) && $settings['sudo'] && $username != 'root') {
             $current_user = $this->get_user($username);
             if (isset($current_user->home)) {
                 $settings['home'] = $current_user->home;
@@ -1122,24 +1146,28 @@ class Service {
     public function cwd() {
         return getcwd();
     }
-    private function sudo($token, $command) {
-        if (isset($this->config->settings->sudo) && $this->config->settings->sudo) {
-            $user = $this->get_username($token);
+    // ------------------------------------------------------------------------
+    private function sudo($username, $command) {
+        if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
+            $username != 'root') {
             return "/usr/bin/sudo -u '$user' $command";
-        } else {
-            return $command;
         }
+        return $command;
     }
     // ------------------------------------------------------------------------
     public function shell($token, $command, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        $user = $this->get_username($token);
+        if ($user == 'guest') {
+            throw new Exception("guest user can't exeucte shell commands");
+        }
         $shell_fn = $this->config->settings->shell;
         if (preg_match("/&\s*$/", $command)) {
             $command = preg_replace("/&\s*$/", ' >/dev/null & echo $!', $command);
             $command = '/bin/bash -c ' . escapeshellarg($command);
-            $result = $this->$shell_fn($token, $this->sudo($token, $command));
+            $result = $this->$shell_fn($token, $this->sudo($user, $command));
             return array(
                 'output' => '[1] ' . $result,
                 'cwd' => $path
@@ -1157,7 +1185,7 @@ class Service {
             if (!method_exists($this, $shell_fn)) {
                 throw new Exception("Invalid shell '$shell_fn'");
             }
-            $command = $this->sudo($token, '/bin/bash -c ' . $command . ' 2>&1');
+            $command = $this->sudo($user, '/bin/bash -c ' . $command . ' 2>&1');
             $result = $this->$shell_fn($token, $command);
             if ($result) {
                 // work wth `set` that return BASH_EXECUTION_STRING

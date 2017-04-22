@@ -6,6 +6,8 @@
  *
  *  Date: {{DATE}}
  */
+/* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
+          */
 function Uploader(leash) {
     this.token = leash.terminal.token();
     this.leash = leash;
@@ -461,7 +463,8 @@ var leash = (function() {
             // -----------------------------------------------------------------
             var home;
             var config;
-            var formatters_stack = [$.terminal.defaults.formatters];
+            var init_formatters = $.terminal.defaults.formatters;
+            var formatters_stack = [init_formatters];
             function expand_env_vars(command) {
                 var fixed_command = command;
                 $.each(leash.env, function(k, v) {
@@ -587,6 +590,7 @@ var leash = (function() {
                 };
             }
             var leash = {
+                formatters: init_formatters,
                 version: '{{VERSION}}',
                 date: '{{DATE}}',
                 jargon: [],
@@ -714,7 +718,7 @@ var leash = (function() {
                         },
                         {
                             name: "server",
-                            text: "Type your server name",
+                            text: "Type your server name"
                         },
                         {
                             name: "username",
@@ -723,6 +727,16 @@ var leash = (function() {
                         {
                             name: "home",
                             text: "Home directory"
+                        },
+                        {
+                            name: 'guest',
+                            text: 'Allow guest sessions (Y)es/(N)o',
+                            boolean: true
+                        },
+                        {
+                            name: 'sudo',
+                            text: 'Execute sudo for user accounts (Y)es/(N)o',
+                            boolean: true
                         },
                         {
                             name: "password",
@@ -744,8 +758,21 @@ var leash = (function() {
                                 if (question.mask) {
                                     term.set_mask(false);
                                 }
-                                settings[question.name] = command;
-                                install(step+1, finish);
+                                if (question.boolean) {
+                                    var value;
+                                    if (command.match(/^Y(es)?/i)) {
+                                        value = true;
+                                    } else if (command.match(/^N(o)?/i)) {
+                                        value = false;
+                                    }
+                                    if (typeof value != 'undefined') {
+                                        settings[question.name] = value;
+                                        install(step+1, finish);
+                                    }
+                                } else {
+                                    settings[question.name] = command;
+                                    install(step+1, finish);
+                                }
                             }, {
                                 prompt: question.prompt || question.name + ": "
                             });
@@ -794,6 +821,7 @@ var leash = (function() {
                                     term.resume();
                                     if (err) {
                                         term.error(err.message);
+                                        leash.install(term);
                                     } else {
                                         term.echo("Your instalation is complete no"+
                                                   "w you can refresh the page and "+
@@ -1658,8 +1686,9 @@ var leash = (function() {
                     }
                 },
                 onPush: function(before, after) {
-                    $.terminal.defaults.formatters = after.formatters || [];
-                    formatters_stack.push($.terminal.defaults.formatters);
+                    var formatters = leash.formatters.slice().concat(after.formatters || []);
+                    $.terminal.defaults.formatters = formatters;
+                    formatters_stack.push(formatters);
                 },
                 onPop: function(before, after) {
                     formatters_stack.pop();
@@ -2301,7 +2330,9 @@ var leash = (function() {
                         var query = 'SELECT name FROM sqlite_master WHERE type = "table"';
                         leash.service.sqlite_query(token, fn, query)(function(err, res) {
                             if (err) {
-                                term.push(res.map(function(assoc) {
+                                term.error(err.message);
+                            } else {
+                                push(res.map(function(assoc) {
                                     return assoc['name'];
                                 }));
                             }
@@ -2667,6 +2698,9 @@ var leash = (function() {
                     onImport: leash.onImport,
                     onPop: leash.onPop,
                     onPush: leash.onPush,
+                    extra: {
+                        formatters: leash.formatters
+                    },
                     name: 'leash',
                     outputLimit: 500,
                     greetings: leash.greetings,
