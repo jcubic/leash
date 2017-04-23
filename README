@@ -42,6 +42,15 @@ one of the following:
   refresh
 * view html pages as text on the terminal, when clicking on the link
 * github repos browser (with cat/less/cd/ls sub commands)
+* guest and sudo options:
+  * guest, if set, will have limited access to shell, list of commands are
+    configurable from config.json
+  * sudo option, if set, will allow to execute commands are real unix user
+    you will need to create user using linux command line (adduser command
+    from real) and you will need to have leash user with the same name,
+    (to add user from leash you need to be root and execute adduser command)
+    and have sudo access without password for apache user
+
 ----------------------------------------------------------------------------
 :: License
 ----------------------------------------------------------------------------
