@@ -467,6 +467,16 @@ class Service {
         $this->config->settings['debug'] = false;
         $this->config->settings['show_messages'] = true;
 
+        $this->config->settings['guest_commands'] = array(
+            'echo',
+            'cat',
+            'ls',
+            'find',
+            'cd',
+            'grep',
+            'test'
+        );
+
         // get external libraries
         $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
         $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
@@ -486,7 +496,8 @@ class Service {
         $settings = (array)$this->config->settings;
         // allow to overwrite HOME if user want to have different directory
         $username = $this->get_username($token);
-        if (isset($settings['sudo']) && $settings['sudo'] && $username != 'root') {
+        if (isset($settings['sudo']) && $settings['sudo'] &&
+            $username != 'root' && $username != 'guest') {
             $current_user = $this->get_user($username);
             if (isset($current_user->home)) {
                 $settings['home'] = $current_user->home;
@@ -497,7 +508,7 @@ class Service {
             $settings['home'] = "/home/$username";
         }
         try {
-            $path = $this->shell($token, 'echo -n $PATH', '/');
+            $path = $this->command($token, 'echo -n $PATH', '/');
             $settings['path'] = $path['output'];
             $settings['executables'] = $this->executables($token, '/');
         } catch(Exception $e) {
@@ -603,7 +614,7 @@ class Service {
         $cmd = "find . -mindepth 1 -maxdepth 1 \\( -type f -executable -printf ".
             "'$EXEC%p\\0' \\)  -o -type d -printf '$DIR%p\\0' -o \\( -type l -x".
             "type d -printf '$DIR%p\\0' \\) -o -not -type d -printf '$FILE%p\\0'";
-        $result = $this->shell($token, $cmd, $path);
+        $result = $this->command($token, $cmd, $path);
         //return $result;
         $files = array();
         $dirs = array();
@@ -656,7 +667,8 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function executables($token, $path) {
-        $result = $this->shell($token, "compgen -A function -abck | sort | uniq", $path);
+        $command = "compgen -A function -abck | sort | uniq";
+        $result = $this->command($token, $command, $path);
         $commands = explode("\n", trim($result['output']));
         // array_filter return object with number as keys
         return array_values(array_filter($commands, function($command) {
@@ -1149,10 +1161,41 @@ class Service {
     // ------------------------------------------------------------------------
     private function sudo($username, $command) {
         if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
-            $username != 'root') {
-            return "/usr/bin/sudo -u '$user' $command";
+            $username != 'root' && $username != 'guest') {
+            return "/usr/bin/sudo -u '$username' $command";
         }
         return $command;
+    }
+    // ------------------------------------------------------------------------
+    public function validate_command($command) {
+        if (isset($this->config->settings->guest_commands)) {
+            $commands = $this->config->settings->guest_commands;
+        } else {
+            $commands = array('echo', 'cat', 'ls', 'find', 'cd', 'grep', 'test', 'xargs');
+        }
+        $cmd_re = "(" . implode("|", array_diff($commands, array("xargs"))) . ")";
+        if (in_array("xargs", $commands)) {
+            $re = "/^\s*($cmd_re|xargs\s*$cmd_re)/";
+        } else {
+            $re = "/^\s*$cmd_re/";
+        }
+        $separators = "/(&&|\|\||\||;)/";
+        $parts = preg_split($separators, $command, null, PREG_SPLIT_DELIM_CAPTURE);
+        $result = array();
+        foreach ($parts as $part) {
+            if (!preg_match($re, trim($part)) && !preg_match($separators, $part)) {
+                $last = array_pop($commands);
+                $message = "guest user can only execute: " .
+                         implode(", ", $commands) . " and " . $last;
+                throw new Exception($message);
+            } else if (preg_match('/(>|`|\$\()/', $part)) {
+                throw new Exception("guest user can't use redirect to write to files" .
+                                    " or execute subshell");
+            } else {
+                $result[] = $part;
+            }
+        }
+        return implode($result);
     }
     // ------------------------------------------------------------------------
     public function shell($token, $command, $path) {
@@ -1161,8 +1204,16 @@ class Service {
         }
         $user = $this->get_username($token);
         if ($user == 'guest') {
-            throw new Exception("guest user can't exeucte shell commands");
+            return $this->command($token, $this->validate_command($command), $path);
         }
+        return $this->command($token, $command, $path);
+    }
+    // ------------------------------------------------------------------------
+    private function command($token, $command, $path) {
+        if (!$this->valid_token($token)) {
+            throw new Exception("Access Denied: Invalid Token");
+        }
+        $user = $this->get_username($token);
         $shell_fn = $this->config->settings->shell;
         if (preg_match("/&\s*$/", $command)) {
             $command = preg_replace("/&\s*$/", ' >/dev/null & echo $!', $command);
@@ -1196,7 +1247,7 @@ class Service {
                     $cwd = $path;
                 }
                 return array(
-                    'output' => $output[0],
+                    'output' => preg_replace("/" . preg_quote($post) . "/", "", $output[0]),
                     'cwd' => $cwd
                 );
             } else {
