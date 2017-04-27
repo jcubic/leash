@@ -6,8 +6,8 @@
  *
  *  Date: {{DATE}}
  */
-/* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
-          */
+/* global sysend $ Directory File FormData rpc wcwidth clearTimeout setTimeout optparse
+ */
 function Uploader(leash) {
     this.token = leash.terminal.token();
     this.leash = leash;
@@ -1648,7 +1648,6 @@ var leash = (function() {
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
                     var token = leash.token;
-                    console.log(token);
                     if (string.match(/^\$/)) {
                         service.shell(token, 'env', '/')(function(err, result) {
                             callback(result.output.split('\n').map(function(pair) {
@@ -2218,7 +2217,7 @@ var leash = (function() {
                                     dataType: 'jsonp',
                                     success: function(data) {
                                         var members = data.query.categorymembers;
-                                        text = members.map(function(member) {
+                                        var text = members.map(function(member) {
                                             return '[[bu;#fff;;wiki]' + member.title + ']';
                                         }).join('\n');
                                         var re = /(\[\[bu;#fff;;wiki\]Category)/;
@@ -2574,6 +2573,21 @@ var leash = (function() {
                     },
                     purge: function(cmd, token, term) {
                         term.logout().purge();
+                    },
+                    help: function(cmd, token, term) {
+                        function format(commands) {
+                            commands = commands.map(function(command) {
+                                return '[[b;#fff;]' + command + ']';
+                            });
+                            return commands.slice(0, -1).join(', ') + ' and ' +
+                                commands[commands.length-1];
+                        }
+                        term.echo('leash build in commands: ' + format(Object.keys(leash.commands)), {
+                            keepWords: true
+                        });
+                        term.echo('all other commands are exectute by the shell');
+                        term.echo('guest users can only exeucte: ' +
+                                  format(leash.settings.guest_commands));
                     }
                 } // commands
             }; // leash
