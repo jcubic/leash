@@ -446,8 +446,8 @@ class Service {
         if ($this->installed()) {
             throw new Exception("You can't call this function, leash already installed");
         }
-        if ($settings['username'] == 'guest' || $settings['username'] == 'root') {
-            throw new Exception("You can't use " . $settings['username'] . " as userna".
+        if ($settings->username == 'guest' || $settings->username == 'root') {
+            throw new Exception("You can't use " . $settings->username . " as userna".
                                 "me because it's special account");
         }
         $settings = (array)$settings;
