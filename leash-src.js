@@ -848,6 +848,7 @@ var leash = (function() {
                                 term.logout();
                                 term.resume();
                             } else {
+                                leash.token = token;
                                 service.jargon_list()(function(err, result) {
                                     if (!err) {
                                         leash.jargon = result;
@@ -887,6 +888,14 @@ var leash = (function() {
                         });
                     }
                 },
+                refresh_dir: function(callback) {
+                    service.dir(leash.token, leash.cwd)(function(err, result) {
+                        leash.dir = result;
+                        if ($.isFunction(callback)) {
+                            callback();
+                        }
+                    });
+                },
                 shell: function(command, token, term) {
                     var re = /\|\s*less\s*$/;
                     var deferr = $.Deferred();
@@ -917,11 +926,11 @@ var leash = (function() {
                                     term.echo(output);
                                 }
                                 leash.cwd = res.cwd;
-                                service.dir(token, leash.cwd)(function(err, result) {
-                                    leash.dir = result;
+                                leash.refresh_dir(function() {
                                     term.resume();
                                     deferr.resolve();
                                 });
+                                
                             }
                         });
                     }
@@ -1638,7 +1647,8 @@ var leash = (function() {
                     }
                     var cmd = $.terminal.parse_command(command);
                     var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
-                    var token = this.token();
+                    var token = leash.token;
+                    console.log(token);
                     if (string.match(/^\$/)) {
                         service.shell(token, 'env', '/')(function(err, result) {
                             callback(result.output.split('\n').map(function(pair) {
@@ -2731,6 +2741,9 @@ var leash = (function() {
                     if (files) {
                         files = [].slice.call(files);
                     }
+                    function complete() {
+                        leash.refresh_dir();
+                    }
                     if (items && items.length) {
                         if (items[0].webkitGetAsEntry) {
                             var entries = [];
@@ -2742,6 +2755,8 @@ var leash = (function() {
                                 var entry = entries.shift();
                                 if (entry) {
                                     uploader.upload_tree(entry, leash.cwd).then(upload);
+                                } else {
+                                    complete();
                                 }
                             })();
                         }
@@ -2750,6 +2765,8 @@ var leash = (function() {
                             var file = files.shift();
                             if (file) {
                                 uploader.upload(file, leash.cwd).then(upload);
+                            } else {
+                                complete();
                             }
                         })();
                     } else if (org.dataTransfer.getFilesAndDirectories) {
@@ -2758,6 +2775,8 @@ var leash = (function() {
                                 var item = items.shift();
                                 if (item) {
                                     uploader.upload_tree(item, leash.cwd).then(upload);
+                                } else {
+                                    complete();
                                 }
                             })();
                         });
