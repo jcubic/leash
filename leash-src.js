@@ -1748,6 +1748,7 @@ var leash = (function() {
                             ['-u', '--username USER', 'owner of the repo'],
                             ['-r', '--repo REPO', 'repo to open']
                         ]);
+                        parser.banner = 'Usage: github [options]';
                         var user, repo, branch = 'master';
                         parser.on('username', function(opt, value) {
                             user = value;
@@ -1815,7 +1816,7 @@ var leash = (function() {
                             term.push(function(command) {
                                 var cmd = $.terminal.parse_command(command);
                                 if (cmd.name == 'cd') {
-                                    path = cmd.args[0];
+                                    var path = cmd.args[0];
                                     if (cmd.args[0] == '..') {
                                         path = cwd.replace(/[^\/]+\/$/, '');
                                     } else {
@@ -1906,17 +1907,23 @@ var leash = (function() {
                             });
                             var params = $.param({filename: filename, token: token});
                             iframe.attr('src', 'lib/download.php?' + params);
+                        } else {
+                            term.echo('usage: download {FILENAME}');
                         }
                     },
                     pushd: function(cmd, token, term) {
-                        var dir = leash.cwd;
-                        if (dir_stack.length == 0) {
-                            dir_stack.push(dir);
+                        if (cmd.args.length == 1) {
+                            var dir = leash.cwd;
+                            if (dir_stack.length == 0) {
+                                dir_stack.push(dir);
+                            }
+                            leash.shell('cd ' + cmd.args[0], token, term).then(function() {
+                                dir_stack.push(leash.cwd);
+                                term.echo(dir_stack.slice().reverse().join(' '));
+                            });
+                        } else {
+                            term.echo('usage: pushd {DIRECTORY}');
                         }
-                        leash.shell('cd ' + cmd.args[0], token, term).then(function() {
-                            dir_stack.push(leash.cwd);
-                            term.echo(dir_stack.slice().reverse().join(' '));
-                        });
                     },
                     popd: function(cmd, token, term) {
                         if (dir_stack.length > 1) {
@@ -2007,12 +2014,12 @@ var leash = (function() {
                         } else if (cmd.args[0] == 'stop') {
                             term.history_state(false);
                         } else {
-                            term.echo('usage:\n\trecord [stop|start]');
+                            term.echo('usage: record [stop|start]');
                         }
                     },
                     timer: function(cmd, token, term) {
                         function usage() {
-                            term.echo('timer time [command]\ntime - number [smh]');
+                            term.echo('usage: timer time [command]\ntime - number [smh]');
                         }
                         if (cmd.args.length > 1) {
                             var time = cmd.args[0];
@@ -2175,7 +2182,7 @@ var leash = (function() {
                         }
                         if (cmd.args.length === 0) {
                             term.echo('Display contents of wikipedia articles\n' +
-                                      'usage:\n\twikipedia {ARTICLE}\n\n' +
+                                      'usage: wikipedia [{ARTICLE} |-s {TERM}]\n\n' +
                                       '-s {SEARCH TERM}');
                         } else {
                             term.pause();
@@ -2299,12 +2306,16 @@ var leash = (function() {
                         }
                     },
                     man: function(cmd, token, term) {
-                        term.pause();
-                        var command = 'MANWIDTH=' + term.cols() + ' ' + cmd.command;
-                        service.shell(token, command, '/')(function(err, ret) {
-                            leash.less($.terminal.overtyping(ret.output));
-                            term.resume();
-                        });
+                        if (cmd.args.length === 0) {
+                            term.echo('usage: man {COMMAND}');
+                        } else {
+                            term.pause();
+                            var command = 'MANWIDTH=' + term.cols() + ' ' + cmd.command;
+                            service.shell(token, command, '/')(function(err, ret) {
+                                leash.less($.terminal.overtyping(ret.output));
+                                term.resume();
+                            });
+                        }
                     },
                     sqlite: function(cmd, token, term) {
                         term.pause();
