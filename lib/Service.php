@@ -1179,8 +1179,10 @@ class Service {
         } else {
             $re = "/^\s*$cmd_re/";
         }
-        $separators = "/(&&|\|\||\||;)/";
-        $parts = preg_split($separators, $command, null, PREG_SPLIT_DELIM_CAPTURE);
+        $separators = "/(?:\"(?:[^\"]|\\\")*\"|'(?:[^']|\\')*')(*SKIP)(*F)|(&&|\|‌​{1,2}|;)/";
+        //$separatots = "~(?:\s*(?:\"[^\"\\\\]*(?:\\.[^\"\\\\]*)*\"|'[^'\\\\]*(\\.[^'\\\\]*)*'))+‌​\K|\s+(&&|\|{1,2}|;)‌​\s+~";
+        $flags = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE;
+        $parts = preg_split($separators, $command, null, $flags);
         $result = array();
         foreach ($parts as $part) {
             if (!preg_match($re, trim($part)) && !preg_match($separators, $part)) {
