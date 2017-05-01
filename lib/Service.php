@@ -1179,8 +1179,12 @@ class Service {
         } else {
             $re = "/^\s*$cmd_re/";
         }
-        $separators = "/(?:\"(?:[^\"]|\\\")*\"|'(?:[^']|\\')*')(*SKIP)(*F)|(&&|\|‌​{1,2}|;)/";
-        //$separatots = "~(?:\s*(?:\"[^\"\\\\]*(?:\\.[^\"\\\\]*)*\"|'[^'\\\\]*(\\.[^'\\\\]*)*'))+‌​\K|\s+(&&|\|{1,2}|;)‌​\s+~";
+        $invalid_string = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|\"/";
+        // shell will return syntax error on non closed strings
+        if (preg_match($invalid_string, $command)) {
+            return $command;
+        }
+        $separators = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|(\s+(?:&&|\|{1,2}|;)\s+)/";
         $flags = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE;
         $parts = preg_split($separators, $command, null, $flags);
         $result = array();
