@@ -1179,7 +1179,12 @@ class Service {
         } else {
             $re = "/^\s*$cmd_re/";
         }
-        $invalid_string = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|\"/";
+        $invalid_string = '~(?:  [^"\']+
+           |  " [^"\\\\]*  (?: \\\\. [^"\\\\]*  )*  "
+           | \' [^\'\\\\]* (?: \\\\. [^\'\\\\]* )* \'
+           )*+  # possessive quantifier
+           .    # a character that can only be a quote (single or double)
+         ~xAs';
         // shell will return syntax error on non closed strings
         if (preg_match($invalid_string, $command)) {
             return $command;
@@ -1189,14 +1194,14 @@ class Service {
         $parts = preg_split($separators, $command, null, $flags);
         $result = array();
         foreach ($parts as $part) {
-            if (!preg_match($re, trim($part)) && !preg_match($separators, $part)) {
+            if (preg_match('/(>|`|\$\()/', $part)) {
+                throw new Exception("guest user can't use redirect to write to files" .
+                                    " or execute subshell");
+            } else if (!preg_match($re, trim($part)) && !preg_match($separators, $part)) {
                 $last = array_pop($commands);
                 $message = "guest user can only execute: " .
                          implode(", ", $commands) . " and " . $last;
                 throw new Exception($message);
-            } else if (preg_match('/(>|`|\$\()/', $part)) {
-                throw new Exception("guest user can't use redirect to write to files" .
-                                    " or execute subshell");
             } else {
                 $result[] = $part;
             }

@@ -698,11 +698,15 @@ var leash = (function() {
                     } else {
                         var token = term.token();
                         leash.env.TOKEN = token;
-                        var cmd = $.terminal.parse_command(command);
-                        if (leash.commands[cmd.name]) {
-                            leash.commands[cmd.name](cmd, token, term);
-                        } else if (command !== '') {
+                        if ($.terminal.unclosed_strings(command)) {
                             leash.shell(command, token, term);
+                        } else {
+                            var cmd = $.terminal.parse_command(command);
+                            if (leash.commands[cmd.name]) {
+                                leash.commands[cmd.name](cmd, token, term);
+                            } else if (command !== '') {
+                                leash.shell(command, token, term);
+                            }
                         }
                     }
 
@@ -1629,6 +1633,13 @@ var leash = (function() {
                 },
                 completion: function(string, callback) {
                     var command = this.get_command();
+                    var username = this.login_name();
+                    var execs;
+                    if (username == 'guest') {
+                        execs = leash.settings.guest_commands;
+                    } else {
+                        execs = (leash.dir.execs || []).concat(config.executables);
+                    }
                     function dirs_slash(dir) {
                         return (dir.dirs || []).map(function(dir) {
                             return dir + '/';
@@ -1656,8 +1667,7 @@ var leash = (function() {
                         });
                     } else if (command.match(re) || command === '') {
                         var commands = Object.keys(leash.commands);
-                        callback(commands.concat(leash.dir.execs || []).
-                            concat(config.executables));
+                        callback(commands.concat(execs));
                     } else {
                         var m = string.match(/(.*)\/([^\/]+)/);
                         var path;
