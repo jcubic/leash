@@ -2576,11 +2576,14 @@ var leash = (function() {
                             user = value;
                         });
                         parser.parse(cmd.args);
-                        function unload() {
-                            if (term.level() == level + 1) {
-                                term.logout();
-                            }
-                        }
+                        var unload = (function() {
+                            var level = term.level();
+                            return function unload() {
+                                if (term.level() == level + 1) {
+                                    term.logout();
+                                }
+                            };
+                        })();
                         function prompt(callback) {
                             var server, path;
                             if (config && config.server) {
@@ -2598,15 +2601,21 @@ var leash = (function() {
                             user = user || $.terminal.active().login_name();
                             callback(unix_prompt(user, server, path));
                         }
-                        var level = term.level();
-                        term.set_mask(true).push(function(password) {
+                        term.history().disable();
+                        function login(password) {
+                            var is_interpreter = arguments.length == 2;
                             term.pause();
                             service.login(user, password)(function(err, token) {
-                                if (token) {
+                                term.history().enable();
+                                if (is_interpreter) {
+                                    term.pop().set_mask(false);
+                                }
+                                if (err) {
+                                    term.error(err.message);
+                                } else if (token) {
                                     cwd.push(leash.cwd);
                                     interpreters.push(leash.make_interpreter(token));
-                                    term.set_token(token);
-                                    term.pop().push(leash.interpreter, {
+                                    term.push(leash.interpreter, {
                                         prompt: prompt,
                                         name: 'su_' + user,
                                         onExit: function() {
@@ -2616,16 +2625,21 @@ var leash = (function() {
                                             $(window).off('unload', unload);
                                         }
                                     });
+                                    term.set_token(token);
                                 } else {
                                     term.error('Wrong password');
-                                    term.pop();
                                 }
-                                term.set_mask(false).resume();
+                                term.resume();
                             });
                             $(window).unload(unload);
-                        }, {
-                            prompt: 'password: '
-                        });
+                        }
+                        if (user == 'guest') {
+                            login('guest');
+                        } else {
+                            term.set_mask(true).push(login, {
+                                prompt: 'password: '
+                            });
+                        }
                     },
                     adduser: function(cmd, token, term) {
                         var password = {

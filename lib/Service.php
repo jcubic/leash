@@ -1197,7 +1197,8 @@ class Service {
         if ($this->unclosed_strings($command)) {
             return $command;
         }
-        if (count($this->get_subshells($command)) > 0) {
+        $subshells = $this->get_subshells($command);
+        if ($subshells == -1 || count($subshells) > 0) {
             throw new Exception("guest user can't execute subshells");
         }
         $parts = $this->split_command($command);
@@ -1267,12 +1268,18 @@ class Service {
             }
 
         }
+        if (count($stack) > 0) {
+            return -1;
+        }
         return array_reverse($subshells);
     }
     // ------------------------------------------------------------------------
     function have_sudo($token, $command) {
         $shell_fn = $this->config->settings->shell;
         $subshells = $this->get_subshells($command);
+        if ($subshells == -1) {
+            return -1;
+        }
         if (count($subshells)) {
             foreach($subshells as $subshell) {
                 if ($this->have_sudo($token, trim($subshell))) {
