@@ -111,6 +111,7 @@ class Service {
     protected $config;
     const password_hash = 'h'; // function use for password on installation
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]*):(.*)/';
+    const separators = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|(\s+(?:&&|\|{1,2}|;)\s+)/";
     private $safe_to_save = false;
 
     function __construct($config_file, $path) {
@@ -1159,10 +1160,25 @@ class Service {
     // ------------------------------------------------------------------------
     private function sudo($username, $command) {
         if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
-            $username != 'root' && $username != 'guest') {
+            $username != 'guest') {
             return "/usr/bin/sudo -u '$username' $command";
         }
         return $command;
+    }
+    // ------------------------------------------------------------------------
+    public function unclosed_strings($command) {
+        $invalid_string = '~(?:  [^"\']+
+           |  " [^"\\\\]*  (?: \\\\. [^"\\\\]*  )*  "
+           | \' [^\'\\\\]* (?: \\\\. [^\'\\\\]* )* \'
+           )*+  # possessive quantifier
+           .    # a character that can only be a quote (single or double)
+         ~xAs';
+        return preg_match($invalid_string, $command);
+    }
+    // ------------------------------------------------------------------------
+    public function split_command($command) {
+        $flags = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE;
+        return preg_split(Service::separators, $command, null, $flags);
     }
     // ------------------------------------------------------------------------
     public function validate_command($command) {
@@ -1177,25 +1193,19 @@ class Service {
         } else {
             $re = "/^\s*$cmd_re/";
         }
-        $invalid_string = '~(?:  [^"\']+
-           |  " [^"\\\\]*  (?: \\\\. [^"\\\\]*  )*  "
-           | \' [^\'\\\\]* (?: \\\\. [^\'\\\\]* )* \'
-           )*+  # possessive quantifier
-           .    # a character that can only be a quote (single or double)
-         ~xAs';
         // shell will return syntax error on non closed strings
-        if (preg_match($invalid_string, $command)) {
+        if ($this->unclosed_strings($command)) {
             return $command;
         }
-        $separators = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|(\s+(?:&&|\|{1,2}|;)\s+)/";
-        $flags = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE;
-        $parts = preg_split($separators, $command, null, $flags);
+        if (count($this->get_subshells($command)) > 0) {
+            throw new Exception("guest user can't execute subshells");
+        }
+        $parts = $this->split_command($command);
         $result = array();
         foreach ($parts as $part) {
-            if (preg_match('/(>|`|\$\()/', $part)) {
-                throw new Exception("guest user can't use redirect to write to files" .
-                                    " or execute subshell");
-            } else if (!preg_match($re, trim($part)) && !preg_match($separators, $part)) {
+            if (preg_match('/>/', $part)) {
+                throw new Exception("guest user can't use redirect to write to files");
+            } else if (!preg_match($re, trim($part)) && !preg_match(Service::separators, $part)) {
                 $last = array_pop($commands);
                 $message = "guest user can only execute: " .
                          implode(", ", $commands) . " and " . $last;
@@ -1232,16 +1242,68 @@ class Service {
         }
     }
     // ------------------------------------------------------------------------
+    public function get_subshells($command) {
+        $re = '/(\$\(|\(|\)|`)/';
+        $parts = preg_split($re, $command, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $subshells = array();
+        $backtick = false;
+        $stack = array();
+        foreach ($parts as $part) {
+            if (preg_match($re, $part)) {
+                if ($part == "`") {
+                    $backtick = !$backtick;
+                }
+                if ($backtick || preg_match("/\(/", $part)) {
+                    $stack[] = array('tag' => $part, 'content' => '');
+                } else {
+                    $last = array_pop($stack);
+                    $subshells[] = preg_replace('/^(\$\(|\(|`)/', '', $last['content']);
+                }
+            }
+            if (count($stack) > 0) {
+                foreach ($stack as &$subshell) {
+                    $subshell['content'] .= $part;
+                }
+            }
+
+        }
+        return array_reverse($subshells);
+    }
+    // ------------------------------------------------------------------------
+    function have_sudo($token, $command) {
+        $shell_fn = $this->config->settings->shell;
+        $subshells = $this->get_subshells($command);
+        if (count($subshells)) {
+            foreach($subshells as $subshell) {
+                if ($this->have_sudo($token, trim($subshell))) {
+                    return true;
+                }
+            }
+        } else {
+            $re = "!^(sudo|" . $this->$shell_fn($token, "which sudo") . ")!";
+            foreach ($this->split_command($command) as $part) {
+                if (preg_match($re, trim($part))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    // ------------------------------------------------------------------------
     private function command($token, $command, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $user = $this->get_username($token);
+        $username = $this->get_username($token);
         $shell_fn = $this->config->settings->shell;
+        if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
+            $username != 'guest' && $this->have_sudo($token, $command)) {
+            throw new Exception("You can't execute sudo if sudo option is on");
+        }
         if (preg_match("/&\s*$/", $command)) {
             $command = preg_replace("/&\s*$/", ' >/dev/null & echo $!', $command);
             $command = '/bin/bash -c ' . escapeshellarg($command);
-            $result = $this->$shell_fn($token, $this->sudo($user, $command));
+            $result = $this->$shell_fn($token, $this->sudo($username, $command));
             return array(
                 'output' => '[1] ' . $result,
                 'cwd' => $path
@@ -1259,7 +1321,7 @@ class Service {
             if (!method_exists($this, $shell_fn)) {
                 throw new Exception("Invalid shell '$shell_fn'");
             }
-            $command = $this->sudo($user, '/bin/bash -c ' . $command . ' 2>&1');
+            $command = $this->sudo($username, '/bin/bash -c ' . $command . ' 2>&1');
             $command = $this->unbuffer($token, $command);
             $result = $this->$shell_fn($token, $command);
             if ($result) {

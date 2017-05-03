@@ -465,6 +465,8 @@ var leash = (function() {
             var config;
             var init_formatters = $.terminal.defaults.formatters;
             var formatters_stack = [init_formatters];
+            var interpreters = [];
+            var cwd = [];
             function expand_env_vars(command) {
                 var fixed_command = command;
                 $.each(leash.env, function(k, v) {
@@ -692,24 +694,30 @@ var leash = (function() {
                     }
                 },
                 interpreter: function(command, term) {
-                    if (!leash.installed) {
-                        term.error("Invalid command, you need to refresh the p"+
-                                   "age");
+                    if (!interpreters.length) {
+                        term.error("Not interpeter");
                     } else {
-                        var token = term.token();
-                        leash.env.TOKEN = token;
-                        if ($.terminal.unclosed_strings(command)) {
-                            leash.shell(command, token, term);
+                        interpreters[interpreters.length-1](command, term);
+                    }
+                },
+                make_interpreter: function(token) {
+                    return function(command, term) {
+                        if (!leash.installed) {
+                            term.error("Invalid command, you need to refresh the p"+
+                                       "age");
                         } else {
-                            var cmd = $.terminal.parse_command(command);
-                            if (leash.commands[cmd.name]) {
-                                leash.commands[cmd.name](cmd, token, term);
-                            } else if (command !== '') {
+                            if ($.terminal.unclosed_strings(command)) {
                                 leash.shell(command, token, term);
+                            } else {
+                                var cmd = $.terminal.parse_command(command);
+                                if (leash.commands[cmd.name]) {
+                                    leash.commands[cmd.name](cmd, token, term);
+                                } else if (command !== '') {
+                                    leash.shell(command, token, term);
+                                }
                             }
                         }
-                    }
-
+                    };
                 },
                 install: function(term) {
                     var settings = {};
@@ -853,6 +861,8 @@ var leash = (function() {
                                 term.resume();
                             } else {
                                 leash.token = token;
+                                leash.env.TOKEN = token;
+                                interpreters.push(leash.make_interpreter(token));
                                 service.jargon_list()(function(err, result) {
                                     if (!err) {
                                         leash.jargon = result;
@@ -2558,18 +2568,63 @@ var leash = (function() {
                         term.echo(term.history().data().join('\n'));
                     },
                     su: function(cmd, token, term) {
-                        term.echo('testing command');
-                        term.push(function(command) {
-                            term.echo('[[u;#fff;]' + command + ']');
-                        }, {
-                            prompt: '$ ',
-                            login: function(user, pass, callback) {
-                                if (user == 'demo' && pass == 'demo') {
-                                    callback('xxx');
-                                } else {
-                                    callback(null);
-                                }
+                        var parser = new optparse.OptionParser([
+                            ['-u', '--user USER', 'User or root if not specified']
+                        ]);
+                        var user = 'root';
+                        parser.on('user', function(opt, value) {
+                            user = value;
+                        });
+                        parser.parse(cmd.args);
+                        function unload() {
+                            if (term.level() == level + 1) {
+                                term.logout();
                             }
+                        }
+                        function prompt(callback) {
+                            var server, path;
+                            if (config && config.server) {
+                                server = config.server;
+                            } else {
+                                server = 'unknown';
+                            }
+                            if (config && leash.cwd) {
+                                var home = $.terminal.escape_regex(config.home);
+                                var re = new RegExp('^' + home);
+                                path = leash.cwd.replace(re, '~');
+                            } else {
+                                path = leash.cwd;
+                            }
+                            user = user || $.terminal.active().login_name();
+                            callback(unix_prompt(user, server, path));
+                        }
+                        var level = term.level();
+                        term.set_mask(true).push(function(password) {
+                            term.pause();
+                            service.login(user, password)(function(err, token) {
+                                if (token) {
+                                    cwd.push(leash.cwd);
+                                    interpreters.push(leash.make_interpreter(token));
+                                    term.set_token(token);
+                                    term.pop().push(leash.interpreter, {
+                                        prompt: prompt,
+                                        name: 'su_' + user,
+                                        onExit: function() {
+                                            leash.cwd = cwd.pop();
+                                            interpreters.pop();
+                                            leash.env.TOKEN = term.token(true);
+                                            $(window).off('unload', unload);
+                                        }
+                                    });
+                                } else {
+                                    term.error('Wrong password');
+                                    term.pop();
+                                }
+                                term.set_mask(false).resume();
+                            });
+                            $(window).unload(unload);
+                        }, {
+                            prompt: 'password: '
                         });
                     },
                     adduser: function(cmd, token, term) {
