@@ -12,7 +12,7 @@
  * Copyright (c) 2011-2017 Jakub Jankiewicz <http://jcubic.pl>
  * Released under the MIT license
  *
- * Date: Mon, 27 Feb 2017 17:04:03 +0000
+ * Date: Wed, 03 May 2017 13:26:13 +0000
  */
 .terminal .terminal-output .format, .cmd .format,
 .cmd .prompt, .cmd .prompt div, .terminal .terminal-output div div{
@@ -78,15 +78,18 @@
     background-color: #aaa;
     color: #000;
 }
+.cmd .cursor {
+    border-bottom: 3px solid transparent;
+    margin-bottom: -3px;
+    background-clip: content-box;
+}
 .cmd .cursor.blink {
     -webkit-animation: terminal-blink 1s infinite steps(1, start);
        -moz-animation: terminal-blink 1s infinite steps(1, start);
         -ms-animation: terminal-blink 1s infinite steps(1, start);
             animation: terminal-blink 1s infinite steps(1, start);
     border-left: 1px solid transparent;
-    border-bottom: 3px solid transparent;
     margin-left: -1px;
-    background-clip: content-box;
 }
 .bar.terminal .inverted, .bar.cmd .inverted {
     border-left-color: #aaa;
@@ -170,7 +173,7 @@
       border-bottom-color: #aaa;
       position: relative;
       top: 2px;
-      line-height: 11px;
+      line-height: 12px;
       border-left: none;
       margin: 0;
   }
@@ -178,7 +181,7 @@
       border-bottom-color: #000;
       position: relative;
       top: 2px;
-      line-height: 11px;
+      line-height: 12px;
       border-left: none;
       margin: 0;
   }
@@ -188,7 +191,7 @@
       border-bottom-color: #aaa;
       position: relative;
       top: 2px;
-      line-height: 11px;
+      line-height: 12px;
       border-left: none;
       margin: 0;
   }
@@ -196,7 +199,7 @@
       border-bottom-color: #000;
       position: relative;
       top: 2px;
-      line-height: 11px;
+      line-height: 12px;
       border-left: none;
       margin: 0;
   }
@@ -206,7 +209,7 @@
       border-bottom-color: #aaa;
       position: relative;
       top: 2px;
-      line-height: 11px;
+      line-height: 12px;
       border-left: none;
       margin: 0;
   }
@@ -385,7 +388,7 @@
 .terminal a:hover {
     color: red;
 }
-.terminal iframe {
+.terminal .terminal-fill {
     position: absolute;
     left: 0;
     top: -100%;
@@ -397,8 +400,8 @@
     pointer-events: none;
     box-sizing: border-box;
 }
-.terminal, .terminal iframe {
-    padding: 10px; /* we get width of the terminal from iframe so it need to have the same padding */
+.terminal, .terminal .terminal-fill {
+    padding: 10px;
 }
 @supports (--css: variables) {
     .terminal, .cmd {
@@ -540,7 +543,7 @@
           border-bottom-color: var(--color, #aaa);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -548,7 +551,7 @@
           border-bottom-color: var(--background, #000);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -558,7 +561,7 @@
           border-bottom-color: var(--background, #000);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -566,7 +569,7 @@
           border-bottom-color: var(--color, #aaa);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -576,7 +579,7 @@
           border-bottom-color: var(--background, #000);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -584,7 +587,7 @@
           border-bottom-color: var(--color, #aaa);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -594,7 +597,7 @@
           border-bottom-color: var(--background, #000);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
@@ -602,7 +605,7 @@
           border-bottom-color: var(--color, #aaa);
           position: relative;
           top: 2px;
-          line-height: 11px;
+          line-height: calc(var(--size, 1) * 12px);
           border-left: none;
           margin: 0;
       }
