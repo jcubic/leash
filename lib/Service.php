@@ -249,7 +249,6 @@ class Service {
             return true;
         }
     }
-
     // ------------------------------------------------------------------------
     public function valid_token($token) {
         return !$this->installed() || ($token ? $this->get_session($token) != null : false);
@@ -340,9 +339,8 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $command = "which $command > /dev/null && echo true || echo false";
-        $response = $this->shell($token, $command, ".");
-        return json_decode($response['output']);
+        $response = $this->command($token, "which $command", ".");
+        return !empty(preg_replace("/\s$/", "", $response['output']));
     }
     // ------------------------------------------------------------------------
     public function html($token, $url, $width) {
@@ -1220,6 +1218,20 @@ class Service {
         return $this->command($token, $command, $path);
     }
     // ------------------------------------------------------------------------
+    public function unbuffer($token, $command) {
+        if (preg_match("/which unbuffer/", $command)) {
+            return $command;
+        } else {
+            $shell_fn = $this->config->settings->shell;
+            $path = preg_replace("/\s$/", "", $this->$shell_fn($token, "which unbuffer"));
+            if (empty($path)) {
+                return $command;
+            } else {
+                return $path . " " . $command;
+            }
+        }
+    }
+    // ------------------------------------------------------------------------
     private function command($token, $command, $path) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
@@ -1248,6 +1260,7 @@ class Service {
                 throw new Exception("Invalid shell '$shell_fn'");
             }
             $command = $this->sudo($user, '/bin/bash -c ' . $command . ' 2>&1');
+            $command = $this->unbuffer($token, $command);
             $result = $this->$shell_fn($token, $command);
             if ($result) {
                 // work wth `set` that return BASH_EXECUTION_STRING

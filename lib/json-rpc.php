@@ -123,7 +123,7 @@ function response($result, $id, $error) {
     }
     return json_encode(array("jsonrpc" => "2.0",
                              'result' => $result,
-                             'id' => $id,
+                             'id' => $id == null ? null : intval($id),
                              'error'=> $error));
 }
 
