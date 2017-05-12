@@ -480,8 +480,8 @@ class Service {
         $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
         $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
 
-        $this->new_user('root', $root_password);
-        $this->new_user($username, $password);
+        $this->new_user('root', $root_password, $settings['home']);
+        $this->new_user($username, $password, $settings['home']);
         if (!file_exists('init.js')) {
             copy('init.js.src', 'init.js');
         }
