@@ -944,7 +944,6 @@ var leash = (function() {
                                     term.resume();
                                     deferr.resolve();
                                 });
-                                
                             }
                         });
                     }
@@ -953,7 +952,7 @@ var leash = (function() {
                 wikipedia: function(text, title) {
                     function list(list) {
                         if (list.length == 1) {
-                            return list[0]
+                            return list[0];
                         } else if (list.length == 2) {
                             return list.join(' and ');
                         } else if (list.length > 2) {
@@ -1070,12 +1069,12 @@ var leash = (function() {
                         },
                         quote: function(content) {
                             content = content.replace(/^\s*\|/gm, '').
-                                split(/|(?![^\]]+\])/);
+                                split(/\|(?![^\]]+\])/);
                             var keys = {};
                             content = content.map(function(item) {
                                 var m = item.match(/\s*(\w+)\s*=\s*(.*)/);
                                 if (m) {
-                                    if (!isNaN(m[1])) {
+                                    if (!isNaN(+m[1])) {
                                         return m[2];
                                     } else {
                                         keys[m[1].toLowerCase()] = m[2];
@@ -1397,67 +1396,7 @@ var leash = (function() {
                         var to_print = lines.slice(pos, pos+rows-1);
                         var format_start_re = /^(\[\[[!gbiuso]*;[^;]*;[^\]]*\])/i;
                         to_print = to_print.map(function(line, line_index) {
-                            if ($.terminal.have_formatting(line)) {
-                                var result, start = -1, format, count = 0,
-                                    formatting = null, in_text = false, beginning = '';
-                                for (var i=0, len=line.length; i<len; ++i) {
-                                    var m = line.substring(i).match(format_start_re);
-                                    if (m) {
-                                        formatting = m[1];
-                                        in_text = false;
-                                    } else if (formatting && line[i] === ']') {
-                                        if (in_text) {
-                                            formatting = null;
-                                            in_text = false;
-                                        } else {
-                                            in_text = true;
-                                        }
-                                    }
-                                    if (count === left && start == -1) {
-                                        start = i;
-                                        if (formatting && in_text && line[i] != ']') {
-                                            beginning = formatting;
-                                        }
-                                    } else if (i==len-1) {
-                                        if (left > count) {
-                                            result = '';
-                                        } else {
-                                            result = beginning + line.substring(start, len);
-                                            if (formatting && in_text && line[i] != ']') {
-                                                result += ']';
-                                            }
-                                        }
-                                    } else if (count === left+cols-1) {
-                                        result = beginning + line.substring(start, i);
-                                        if (formatting && in_text) {
-                                            result += ']';
-                                        }
-                                        break;
-                                    }
-                                    if (((formatting && in_text) || !formatting) &&
-                                        line[i] != ']') {
-                                        // treat entity as one character
-                                        if (line[i] === '&') {
-                                            m = line.substring(i).match(/^(&[^;]+;)/);
-                                            if (!m) {
-                                                throw new Error('Unclosed html entity in' +
-                                                                ' line ' + (line_index+1) +
-                                                                ' at char ' + (i+1));
-                                            }
-                                            i+=m[1].length-2; // because continue adds 1 to i
-                                            continue;
-                                        } else if (line[i] === ']' && line[i-1] === '\\') {
-                                            // escape \] counts as one character
-                                            --count;
-                                        } else {
-                                            ++count;
-                                        }
-                                    }
-                                } // for line
-                                return result;
-                            } else {
-                                return line.substring(left, left+cols-1);
-                            }
+                            return $.terminal.substring(line, left, left+cols-1);
                         });
                         if (to_print.length < rows-1) {
                             while (rows-1 > to_print.length) {
