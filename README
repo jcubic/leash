@@ -52,6 +52,16 @@ one of the following:
     and have sudo access without password for apache user
 
 ----------------------------------------------------------------------------
+:: Requirements
+----------------------------------------------------------------------------
+* php with .htaccess with modules curl, mbstring and zip
+* to have full use of leash you will also need one of functions enabled:
+  * exec
+  * system
+  * shell_exec
+  * or cgi (perl or python in cgi-bin directory)
+
+----------------------------------------------------------------------------
 :: License
 ----------------------------------------------------------------------------
 

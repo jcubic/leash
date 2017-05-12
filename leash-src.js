@@ -627,6 +627,7 @@ var leash = (function() {
                         this.animating = true;
                         this.prompt = leash.terminal.get_prompt();
                         var self = this;
+                        leash.terminal.pause(true);
                         (function animation() {
                             leash.terminal.set_prompt(anim[i++]);
                             if (i > anim.length-1) {
@@ -641,6 +642,7 @@ var leash = (function() {
                             leash.terminal.set_prompt(this.prompt);
                             this.animating = false;
                         }
+                        leash.terminal.resume();
                     }
                 },
                 service: service,
@@ -1897,7 +1899,7 @@ var leash = (function() {
                         }
                     },
                     update: function(cmd, token, term) {
-                        term.pause();
+                        leash.animation.start(400);
                         leash.service.update(token)(function(err, result) {
                             if (err) {
                                 print_error(err);
@@ -1907,7 +1909,7 @@ var leash = (function() {
                             } else {
                                 term.error('No new version available');
                             }
-                            term.resume();
+                            leash.animation.stop();
                         });
                     },
                     rfc: function(cmd, token, term) {
