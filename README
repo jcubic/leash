@@ -46,8 +46,8 @@ one of the following:
   * guest, if set, will have limited access to shell, list of commands are
     configurable from config.json
   * sudo option, if set, will allow to execute commands are real unix user
-    you will need to create user using linux command line (adduser command
-    from real) and you will need to have leash user with the same name,
+    to create new user you will need to use linux command line (adduser command
+    from real terminal) and you will need to have leash user with the same name,
     (to add user from leash you need to be root and execute adduser command)
     and have sudo access without password for apache user
 
@@ -60,6 +60,8 @@ one of the following:
   * system
   * shell_exec
   * or cgi (perl or python in cgi-bin directory)
+* if you want to have mysql or sqlite commands you need to install those databases
+  and appropriate php modules
 
 ----------------------------------------------------------------------------
 :: License
