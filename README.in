@@ -62,6 +62,9 @@ one of the following:
   * or cgi (perl or python in cgi-bin directory)
 * if you want to have mysql or sqlite commands you need to install those databases
   and appropriate php modules
+* you may also want to have programm unbuffer installed (in ubuntu it's provied
+  by package expect - actually it's expect script), it will make not interactive
+  shell act like real terminal (tty)
 
 ----------------------------------------------------------------------------
 :: License
