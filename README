@@ -54,7 +54,7 @@ one of the following:
 ----------------------------------------------------------------------------
 :: Requirements
 ----------------------------------------------------------------------------
-* php with .htaccess with modules curl, mbstring and zip
+* php with .htaccess with modules curl, mbstring, json and zip
 * to have full use of leash you will also need one of functions enabled:
   * exec
   * system
