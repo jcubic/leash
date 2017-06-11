@@ -2575,13 +2575,9 @@ var leash = (function() {
                             });
                             $(window).unload(unload);
                         }
-                        if (user == 'guest') {
-                            login('guest');
-                        } else {
-                            term.set_mask(true).push(login, {
-                                prompt: 'password: '
-                            });
-                        }
+                        term.set_mask(true).push(login, {
+                            prompt: 'password: '
+                        });
                     },
                     adduser: function(cmd, token, term) {
                         var password = {
