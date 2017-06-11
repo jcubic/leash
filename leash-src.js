@@ -915,6 +915,7 @@ var leash = (function() {
                 shell: function(command, token, term) {
                     var re = /\|\s*less\s*$/;
                     var deferr = $.Deferred();
+                    command = expand_env_vars(command);
                     term.pause();
                     if (command.match(re)) {
                         command = command.replace(re, '');
@@ -2601,6 +2602,31 @@ var leash = (function() {
                             history: false,
                             token: true
                         });
+                    },
+                    deluser: function(cmd, token, term) {
+                        if (cmd.args.length != 1) {
+                            term.echo('remove leash user\nusage:\ndeluser [username]');
+                        } else {
+                            var username = cmd.args[0];
+                            function confirm(err) {
+                                if (err) {
+                                    print_error(err);
+                                } else {
+                                    term.echo('user ' + username + ' removed');
+                                }
+                            }
+                            term.push(function(remove) {
+                                if (remove.match(/^(y(es)?|n(o)?)$/i)) {
+                                    if (remove.match(/^y/i)) {
+                                        service.remove_user(token, username)(confirm);
+                                    }
+                                    term.pop();
+                                }
+                            }, {
+                                prompt: 'Are you sure you want to delete this' +
+                                    ' account (Y/N)? '
+                            });
+                        }
                     },
                     purge: function(cmd, token, term) {
                         term.logout().purge();
