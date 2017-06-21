@@ -74,6 +74,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <script src="lib/browser.js"></script>
   <script src="lib/optparse.js"></script>
   <script src="lib/jquery.ba-hashchange.min.js"></script>
+  <script src="https://rawgit.com/cvan/keyboardevent-key-polyfill/master/index.js"></script>
   <script src="lib/sysend.js"></script>
   <?php if ($service->debug()) { ?>
     <script src="leash-src.js?<?= time() ?>"></script>
@@ -81,6 +82,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <script src="leash.min.js"></script>
   <?php } ?>
   <script>
+   keyboardeventKeyPolyfill.polyfill();
    var d = $.Deferred();
    $.leash = d.promise();
    $(function() {

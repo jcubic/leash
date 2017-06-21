@@ -369,7 +369,7 @@ var leash = (function() {
             if (params === undefined) {
                 params = [];
             }
-            terminal.pause();
+            terminal.pause(true);
             $.jrpc(url, method, params, function(data) {
                 if (data.error) {
                     json_error(data.error);
@@ -381,7 +381,7 @@ var leash = (function() {
                 terminal.resume();
             }, ajax_error);
         }
-        terminal.pause();
+        terminal.pause(true);
         var session_id;
         $.jrpc(url, 'start', [], function(data) {
             if (data.error) {
@@ -580,7 +580,7 @@ var leash = (function() {
             function less_command(cat) {
                 return function(cmd, token, term) {
                     var shell_cmd = cat + ' ' + cmd.args[0];
-                    term.pause();
+                    term.pause(true);
                     service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
                         if (err) {
                             print_error(err);
@@ -797,7 +797,7 @@ var leash = (function() {
                             finish();
                         }
                     })(0, function() {
-                        term.pause();
+                        term.pause(true);
                         var colors = $.terminal.ansi_colors.bold;
                         // recursive call after ajax
                         function test_shells(shells, continuation) {
@@ -916,7 +916,7 @@ var leash = (function() {
                     var re = /\|\s*less\s*$/;
                     var deferr = $.Deferred();
                     command = expand_env_vars(command);
-                    term.pause();
+                    //term.pause(true);
                     if (command.match(re)) {
                         command = command.replace(re, '');
                         service.shell(token, command, leash.cwd)(function(err, res) {
@@ -1762,7 +1762,7 @@ var leash = (function() {
                             })).join('\n'));
                         }
                         function show(path, callback) {
-                            term.pause();
+                            term.pause(true);
                             file(cwd + path, function(contents) {
                                 callback(contents);
                                 term.resume();
@@ -1784,7 +1784,7 @@ var leash = (function() {
                                     } else {
                                         path = (cwd == '/' ? '' : cwd) + cmd.args[0];
                                     }
-                                    term.pause();
+                                    term.pause(true);
                                     base_defer = $.Deferred();
                                     dir(path, function(data) {
                                         base_content = data;
@@ -1803,7 +1803,7 @@ var leash = (function() {
                                     if (cmd.args == 0) {
                                         list(base_content);
                                     } else {
-                                        term.pause();
+                                        term.pause(true);
                                         dir(cmd.args[0], function(data) {
                                             list(data);
                                             term.resume();
@@ -1915,7 +1915,7 @@ var leash = (function() {
                     },
                     rfc: function(cmd, token, term) {
                         var number = cmd.args.length ? cmd.args[0] : null;
-                        term.pause();
+                        term.pause(true);
                         leash.service.rfc(number)(function(err, rfc) {
                             if (err) {
                                 print_error(err);
@@ -1997,7 +1997,7 @@ var leash = (function() {
                                     case 's':
                                         time *= 1000;
                                 }
-                                term.pause();
+                                term.pause(true);
                                 setTimeout(function() {
                                     leash.interpreter(command, term);
                                 }, time);
@@ -2012,7 +2012,7 @@ var leash = (function() {
                         term.set_mask(true).history().disable();
                         term.push(function(old_p) {
                             term.push(function(new_p) {
-                                term.pause();
+                                term.pause(true);
                                 service.valid_password(token, old_p)(function(err, valid) {
                                     if (valid) {
                                         service.change_password(token, new_p)(function(err) {
@@ -2074,7 +2074,7 @@ var leash = (function() {
                         }
                         term.push(function(command) {
                             var cmd = $.terminal.parse_command(expand_env_vars(command));
-                            term.pause();
+                            term.pause(true);
                             $.jrpc(name, cmd.name, cmd.args, function(json) {
                                 if (json.error) {
                                     if (json.error.error) {
@@ -2147,7 +2147,7 @@ var leash = (function() {
                                       'usage: wikipedia [{ARTICLE} |-s {TERM}]\n\n' +
                                       '-s {SEARCH TERM}');
                         } else {
-                            term.pause();
+                            term.pause(true);
                             term.option('convertLinks', false);
                             var url = 'https://en.wikipedia.org/w/api.php?';
                             wiki_stack.push(cmd.rest.replace(/^-s\s*/, ''));
@@ -2219,7 +2219,7 @@ var leash = (function() {
                                 'earch jargon file';
                             term.echo(msg, {keepWords: true});
                         } else if (cmd.args[0] == '-s') {
-                            term.pause();
+                            term.pause(true);
                             var search_term = cmd.rest.replace(/^-s/, '').trim();
                             if (!search_term.match(/%/)) {
                                 search_term = '%' + search_term + '%';
@@ -2235,7 +2235,7 @@ var leash = (function() {
                                 term.resume();
                             });
                         } else {
-                            term.pause();
+                            term.pause(true);
                             // NOTE: when paste using mouse middle rpc jargon
                             //       function don't return result
                             var word = cmd.args.join(' ').replace(/\s+/g, ' ');
@@ -2271,7 +2271,7 @@ var leash = (function() {
                         if (cmd.args.length === 0) {
                             term.echo('usage: man {COMMAND}');
                         } else {
-                            term.pause();
+                            term.pause(true);
                             var command = 'MANWIDTH=' + term.cols() + ' ' + cmd.command;
                             service.shell(token, command, '/')(function(err, ret) {
                                 leash.less($.terminal.overtyping(ret.output));
@@ -2280,7 +2280,7 @@ var leash = (function() {
                         }
                     },
                     sqlite: function(cmd, token, term) {
-                        term.pause();
+                        term.pause(true);
                         var fn;
                         if (!cmd.args.length) {
                             term.error('You need to provide the file').resume();
@@ -2299,7 +2299,7 @@ var leash = (function() {
                                               'aster WHERE type = "table"\ndescribe tabl'+
                                               'e:\n\tPRAGMA table_info([TABLE NAME])');
                                 } else {
-                                    term.pause();
+                                    term.pause(true);
                                     leash.service.sqlite_query(token, fn, q)(prn_sql_result);
                                 }
                             }, {
@@ -2363,10 +2363,10 @@ var leash = (function() {
                         }
                         host = host || 'localhost';
                         function mysql() {
-                            term.pause();
+                            term.pause(true);
                             var db;
                             function mysql_query(query) {
-                                term.pause();
+                                term.pause(true);
                                 service.mysql_query(token, db, query)(prn_sql_result);
                             }
                             function mysql_close(db) {
@@ -2546,7 +2546,7 @@ var leash = (function() {
                         term.history().disable();
                         function login(password) {
                             var is_interpreter = arguments.length == 2;
-                            term.pause();
+                            term.pause(true);
                             service.login(user, password)(function(err, token) {
                                 term.history().enable();
                                 if (is_interpreter) {
