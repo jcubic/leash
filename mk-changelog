@@ -1,0 +1,2 @@
+#!/bin/bash
+conventional-changelog -i CHANGELOG.md -s -r 0
