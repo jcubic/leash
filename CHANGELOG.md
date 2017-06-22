@@ -1,6 +1,12 @@
-<a name="0.15.0"></a>
-# 0.15.0 (2017-04-12)
+<a name="0.15.1"></a>
+# 0.15.1 (2017-06-22)
 
+* Fix error from refactoring ([0d260eb](https://github.com/jcubic/leash/commit/0d260eb))
+
+<a name="0.15.0"></a>
+# 0.15.0 (2017-06-22)
+
+* Add changelog ([5b36f46](https://github.com/jcubic/leash/commit/5b36f46))
 * Add help command ([6d1e438](https://github.com/jcubic/leash/commit/6d1e438))
 * Add info about unbuffer to README ([d9e0ede](https://github.com/jcubic/leash/commit/d9e0ede))
 * Add json reqirement to readme ([3e88fa0](https://github.com/jcubic/leash/commit/3e88fa0))

@@ -2640,6 +2640,8 @@ var leash = (function() {
                         path = leash.cwd;
                     }
                     username = username || $.terminal.active().login_name();
+                    console.log(username);
+                    console.log($.terminal.active().login_name());
                     callback(unix_prompt(username, server, path));
                 };
                 leash.onImport = function(view) {
@@ -2668,8 +2670,8 @@ var leash = (function() {
 
                     // we need to pause because prompt was flickering
                     // and pause should be always called before ajax call
-                    term.pause();
                     var self = this;
+                    self.pause();
                     service.login(user, password)(function(err, token) {
                         login_callback[index] = null; // we are fine now
                         username = user; // for use in prompt
@@ -2700,7 +2702,7 @@ var leash = (function() {
     }
     // callback to set invalid token on auth when there was an error
     var i = 0;
-    var login_callback;
+    var login_callback = {};
     return function(options) {
         var d = new $.Deferred();
         var index = i++;
