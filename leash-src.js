@@ -6,7 +6,8 @@
  *
  *  Date: {{DATE}}
  */
-/* global sysend $ Directory File FormData rpc wcwidth clearTimeout setTimeout optparse
+/* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
+          optparse
  */
 function Uploader(leash) {
     this.token = leash.terminal.token();
@@ -2509,7 +2510,7 @@ var leash = (function() {
                         } else {
                             server = 'unknown';
                         }
-                        if (config && leash.cwd) {
+                        if (config && leash.cwd && config.home != '/') {
                             var home = $.terminal.escape_regex(config.home);
                             var re = new RegExp('^' + home);
                             path = leash.cwd.replace(re, '~');
@@ -2632,7 +2633,7 @@ var leash = (function() {
                     } else {
                         server = 'unknown';
                     }
-                    if (config && leash.cwd) {
+                    if (config && leash.cwd && config.home != '/') {
                         var home = $.terminal.escape_regex(config.home);
                         var re = new RegExp('^' + home);
                         path = leash.cwd.replace(re, '~');
@@ -2640,8 +2641,6 @@ var leash = (function() {
                         path = leash.cwd;
                     }
                     username = username || $.terminal.active().login_name();
-                    console.log(username);
-                    console.log($.terminal.active().login_name());
                     callback(unix_prompt(username, server, path));
                 };
                 leash.onImport = function(view) {
@@ -2767,7 +2766,7 @@ var leash = (function() {
             service: null
         }, options && options.leash || {});
         var d = $.Deferred();
-        var len = this.size();
+        var len = this.length;
         var result = [];
         this.each(function(i) {
             var self = $(this);
