@@ -1708,8 +1708,8 @@ var leash = (function() {
                                     })
                                 });
                             },
-                            error: function(data) {
-                                term.error('wrong directory');
+                            error: function(xhr, status, error) {
+                                term.error(status + ' ' + error);
                                 resume(term);
                             }
                         });
