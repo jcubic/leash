@@ -122,9 +122,8 @@ class Service {
         $this->config = new stdClass();
         $this->shell_method = false;
         if (file_exists($full_path)) {
-            try {
-                $this->config = json_decode(file_get_contents($full_path));
-            } catch (Exception $e) {
+            $this->config = json_decode(file_get_contents($full_path));
+            if (json_last_error() !== JSON_ERROR_NONE) {
                 $this->config = new stdClass();
                 $corrupted = true;
                 $this->logger->log('file corupted: ' . file_get_contents($full_path));
