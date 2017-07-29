@@ -246,6 +246,7 @@ class Service {
         if (file_exists($filename) && !is_writable($filename)) {
             return false;
         }
+        unlink($filename);
         $file = fopen($filename, 'w+');
         fwrite($file, $content);
         fclose($file);
@@ -259,7 +260,7 @@ class Service {
         } else {
             $root = $this->get_user('root');
             return $root != null && isset($root->password) &&
-                preg_match(self::password_regex, $root->password);
+                   preg_match(self::password_regex, $root->password);
         }
     }
     // ------------------------------------------------------------------------
@@ -381,15 +382,15 @@ class Service {
         $base = preg_replace("~(?<!/)/(?!/).*$~", "", $url);
         $rel = preg_replace("~(?<!/)/(?!/)[^/]+$~", "/", $url);
         return preg_replace_callback("/\\[([^\\]]+)\\]/", function($matches) use ($base,$rel) {
-                if (preg_match("~^/~", $matches[1])) {
-                    $url = $base . $matches[1];
-                } else if (preg_match("/^(http|mailto)/", $matches[1])) {
-                    $url = $matches[1];
-                } else {
-                    $url = $rel . $matches[1];
-                }
-                return '&#91;[[!;;;;' . $url . ']' . $url . ']&#93;';
-            }, $text);
+            if (preg_match("~^/~", $matches[1])) {
+                $url = $base . $matches[1];
+            } else if (preg_match("/^(http|mailto)/", $matches[1])) {
+                $url = $matches[1];
+            } else {
+                $url = $rel . $matches[1];
+            }
+            return '&#91;[[!;;;;' . $url . ']' . $url . ']&#93;';
+        }, $text);
     }
     // ------------------------------------------------------------------------
     public function file($token, $filename) {
@@ -624,18 +625,18 @@ class Service {
     // TODO: Use Shell to get the content of the directory
     public function dir($token, $path) {
         /* shell method test for valid token
-        if (!$this->valid_token($token)) {
-            throw new Exception("Access Denied: Invalid Token");
-        }
-        */
+           if (!$this->valid_token($token)) {
+           throw new Exception("Access Denied: Invalid Token");
+           }
+         */
         // using shell since php can restric to read files from specific directories
         $EXEC = 'X';
         $DIR = 'D';
         $FILE = 'F';
         // depend on GNU version of find (not tested on different versions)
         $cmd = "find . -mindepth 1 -maxdepth 1 \\( -type f -executable -printf ".
-            "'$EXEC%p\\0' \\)  -o -type d -printf '$DIR%p\\0' -o \\( -type l -x".
-            "type d -printf '$DIR%p\\0' \\) -o -not -type d -printf '$FILE%p\\0'";
+               "'$EXEC%p\\0' \\)  -o -type d -printf '$DIR%p\\0' -o \\( -type l -x".
+               "type d -printf '$DIR%p\\0' \\) -o -not -type d -printf '$FILE%p\\0'";
         $result = $this->command($token, $cmd, $path);
         //return $result;
         $files = array();
@@ -662,30 +663,30 @@ class Service {
             'execs' => $execs
         );
         /*
-        if (is_dir($path)) {
-            $files = array();
-            $dirs = array();
-            $execs = array();
-            foreach (scandir($path) as $file_dir) {
-                $full_path = $path . "/" . $file_dir;
-                if (is_dir($full_path) && $file_dir != "." && $file_dir != "..") {
-                    $dirs[] = $file_dir;
-                } else {
-                    $files[] = $file_dir;
-                    if (is_executable($full_path)) {
-                        $execs[] = $file_dir;
-                    }
-                }
-            }
-            return array(
-                'files' => $files,
-                'dirs' => $dirs,
-                'execs' => $execs
-            );
-        } else {
-            throw new Exception('$path is no directory');
-        }
-        */
+           if (is_dir($path)) {
+           $files = array();
+           $dirs = array();
+           $execs = array();
+           foreach (scandir($path) as $file_dir) {
+           $full_path = $path . "/" . $file_dir;
+           if (is_dir($full_path) && $file_dir != "." && $file_dir != "..") {
+           $dirs[] = $file_dir;
+           } else {
+           $files[] = $file_dir;
+           if (is_executable($full_path)) {
+           $execs[] = $file_dir;
+           }
+           }
+           }
+           return array(
+           'files' => $files,
+           'dirs' => $dirs,
+           'execs' => $execs
+           );
+           } else {
+           throw new Exception('$path is no directory');
+           }
+         */
     }
     // ------------------------------------------------------------------------
     public function executables($token, $path) {
