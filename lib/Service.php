@@ -245,7 +245,9 @@ class Service {
         if (file_exists($filename) && !is_writable($filename)) {
             return false;
         }
-        unlink($filename);
+        if (file_exists($filename)) {
+            unlink($filename);
+        }
         $file = fopen($filename, 'w+');
         fwrite($file, $content);
         fclose($file);
