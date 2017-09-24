@@ -7,7 +7,7 @@
  *  Date: {{DATE}}
  */
 /* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
-          optparse
+          optparse, ImageCapture URL
  */
 function Uploader(leash) {
     this.token = leash.terminal.token();
@@ -2618,8 +2618,55 @@ var leash = (function() {
                     term.echo('all other commands are exectute by the shell');
                     term.echo('guest users can only exeucte: ' +
                               format(leash.settings.guest_commands));
+                },
+                grab: function(cmd, token, term) {
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        var media = navigator.mediaDevices.getUserMedia({video: true});
+                        media.then(function(mediaStream) {
+                            var mediaStreamTrack = mediaStream.getVideoTracks()[0];
+                            var imageCapture = new ImageCapture(mediaStreamTrack);
+                            return imageCapture.takePhoto();
+                        }).then(function(blob) {
+                            var parser = new optparse.OptionParser([
+                                ['-u', '--upload FILENAME', 'filename to upload to the server'],
+                                ['-h', '--help', 'Display help screen']
+                            ]);
+                            var filename;
+                            parser.on('upload', function(opt, value) {
+                                filename = value;
+                            });
+                            var help;
+                            parser.on('help', function() {
+                                help = true;
+                            });
+                            parser.parse(cmd.args);
+                            if (help) {
+                                term.echo(parser);
+                            } else if (filename) {
+                                var uploader = new Uploader(leash);
+                                var file = new File([blob], filename);
+                                uploader.upload(file, leash.cwd).then(function() {
+                                    term.echo('uploaded to ' + leash.cwd);
+                                });
+                            } else {
+                                var image = URL.createObjectURL(blob);
+                                term.echo('<img src="' + image + '"/>', {
+                                    raw: true,
+                                    finialize: function(div) {
+                                        div.find('img').on('load', function() {
+                                            URL.revokeObjectURL(this.src);
+                                        });
+                                    }
+                                });
+                            }
+                        }).catch(function(error) {
+                            term.error('Device Media Error: ' + error);
+                        });
+                    } else {
+                        term.error('Image capture API don\'t supported by this device');
+                    }
                 }
-            } // commands
+            }// commands
         }; // leash
         service.installed()(function(err, installed) {
             leash.installed = installed;

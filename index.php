@@ -22,6 +22,10 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     exit;
 }
 
+function with_hash($url) {
+    return $url . "?v=" . md5(file_get_contents($url));
+}
+
 ?><!DOCTYPE HTML>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -36,7 +40,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <?php if ($service->debug()) { ?>
         <link href="css/jquery.terminal.css?<?= time() ?>" rel="stylesheet"/>
     <?php } else { ?>
-        <link href="css/jquery.terminal.css" rel="stylesheet"/>
+        <link href="<?= with_hash('css/jquery.terminal.css') ?>" rel="stylesheet"/>
     <?php } ?>
     <link href="css/style.css" rel="stylesheet"/>
     <style>
@@ -62,24 +66,24 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   <?php } else { ?>
       <script src="lib/jquery-1.12.0.min.js"></script>
   <?php } ?>
-  <script src="lib/json-rpc.js"></script>
-  <script src="lib/wcwidth.js"></script>
+  <script src="<?= with_hash('lib/json-rpc.js') ?>"></script>
+  <script src="<?= with_hash('lib/wcwidth.js') ?>"></script>
   <?php if ($service->debug()) { ?>
-    <script src="lib/jquery.terminal-src.js?<?= time() ?>"></script>
+    <script src="<?= with_hash('lib/jquery.terminal-src.js') ?>"></script>
   <?php } else { ?>
-    <script src="lib/jquery.terminal.min.js"></script>
+    <script src="<?= with_hash('lib/jquery.terminal.min.js') ?>"></script>
   <?php } ?>
-  <script src="lib/unix_formatting.js"></script>
-  <script src="lib/jquery.mousewheel-min.js"></script>
-  <script src="lib/browser.js"></script>
-  <script src="lib/optparse.js"></script>
-  <script src="lib/jquery.ba-hashchange.min.js"></script>
-  <script src="lib/keyboardeventKeyPolyfill.js"></script>
-  <script src="lib/sysend.js"></script>
+  <script src="<?= with_hash('lib/unix_formatting.js') ?>"></script>
+  <script src="<?= with_hash('lib/jquery.mousewheel-min.js') ?>"></script>
+  <script src="<?= with_hash('lib/browser.js') ?>"></script>
+  <script src="<?= with_hash('lib/optparse.js') ?>"></script>
+  <script src="<?= with_hash('lib/jquery.ba-hashchange.min.js') ?>"></script>
+  <script src="<?= with_hash('lib/keyboardeventKeyPolyfill.js') ?>"></script>
+  <script src="<?= with_hash('lib/sysend.js') ?>"></script>
   <?php if ($service->debug()) { ?>
-    <script src="leash-src.js?<?= time() ?>"></script>
+    <script src="<?= with_hash('leash-src.js') ?>"></script>
   <?php } else { ?>
-    <script src="leash.min.js"></script>
+    <script src="<?= with_hash('leash.min.js') ?>"></script>
   <?php } ?>
   <script>
    keyboardeventKeyPolyfill.polyfill();
