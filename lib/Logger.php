@@ -9,12 +9,16 @@
 
 class Logger {
     function __construct($path) {
-        $this->file = fopen($path, 'a+');
+        $this->file = @is_writable($path) ? fopen($path, 'a+') : null;
     }
     function log($str) {
-        fwrite($this->file, "[" . date("d-m-Y H:i:s") . "]: " . $str . "\n");
+        if ($this->file) {
+            fwrite($this->file, "[" . date("d-m-Y H:i:s") . "]: " . $str . "\n");
+        }
     }
     function __destruct() {
-        fclose($this->file);
+        if ($this->file) {
+            fclose($this->file);
+        }
     }
 }

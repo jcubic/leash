@@ -1,7 +1,39 @@
-<a name="0.15.1"></a>
-# 0.15.1 (2017-06-22)
+<a name=""></a>
+#  (2017-10-01)
 
+* Fix warning in write log file + better clear of file in __write ([33bced8](https://github.com/jcubic/leash/commit/33bced8))
+
+
+
+<a name="0.16.0"></a>
+# 0.16.0 (2017-09-24)
+
+* grab command + hash for assets + update jQuery ([6ebcd33](https://github.com/jcubic/leash/commit/6ebcd33))
+
+
+
+<a name="0.15.3"></a>
+## 0.15.3 (2017-08-17)
+
+* Fix wrong json in config handling ([196fc50](https://github.com/jcubic/leash/commit/196fc50))
+* unlink on write only if file exist #7 ([1d6c8c8](https://github.com/jcubic/leash/commit/1d6c8c8))
+* version 0.15.3 ([1e4f738](https://github.com/jcubic/leash/commit/1e4f738))
+
+
+
+<a name="0.15.2"></a>
+## 0.15.2 (2017-07-29)
+
+* Add .gitattributes file ([4d7e5a9](https://github.com/jcubic/leash/commit/4d7e5a9))
+* Add key polyfill + unlink file before write ([e685064](https://github.com/jcubic/leash/commit/e685064))
+* Don't replace home directory by ~ if it's / ([2fec62d](https://github.com/jcubic/leash/commit/2fec62d))
 * Fix error from refactoring ([0d260eb](https://github.com/jcubic/leash/commit/0d260eb))
+* Update changelog ([3b085c3](https://github.com/jcubic/leash/commit/3b085c3))
+* Update jQuery Terminal ([a859655](https://github.com/jcubic/leash/commit/a859655))
+* Update jQuery Terminal ([8696423](https://github.com/jcubic/leash/commit/8696423))
+* Version 0.15.2 ([92ae306](https://github.com/jcubic/leash/commit/92ae306))
+
+
 
 <a name="0.15.0"></a>
 # 0.15.0 (2017-06-22)
