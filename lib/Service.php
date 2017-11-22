@@ -105,8 +105,8 @@ function h($str) {
 require_once('json-rpc.php');
 
 class Service {
-    protected $config_file;
-    protected $config;
+    //protected $config_file;
+    //protected $config;
     const password_hash = 'h'; // function use for password on installation
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]*):(.*)/';
     const separators = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|(\s+(?:&&|\|{1,2}|;)\s+)/";
@@ -119,21 +119,45 @@ class Service {
         $this->config_file = $config_file;
         $full_path = $path . "/" . $this->config_file;
         $corrupted = false;
-        $this->config = new stdClass();
+        $dir = "plugins/";
+        $name_re = "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*";
+        $fname_re = "/^($name_re)\.php$/";
         $this->shell_method = false;
-        if (file_exists($full_path)) {
-            $this->config = json_decode(file_get_contents($full_path));
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->config = new stdClass();
-                $corrupted = true;
-                $this->logger->log('file corupted: ' . file_get_contents($full_path));
+        if ($dh = opendir($dir)) {
+            while (($file = readdir($dh)) !== false) {
+                if (is_file($dir . $file) && preg_match($fname_re, $file, $m)) {
+                    require($dir . $file);
+                    $plugin_name = $m[1];
+                    if (function_exists($plugin_name)) {
+                        try {
+                            $plugin_name($this);
+                        } catch (Exception $e) {
+                            $this->logger->log("exception while executing " .
+                                               $plugin_name);
+                            $this->logger->log($e->getMessage());
+                        }
+                    }
+                }
             }
-            // it had no write permission when first created while testing
-            if (!is_writable($full_path)) {
-                chmod($full_path, 0664);
+        }
+        if (!isset($this->config)) {
+            $this->config = new stdClass();
+
+            if (file_exists($full_path)) {
+                $this->config = json_decode(file_get_contents($full_path));
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->config = new stdClass();
+                    $corrupted = true;
+                    $this->logger->log('file corupted: ' .
+                                       file_get_contents($full_path));
+                }
+                // it had no write permission when first created while testing
+                if (!is_writable($full_path)) {
+                    chmod($full_path, 0664);
+                }
+            } else {
+                $this->logger->log("constructor: file don't exists");
             }
-        } else {
-            $this->logger->log("constructor: file don't exists");
         }
         if (!isset($this->config->sessions) || !is_array($this->config->sessions)) {
             $this->logger->log("no sessions " . json_encode($this->config));
