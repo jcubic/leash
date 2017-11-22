@@ -181,7 +181,7 @@ class Service {
     function __destruct() {
         if (!$this->shell_method) {
             if ($this->safe_to_save) {
-                $this->logger->log("destructor save to write: " .
+                $this->logger->log("destructor safe to write: " .
                                    json_encode($this->config));
                 $path = $this->path . "/" . $this->config_file;
                 $this->__write($path, json_encode($this->config));
