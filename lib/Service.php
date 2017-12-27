@@ -1184,17 +1184,17 @@ class Service {
         if ($this->installed() && !$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        $test = "echo -n x";
-        $response = "x";
+        $test = "echo x";
+        $re = "/^x\n?$/";
         if ($name == 'system' || $name == 'exec' || $name == 'shell_exec') {
             if (function_exists($name)) {
-                return $this->$name($token, $test) == $response;
+                return preg_match($re, $this->$name($token, $test));
             } else {
                 return false;
             }
         } else if ($name == 'cgi_perl' || $name == 'cgi_python') {
             try {
-                return $this->$name($token, $test) == $response;
+                return preg_match($re, $this->$name($token, $test));
             } catch (Exception $e) {
                 return false;
             }
