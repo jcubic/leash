@@ -1360,6 +1360,27 @@ class Service {
         if (!method_exists($this, $shell_fn)) {
             throw new Exception("Invalid shell '$shell_fn'");
         }
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $pre = "@echo off\ncd /D $path\n";
+            $post = "\necho '$marker'%cd%";
+            $command = $pre . $command . $post;
+            $file = fopen("tmp.bat", "w");
+            fwrite($file, $command);
+            fclose($file);
+            $result = preg_replace("/\r/", "", $this->$shell_fn("tmp.bat"));
+            unlink('tmp.bat');
+            $result = sapi_windows_cp_conv(sapi_windows_cp_get('oem'), 65001, $result);
+            $output = preg_split("/\n?'".$marker."'/", $result);
+            if (count($output) == 2) {
+                $cwd = preg_replace("/\n$/", '', $output[1]);
+            } else {
+                $cwd = $path;
+            }
+            return array(
+                'output' => $output[0],
+                'cwd' => $cwd
+            );
+        }
         $command = preg_replace("/&\s*$/", ' >/dev/null & echo $!', $command);
         $marker = 'XXXX' . md5(time());
         $home = $this->get_home_dir($username);
