@@ -1,7 +1,7 @@
    __   _______   ______ __
   / /  / __/ _ | / __/ // /
  / /__/ _// __ |_\ \/ _  /
-/____/___/_/ |_/___/_//_/ v. 0.16.0
+/____/___/_/ |_/___/_//_/ v. 0.17.0
 
 ----------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ one of the following:
 ----------------------------------------------------------------------------
 :: Requirements
 ----------------------------------------------------------------------------
-* php with .htaccess with modules curl, mbstring, json and zip
+* php >=5.5 with .htaccess with modules curl, mbstring, json and zip
 * to have full use of leash you will also need one of functions enabled:
   * exec
   * system

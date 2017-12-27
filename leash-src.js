@@ -7,7 +7,7 @@
  *  Date: {{DATE}}
  */
 /* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
-          optparse, ImageCapture URL
+          optparse, ImageCapture, URL
  */
 function Uploader(leash) {
     this.token = leash.terminal.token();
@@ -2609,6 +2609,11 @@ var leash = (function() {
                         commands = commands.map(function(command) {
                             return '[[b;#fff;]' + command + ']';
                         });
+                        if (commands.length == 0) {
+                            return '';
+                        } else if (commands.length == 1) {
+                            return commands[0];
+                        }
                         return commands.slice(0, -1).join(', ') + ' and ' +
                             commands[commands.length-1];
                     }
@@ -2616,8 +2621,12 @@ var leash = (function() {
                         keepWords: true
                     });
                     term.echo('all other commands are exectute by the shell');
-                    term.echo('guest users can only exeucte: ' +
-                              format(leash.settings.guest_commands));
+                    if (leash.settings.guest_commands.length) {
+                        term.echo('guest users can only exeucte: ' +
+                                  format(leash.settings.guest_commands));
+                    } else {
+                        term.echo("guest users can't execute any commands");
+                    }
                 },
                 grab: function(cmd, token, term) {
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {

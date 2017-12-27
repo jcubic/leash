@@ -1,7 +1,12 @@
-<a name=""></a>
-#  (2017-10-01)
+<a name="1.17.0"></a>
+# 1.17.0 (2017-12-27)
 
-* Fix warning in write log file + better clear of file in __write ([33bced8](https://github.com/jcubic/leash/commit/33bced8))
+* Add plugins ([be534e2](https://github.com/jcubic/leash/commit/be534e2))
+* Add windows support ([2ac3f62](https://github.com/jcubic/leash/commit/2ac3f62))
+* better shell detection for macOS ([79b978c](https://github.com/jcubic/leash/commit/79b978c))
+* Fix warning in write log file + better clear of file in __write ([58594cd](https://github.com/jcubic/leash/commit/58594cd))
+* Typo in logger code ([7883ea5](https://github.com/jcubic/leash/commit/7883ea5))
+* update php version in README ([9f9de5d](https://github.com/jcubic/leash/commit/9f9de5d))
 
 
 
