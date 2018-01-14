@@ -22,8 +22,15 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     exit;
 }
 
+function hash36($str) {
+  $arr = unpack("C*", pack("L", crc32($str)));
+  return implode(array_map(function($number) {
+    return base_convert($number, 10, 36);
+  }, $arr));
+}
+
 function with_hash($url) {
-    return $url . "?v=" . md5(file_get_contents($url));
+    return $url . "?v=" . hash36(file_get_contents($url));
 }
 
 ?><!DOCTYPE HTML>
@@ -37,12 +44,8 @@ function with_hash($url) {
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <?php if ($service->debug()) { ?>
-        <link href="css/jquery.terminal.css?<?= time() ?>" rel="stylesheet"/>
-    <?php } else { ?>
-        <link href="<?= with_hash('css/jquery.terminal.css') ?>" rel="stylesheet"/>
-    <?php } ?>
-    <link href="css/style.css" rel="stylesheet"/>
+    <link href="<?= with_hash('css/jquery.terminal.css') ?>" rel="stylesheet"/>
+    <link href="<?= with_hash('css/style.css') ?>" rel="stylesheet"/>
     <style>
      /* some styles before I move them to style.css */
     </style>
@@ -113,15 +116,15 @@ function with_hash($url) {
       if ($dh = opendir($dir)) {
           while (($file = readdir($dh)) !== false) {
               if (is_dir($dir . $file) && file_exists($dir . $file . '/init.js')) {
-                  echo '    <script src="' . $dir. $file . '/init.js"></script>';
+                  echo '    <script src="' . with_hash($dir. $file . '/init.js') . '"></script>';
               }
           }
           closedir($dh);
       }
   }
+  if (file_exists('init.js')) {
+      echo '<script src="' . with_hash('init.js') . '"></script>';
+  }
   ?>
-  <?php if (file_exists('init.js')) { ?>
-    <script src="init.js"></script>
-  <?php } ?>
 </body>
 </html>
