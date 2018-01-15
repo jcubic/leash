@@ -119,7 +119,7 @@ class Service {
         $this->config_file = $config_file;
         $full_path = $path . "/" . $this->config_file;
         $corrupted = false;
-        $dir = "plugins/";
+        $dir = $path . "/plugins/";
         $name_re = "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*";
         $fname_re = "/^($name_re)\.php$/";
         $this->shell_method = false;

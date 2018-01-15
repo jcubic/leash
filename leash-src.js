@@ -60,13 +60,23 @@ Uploader.prototype.upload_tree = function upload_tree(tree, path) {
     return defered.promise();
 };
 
+Uploader.prototype.error = function(error) {
+    if (typeof error === 'string') {
+        this.leash.terminal.error(error);
+    } else if (error.error) {
+        this.leash.terminal.error(error.error.message);
+    } else {
+        this.leash.terminal.error(error.message);
+    }
+};
+
 Uploader.prototype.upload = function upload(file, path) {
     var self = this;
     var defered = $.Deferred();
     var file_name = path + '/' + file.name;
     if (file.size > self.leash.settings.upload_max_filesize) {
         if (!(file.slice || file.webkitSlice)) {
-            self.leash.terminal.error('Exceeded filesize limit.');
+            self.error('Exceeded filesize limit.');
             defered.resolve();
             self.leash.animation.stop();
         } else {
@@ -127,14 +137,14 @@ Uploader.prototype.upload_by_chunks = function upload_by_chunks(file, path, chun
                 type: 'POST',
                 success: function(response) {
                     if (response.error) {
-                        self.leash.terminal.error(response.error);
+                        self.error(response.error);
                         defered.reject();
                     } else {
                         process(end, end+chunk_size);
                     }
                 },
                 error: function(jxhr, error, status) {
-                    self.leash.terminal.error(jxhr.statusText);
+                    self.error(jxhr.statusText);
                     defered.reject();
                 },
                 data: formData,
@@ -150,7 +160,7 @@ Uploader.prototype.upload_by_chunks = function upload_by_chunks(file, path, chun
     var fname = path + '/' + file.name;
     this.leash.service.unlink(self.token, fname)(function(err, del) {
         if (err) {
-            self.leash.terminal.error(err.message);
+            self.error(err);
             defered.reject();
         } else {
             process(0, chunk_size);
@@ -206,7 +216,7 @@ Uploader.prototype.upload_file = function upload_file(file, path) {
         success: function(response) {
             self.leash.animation.stop();
             if (response.error) {
-                self.leash.terminal.error(response.error);
+                self.error(response.error);
                 defered.reject();
             } else {
                 self.leash.terminal.echo('File "' + file.name + '" ' + 'uploaded.');
@@ -214,7 +224,7 @@ Uploader.prototype.upload_file = function upload_file(file, path) {
             }
         },
         error: function(jxhr, error, status) {
-            self.leash.terminal.error(jxhr.statusText);
+            self.error(jxhr.statusText);
             defered.reject();
         },
         data: formData,
