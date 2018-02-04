@@ -77,12 +77,30 @@ class Session {
 function root() {
     $host = $_SERVER['HTTP_HOST'];
     $root = "http://" . $_SERVER["SERVER_NAME"];
-    if ($_SERVER["REQUEST_URI"][strlen($_SERVER["REQUEST_URI"])-1] == "/") {
-        $root .= $_SERVER["REQUEST_URI"];
+    $uri = $_SERVER["REQUEST_URI"];
+    if (preg_match("%upload.php$%", $uri)) {
+        $uri = preg_replace("%lib/upload.php$%", "", $uri);
+    } elseif ($uri[strlen($uri) - 1] == "/") {
+        $root .= $uri;
     } else {
-        $root .= preg_replace("/\/[^\/]+$/", "/", $_SERVER["REQUEST_URI"]);
+        $root .= preg_replace("/\/[^\/]+$/", "/", $uri);
     }
     return $root;
+}
+// ----------------------------------------------------------------------------
+// :: function that check if it's safe to use function on directory
+// ----------------------------------------------------------------------------
+function safe_dir($path) {
+    $basedirw = ini_get('open_basedir');
+    if ($basedir == "") {
+        return true;
+    }
+    foreach (explode(":", $basedir); as $safe) {
+        if (preg_match("%^$safe%", $path)) {
+            return true;
+        }
+    }
+    return false;
 }
 // ----------------------------------------------------------------------------
 // :: random token
@@ -1426,6 +1444,7 @@ class Service {
     }
     // ------------------------------------------------------------------------
     private function exec($token, $code) {
+        $result = array();
         exec($code, $result);
         return implode("\n", $result);
     }
@@ -1445,7 +1464,7 @@ class Service {
     }
     // ------------------------------------------------------------------------
     public function cgi_python($token, $code) {
-        $url = root() . "cgi-bin/cmd.py?token=" . $token;
+        $url = root() . "/cgi-bin/cmd.py?token=" . $token;
         $response = json_decode($this->post($url, $code));
         if ($response) {
             if (isset($response->error)) {

@@ -13,7 +13,8 @@ error_reporting(E_ALL);
 require('Service.php');
 header('Content-type: application/json');
 
-$service = new Service('config.json', preg_replace("/\/[^\/]+\/?$/", "", getcwd()));
+$root = preg_replace("/\/[^\/]+\/?$/", "", getcwd());
+$service = new Service('config.json', $root);
 
 if (isset($_POST['token']) && isset($_POST['path'])) {
     if ($service->valid_token($_POST['token'])) {
@@ -28,13 +29,14 @@ if (isset($_POST['token']) && isset($_POST['path'])) {
                 $path = '';
                 // path from js is unix like
                 foreach (explode("/", $_POST['path']) as $folder) {
-                    if (!is_dir($path . DIRECTORY_SEPARATOR . $folder)) {
-                        mkdir($path . DIRECTORY_SEPARATOR . $folder);
+                    $path = $path . DIRECTORY_SEPARATOR . $folder;
+                    if (safe_dir($path) && !is_dir($path)) {
+                        mkdir($path);
                     }
-                    $path .= DIRECTORY_SEPARATOR . $folder;
                 }
                 $full_name = $_POST['path'] . '/' . $fname;
-                if (file_exists($full_name) && !is_writable($full_name)) {
+                if ((file_exists($full_name) && !is_writable($full_name)) ||
+                    !safe_dir($_POST['path'])) {
                     echo json_encode(array(
                         'error' => 'File "'. $fname . '" is not writable'
                     ));
