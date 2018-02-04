@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  This file is part of Leash (Browser Shell)
-#  Copyright (C) 2013-2014  Jakub Jankiewicz <http://jcubic.pl/e>
+#  Copyright (C) 2013-2014  Jakub Jankiewicz <http://jcubic.pl/me>
 #
 #  Released under the MIT license
 
