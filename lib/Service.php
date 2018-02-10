@@ -95,7 +95,7 @@ function safe_dir($path) {
     if ($basedir == "") {
         return true;
     }
-    foreach (explode(":", $basedir); as $safe) {
+    foreach (explode(":", $basedir) as $safe) {
         if (preg_match("%^$safe%", $path)) {
             return true;
         }
@@ -137,27 +137,9 @@ class Service {
         $this->config_file = $config_file;
         $full_path = $path . "/" . $this->config_file;
         $corrupted = false;
-        $dir = $path . "/plugins/";
-        $name_re = "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*";
-        $fname_re = "/^($name_re)\.php$/";
         $this->shell_method = false;
-        if ($dh = opendir($dir)) {
-            while (($file = readdir($dh)) !== false) {
-                if (is_file($dir . $file) && preg_match($fname_re, $file, $m)) {
-                    require($dir . $file);
-                    $plugin_name = $m[1];
-                    if (function_exists($plugin_name)) {
-                        try {
-                            $plugin_name($this);
-                        } catch (Exception $e) {
-                            $this->logger->log("exception while executing " .
-                                               $plugin_name);
-                            $this->logger->log($e->getMessage());
-                        }
-                    }
-                }
-            }
-        }
+        $this->plugins = $this->load_plugins("plugins");
+        $this->invoke_plugin_method("on_init");
         if (!isset($this->config)) {
             $this->config = new stdClass();
 
@@ -193,18 +175,18 @@ class Service {
         if (!$corrupted) {
             $this->safe_to_save = true;
         }
-        $this->logger->log("constructor end ");
     }
     // ------------------------------------------------------------------------
     function __destruct() {
         if (!$this->shell_method) {
-            if ($this->safe_to_save) {
-                $this->logger->log("destructor safe to write: " .
-                                   json_encode($this->config));
-                $path = $this->path . "/" . $this->config_file;
-                $this->__write($path, json_encode($this->config));
-            } else {
-                $this->logger->log("destructor not safe");
+            $this->invoke_plugin_method("on_destroy");
+            if ($this->config) {
+                if ($this->safe_to_save) {
+                    $path = $this->path . "/" . $this->config_file;
+                    $this->__write($path, json_encode($this->config));
+                } else {
+                    $this->logger->log("destructor not safe");
+                }
             }
         }
     }
@@ -224,6 +206,45 @@ class Service {
             }
         }
         return -1;
+    }
+    // ------------------------------------------------------------------------
+    private function invoke_plugin_method($method) {
+        foreach ($this->plugins as $plugin) {
+            if (method_exists($plugin, $method)) {
+                try {
+                    $plugin->$method();
+                } catch (Exception $e) {
+                    $this->logger->log("exception while executing creating ".
+                                       "instance of " . $plugin_name);
+                    $this->logger->log($e->getMessage());
+                }
+            }
+        }
+    }
+    // ------------------------------------------------------------------------
+    private function load_plugins($directory) {
+        $dir = $this->path . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR;
+        $name_re = "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*";
+        $fname_re = "/^($name_re)\.php$/";
+        $plugins = array();
+        if ($dh = opendir($dir)) {
+            while (($file = readdir($dh)) !== false) {
+                if (is_file($dir . $file) && preg_match($fname_re, $file, $m)) {
+                    require($dir . $file);
+                    $plugin_name = $m[1];
+                    if (class_exists($plugin_name)) {
+                        try {
+                            $plugins[] = new $plugin_name($this);
+                        } catch (Exception $e) {
+                            $this->logger->log("exception while executing creating ".
+                                               "instance of " . $plugin_name);
+                            $this->logger->log($e->getMessage());
+                        }
+                    }
+                }
+            }
+        }
+        return $plugins;
     }
 
     // ------------------------------------------------------------------------
