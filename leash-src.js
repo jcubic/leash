@@ -7,7 +7,7 @@
  *  Date: {{DATE}}
  */
 /* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
-          optparse, ImageCapture, URL
+          optparse, ImageCapture, URL, setInterval, clearInterval
  */
 function Uploader(leash) {
     this.token = leash.terminal.token();
@@ -1850,15 +1850,21 @@ var leash = (function() {
                     if (cmd.args.length == 1) {
                         var filename = leash.cwd + '/' + cmd.args[0];
                         var iframe = $('<iframe/>').hide();
-                        iframe.on('load', function() {
-                            iframe.remove();
-                        });
                         var time = +new Date();
                         var params = $.param({
                             filename: filename,
                             token: token,
                             v: time // no cache
                         });
+                        // this is not triggered on complete download but we don't care
+                        // since we only want to remove the iframe
+                        var id = setInterval(function() {
+                            if (iframe[0].contentDocument &&
+                                iframe[0].contentDocument.readyState == 'complete') {
+                                iframe.remove();
+                                clearInterval(id);
+                            }
+                        }, 500);
                         iframe.attr('src', 'lib/download.php?' + params);
                         iframe.appendTo('body');
                     } else {
