@@ -16,10 +16,12 @@ if ($service->valid_token($_GET['token']) && isset($_GET['filename']) && file_ex
     header('Content-disposition: attachment; filename="' . basename($_GET['filename']) . '"');
     header('Content-Length: ' . $size);
     header('Content-Range: 0-' . ($size-1) . '/' . $size);
-    readfile($_GET['filename']); // do the double-download-dance (dirty but worky)
     $file = fopen($_GET['filename'], 'r');
-    while ($buff = fread($file, 1048576)) { // 1MB
-        write($buff);
+    while (!feof($file)) {
+        $buffer = fread($file, 1048576);
+        echo $buffer;
+        ob_flush();
+        flush();
     }
     fclose($file);
 } else {

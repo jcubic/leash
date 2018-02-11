@@ -1847,10 +1847,14 @@ var leash = (function() {
                     if (cmd.args.length == 1) {
                         var filename = leash.cwd + '/' + cmd.args[0];
                         var iframe = $('<iframe/>').hide().appendTo('body');
-                        iframe.load(function() {
+                        iframe.on('load', function() {
                             iframe.remove();
                         });
-                        var params = $.param({filename: filename, token: token});
+                        var params = $.param({
+                            filename: filename,
+                            token: token,
+                            v: +new Date() // no cache
+                        });
                         iframe.attr('src', 'lib/download.php?' + params);
                     } else {
                         term.echo('usage: download {FILENAME}');
