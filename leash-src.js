@@ -1,6 +1,6 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl/me>
+ *  Copyright (c) 2013-2018 Jakub Jankiewicz <http://jcubic.pl/me>
  *
  *  Released under the MIT license
  *
@@ -245,7 +245,7 @@ var leash = (function() {
         };
     });
     var copyright = [
-        'Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl/me>',
+        'Copyright (c) 2013-2018 Jakub Jankiewicz <http://jcubic.pl/me>',
         '',
         'Licensed under MIT license'
     ].map(function(line) {
