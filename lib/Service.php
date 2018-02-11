@@ -1400,7 +1400,7 @@ class Service {
             throw new Exception("Invalid shell '$shell_fn'");
         }
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $pre = "@echo off\ncd /D $path\n";
+            $pre = "@echo off\ncd /D '$path'\n";
             $post = "\necho '$marker'%cd%";
             $command = $pre . $command . $post;
             $file = fopen("tmp.bat", "w");
@@ -1428,9 +1428,9 @@ class Service {
                    "alias set='php -f \"$cmd_path/cmd.php\" storage_set \"$token\"';";
         if ($shell_fn == 'exec' || $shell_fn == 'shell_exec' ||
             $shell_fn == 'system') {
-            $pre = ". .bashrc\nexport HOME=\"$home\"\ncd $path;$aliases\n";
+            $pre = ". .bashrc\nexport HOME='$home'\ncd '$path';$aliases\n";
         } else {
-            $pre = ". ../.bashrc\nexport HOME=\"$home\"\ncd $path;$aliases\n";
+            $pre = ". ../.bashrc\nexport HOME='$home'\ncd '$path';$aliases\n";
         }
         $post = ";echo -n \"$marker\";pwd";
         $command = escapeshellarg($pre . $command . $post);
