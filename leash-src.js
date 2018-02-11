@@ -428,6 +428,9 @@ var leash = (function() {
     // :: UNIX COLOR PROMPT
     // -------------------------------------------------------------------------
     function unix_prompt(user, server, path) {
+        if (path) {
+            path = $.terminal.escape_brackets(path);
+        }
         var name = colors.green(user + '&#64;' + server);
         var end = colors.grey(user === 'root' ? '# ' : '$ ');
         return name + colors.grey(':') + colors.blue(path) + end;
@@ -1846,16 +1849,18 @@ var leash = (function() {
                 download: function(cmd, token, term) {
                     if (cmd.args.length == 1) {
                         var filename = leash.cwd + '/' + cmd.args[0];
-                        var iframe = $('<iframe/>').hide().appendTo('body');
+                        var iframe = $('<iframe/>').hide();
                         iframe.on('load', function() {
                             iframe.remove();
                         });
+                        var time = +new Date();
                         var params = $.param({
                             filename: filename,
                             token: token,
-                            v: +new Date() // no cache
+                            v: time // no cache
                         });
                         iframe.attr('src', 'lib/download.php?' + params);
+                        iframe.appendTo('body');
                     } else {
                         term.echo('usage: download {FILENAME}');
                     }
