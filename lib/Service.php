@@ -91,7 +91,7 @@ function root() {
 // :: function that check if it's safe to use function on directory
 // ----------------------------------------------------------------------------
 function safe_dir($path) {
-    $basedirw = ini_get('open_basedir');
+    $basedir = ini_get('open_basedir');
     if ($basedir == "") {
         return true;
     }
