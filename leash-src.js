@@ -752,7 +752,6 @@ var leash = (function() {
                             term.echo('[[b;#fff;]' + question.text + ']');
                         }
                         term.push(function(command) {
-                            term.pop();
                             if (question.mask) {
                                 term.set_mask(false);
                             }
@@ -765,10 +764,12 @@ var leash = (function() {
                                 }
                                 if (typeof value != 'undefined') {
                                     settings[question.name] = value;
+                                    term.pop();
                                     install(step+1, finish);
                                 }
                             } else {
                                 settings[question.name] = command;
+                                term.pop();
                                 install(step+1, finish);
                             }
                         }, {
