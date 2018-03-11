@@ -548,6 +548,9 @@ var leash = (function() {
                     return item;
                 }).join(' | ') + ' |';
             });
+            array = array.map(function(line) {
+                return line.replace(/&/g, '&amp;');
+            });
             var sep = '+' + lengths.map(function(length) {
                 return new Array(length + 3).join('-');
             }).join('+') + '+';

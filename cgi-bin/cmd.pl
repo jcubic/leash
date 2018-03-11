@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #  This file is part of Leash (Browser Shell)
 #  Copyright (C) 2013-2018  Jakub Jankiewicz <http://jcubic.pl/me>
 #
@@ -7,33 +7,18 @@
 
 use strict;
 use warnings;
-use lib qw(..);
-use JSON qw( );
+use lib qw(.);
 
-sub valid_token {
-    my $filename = '../config.json';
+use Leash qw(&valid_token);
 
-    my $json_text = do {
-        open(my $json_fh, "<:encoding(UTF-8)", $filename)
-            or die("Can't open \$filename\": $!\n");
-        local $/;
-        <$json_fh>
-    };
-
-    my $json = JSON->new;
-    my $config = $json->decode($json_text);
-
-    for ( @{$config->{sessions}} ) {
-        if ($ENV{'QUERY_STRING'} eq $_->{token}) {
-            return 1;
-        }
-    }
-    return 0;
-}
+print "Content-Type: text/plain\r\n\r\n";
 
 if ($ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}) {
-    if (valid_token()) {
-        print "Content-Type: text/plain\n\n";
+    if (valid_token($ENV{'QUERY_STRING'})) { 
         system(join("", <STDIN>));
+    } else {
+        print "wrong token";
     }
+} else {
+    print "invalid host";
 }
