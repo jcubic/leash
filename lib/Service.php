@@ -88,6 +88,10 @@ function root() {
     return $root;
 }
 // ----------------------------------------------------------------------------
+function is_curl_enabled()  {
+    return false || function_exists('curl_version');
+}
+// ----------------------------------------------------------------------------
 // :: function that check if it's safe to use function on directory
 // ----------------------------------------------------------------------------
 function safe_dir($path) {
@@ -153,7 +157,7 @@ class Service {
                 }
                 // it had no write permission when first created while testing
                 if (!is_writable($full_path)) {
-                    chmod($full_path, 0664);
+                    @chmod($full_path, 0664);
                 }
             } else {
                 $this->logger->log("constructor: file don't exists");
@@ -176,6 +180,7 @@ class Service {
             $this->safe_to_save = true;
         }
     }
+
     // ------------------------------------------------------------------------
     function __destruct() {
         if (!$this->shell_method) {
@@ -198,6 +203,7 @@ class Service {
         $index = $this->get_user_index($username);
         return $index == -1 ? null : $this->config->users[$index];
     }
+
     // ------------------------------------------------------------------------
     private function get_user_index($username) {
         foreach($this->config->users as $i => $user) {
@@ -207,6 +213,7 @@ class Service {
         }
         return -1;
     }
+
     // ------------------------------------------------------------------------
     private function invoke_plugin_method($method) {
         foreach ($this->plugins as $plugin) {
@@ -221,6 +228,7 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     private function load_plugins($directory) {
         $dir = $this->path . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR;
@@ -265,6 +273,7 @@ class Service {
         }
         return false;
     }
+
     // ------------------------------------------------------------------------
     public function get_session($token) {
         foreach ($this->config->sessions as $session) {
@@ -275,11 +284,13 @@ class Service {
         }
         return null;
     }
+
     // ------------------------------------------------------------------------
     public function get_username($token) {
         $session = $this->get_session($token);
         return $session ? $session->username : null;
     }
+
     // ------------------------------------------------------------------------
     public function get_current_user() {
         return get_current_user();
@@ -327,6 +338,7 @@ class Service {
                    preg_match(self::password_regex, $root->password);
         }
     }
+
     // ------------------------------------------------------------------------
     public function debug() {
         if ($this->installed()) {
@@ -335,10 +347,12 @@ class Service {
             return true;
         }
     }
+
     // ------------------------------------------------------------------------
     public function valid_token($token) {
         return !$this->installed() || ($token ? $this->get_session($token) != null : false);
     }
+
     // ------------------------------------------------------------------------
     public function valid_password($token, $password) {
         if (!$this->valid_token($token)) {
@@ -410,6 +424,7 @@ class Service {
         $session = $this->get_session($token);
         return $session->$name;
     }
+
     // ------------------------------------------------------------------------
     public function user_sessions($token) {
         $current = $this->get_session($token);
@@ -421,6 +436,7 @@ class Service {
             return $session->username == $current->username;
         });
     }
+
     // ------------------------------------------------------------------------
     public function command_exists($token, $command) {
         if (!$this->valid_token($token)) {
@@ -429,10 +445,14 @@ class Service {
         $response = $this->command($token, "which $command", ".");
         return !empty(preg_replace("/\s$/", "", $response['output']));
     }
+
     // ------------------------------------------------------------------------
     public function html($token, $url, $width) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
+        }
+        if (!file_exists('html2text/src/Html2Text.php')) {
+            throw new Exception('Html2Text not found');
         }
         require('html2text/src/Html2Text.php');
         $html = $this->get($url);
@@ -440,22 +460,23 @@ class Service {
             throw new Exception("$url return no results");
         }
         $html = new \Html2Text\Html2Text($html, array(
-            'width' => $width
+                'width' => $width
         ));
         $text = $html->getText();
         $base = preg_replace("~(?<!/)/(?!/).*$~", "", $url);
         $rel = preg_replace("~(?<!/)/(?!/)[^/]+$~", "/", $url);
-        return preg_replace_callback("/\\[([^\\]]+)\\]/", function($matches) use ($base,$rel) {
+        return preg_replace_callback("/\\[([^\\]]+)\\]/", function($matches) use ($base, $rel) {
             if (preg_match("~^/~", $matches[1])) {
                 $url = $base . $matches[1];
             } else if (preg_match("/^(http|mailto)/", $matches[1])) {
-                $url = $matches[1];
+                    $url = $matches[1];
             } else {
                 $url = $rel . $matches[1];
             }
             return '&#91;[[!;;;;' . $url . ']' . $url . ']&#93;';
         }, $text);
     }
+
     // ------------------------------------------------------------------------
     public function file($token, $filename) {
         if (!$this->valid_token($token)) {
@@ -466,6 +487,7 @@ class Service {
         }
         return file_get_contents($filename);
     }
+
     // ------------------------------------------------------------------------
     public function unlink($token, $filename) {
         if (!$this->valid_token($token)) {
@@ -481,6 +503,7 @@ class Service {
             return false;
         }
     }
+
     // ------------------------------------------------------------------------
     public function write($token, $filename, $content) {
         if (!$this->valid_token($token)) {
@@ -500,6 +523,7 @@ class Service {
         }
         return true;
     }
+
     // ------------------------------------------------------------------------
     public function append($token, $filename, $content) {
         if (!$this->valid_token($token)) {
@@ -525,6 +549,7 @@ class Service {
         $this->validate_root($token);
         return $this->config;
     }
+
     // ------------------------------------------------------------------------
     // executed when config file don't exists
     public function configure($settings) {
@@ -564,8 +589,10 @@ class Service {
         );
 
         // get external libraries
-        $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
-        $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
+        if (is_curl_enabled()) {
+            $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
+            $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
+        }
 
         $this->new_user('root', $root_password, $settings['home']);
         $this->new_user($username, $password, $settings['home']);
@@ -574,6 +601,7 @@ class Service {
             copy('init.js.src', 'init.js');
         }
     }
+
     // ------------------------------------------------------------------------
     private function get_home_dir($username) {
         $settings = (array)$this->config->settings;
@@ -590,6 +618,7 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     public function get_settings($token) {
         if (!$this->valid_token($token)) {
@@ -628,6 +657,7 @@ class Service {
             throw new Exception("Only root can $msg");
         }
     }
+
     // ------------------------------------------------------------------------
     private function hash($password) {
         $hash = call_user_func(self::password_hash, $password);
@@ -637,6 +667,7 @@ class Service {
     private function new_user($username, $password, $home) {
         $this->config->users[] = new User($username, $this->hash($password), $home);
     }
+
     // ------------------------------------------------------------------------
     public function add_user($token, $username, $password, $home) {
         $this->validate_root($token, "create new account");
@@ -645,6 +676,7 @@ class Service {
         }
         $this->new_user($username, $password, $home);
     }
+
     // ------------------------------------------------------------------------
     public function remove_user($token, $username) {
         $this->validate_root($token, "delete account");
@@ -661,6 +693,7 @@ class Service {
             return $user->username != $username;
         }));
     }
+
     // ------------------------------------------------------------------------
     public function list_users($token) {
         if (!$this->valid_token($token)) {
@@ -670,14 +703,17 @@ class Service {
             return $user->username;
         }, $this->config->users);
     }
+
     // ------------------------------------------------------------------------
     public function file_exists($path) {
         return file_exists($path);
     }
+
     // ------------------------------------------------------------------------
     public function is_file($token, $path) {
         return is_file($path);
     }
+
     // ------------------------------------------------------------------------
     public function function_exists($token, $function) {
         if ($this->installed() && !$this->valid_token($token)) {
@@ -685,6 +721,7 @@ class Service {
         }
         return function_exists($function);
     }
+
     // ------------------------------------------------------------------------
     // TODO: Use Shell to get the content of the directory
     public function dir($token, $path) {
@@ -752,6 +789,7 @@ class Service {
            }
          */
     }
+
     // ------------------------------------------------------------------------
     public function executables($token, $path) {
         $command = "compgen -A function -abck | sort | uniq";
@@ -776,6 +814,7 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     public function change_password($token, $password) {
         if (!$this->valid_token($token)) {
@@ -792,6 +831,7 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     public function logout($token) {
         if (!$this->valid_token($token)) {
@@ -853,6 +893,7 @@ class Service {
                                               $mysql->pass,
                                               $mysql->name);
     }
+
     // ------------------------------------------------------------------------
     public function mysql_close($token, $res_id) {
         if (!$this->valid_token($token)) {
@@ -868,6 +909,7 @@ class Service {
             unset($session->mysql); // this don't work, don't know why
         }
     }
+
     // ------------------------------------------------------------------------
     public function mysql_query($token, $res_id, $query) {
         if (!$this->valid_token($token)) {
@@ -886,6 +928,7 @@ class Service {
             return $db->get_array($query);
         }
     }
+
     // ------------------------------------------------------------------------
     function jargon_list() {
         $db = new PDO('sqlite:' . $this->get_jargon_db_file());
@@ -899,6 +942,7 @@ class Service {
             return array();
         }
     }
+
     // ------------------------------------------------------------------------
     function get_jargon_db_file() {
         $db = new PDO('sqlite::memory:');
@@ -910,6 +954,7 @@ class Service {
             return 'jargon.db';
         }
     }
+
     // ------------------------------------------------------------------------
     function jargon_search($search_term) {
         $filename = $this->get_jargon_db_file();
@@ -920,6 +965,7 @@ class Service {
                           "def like $search_term");
         return $res->fetchAll(PDO::FETCH_ASSOC);
     }
+
     // ------------------------------------------------------------------------
     function jargon($search_term) {
         $filename = $this->get_jargon_db_file();
@@ -945,6 +991,7 @@ class Service {
         }
         return $result;
     }
+
     // ------------------------------------------------------------------------
     public function copy_dir($token, $src, $dest) {
         if (!$this->valid_token($token)) {
@@ -965,6 +1012,7 @@ class Service {
         }
         closedir($dir);
     }
+
     // ------------------------------------------------------------------------
     public function delete_dir($token, $dir) {
         if (!$this->valid_token($token)) {
@@ -988,6 +1036,7 @@ class Service {
         }
         rmdir($dir);
     }
+
     // ------------------------------------------------------------------------
     public function random_string($length) {
         $key = '';
@@ -999,6 +1048,7 @@ class Service {
 
         return $key;
     }
+
     // ------------------------------------------------------------------------
     public function unzip_url($token, $url, $dir, $desc) {
         if (!$this->valid_token($token)) {
@@ -1035,6 +1085,7 @@ class Service {
             throw new Exception("Can't open zip file");
         }
     }
+
     // ------------------------------------------------------------------------
     public function get_repo($token, $user, $repo, $desc) {
         if (!$this->valid_token($token)) {
@@ -1045,10 +1096,14 @@ class Service {
         $desc = $this->path . "/" . $desc;
         return $this->unzip_url($token, $url, $dir, $desc);
     }
+
     // ------------------------------------------------------------------------
     public function update($token) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
+        }
+        if (is_curl_enabled()) {
+            throw new Exception("You can't update because curl is disabled");
         }
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
         $curl = $this->curl($url);
@@ -1073,17 +1128,22 @@ class Service {
             return false;
         }
     }
+
     // ------------------------------------------------------------------------
     private function version($version) {
         return array_map(function($number) {
             return intval($number);
         }, explode('.', $version));
     }
+
     // ------------------------------------------------------------------------
     public function version_message() {
         $fname = $this->path . '/version';
         if (!file_exists($fname)) {
             return null;
+        }
+        if (is_curl_enabled()) {
+            return "Curl is disabled, you will not be able to use all the functions of Leash";
         }
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
         $curl = $this->curl($url);
@@ -1122,6 +1182,7 @@ class Service {
     public function sleep($time) {
         sleep($time);
     }
+
     // ------------------------------------------------------------------------
     public function rfc($number) {
         if ($number == null) {
@@ -1135,6 +1196,7 @@ class Service {
             return $this->get($url);
         }
     }
+
     // ------------------------------------------------------------------------
     public function rfc_update() {
         $path = $this->path . "/rfc";
@@ -1168,6 +1230,7 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     private function curl($url) {
         $ch = curl_init($url);
@@ -1184,13 +1247,19 @@ class Service {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         return $ch;
     }
+
     // ------------------------------------------------------------------------
     public function get($url) {
-        $curl = $this->curl($url);
-        $result = curl_exec($curl);
-        curl_close($curl);
-        return $result;
+        if (is_curl_enabled()) {
+            $curl = $this->curl($url);
+            $result = curl_exec($curl);
+            curl_close($curl);
+            return $result;
+        } else {
+            return @file_get_contents($url);
+        }
     }
+
     // ------------------------------------------------------------------------
     public function post($url, $data) {
         $ch = $this->curl($url);
@@ -1205,6 +1274,7 @@ class Service {
         curl_close($ch);
         return $result;
     }
+
     // ------------------------------------------------------------------------
     public function list_shells($token = null) {
         if ($this->installed() && !$this->valid_token($token)) {
@@ -1218,6 +1288,7 @@ class Service {
             "cgi_perl"
         );
     }
+
     // ------------------------------------------------------------------------
     public function test_shell($token, $name) {
         if ($this->installed() && !$this->valid_token($token)) {
@@ -1241,10 +1312,12 @@ class Service {
             throw new Exception("Invalid shell type");
         }
     }
+
     // ------------------------------------------------------------------------
     public function cwd() {
         return getcwd();
     }
+
     // ------------------------------------------------------------------------
     private function sudo($username, $command) {
         if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
@@ -1253,6 +1326,7 @@ class Service {
         }
         return $command;
     }
+
     // ------------------------------------------------------------------------
     public function unclosed_strings($command) {
         $invalid_string = '~(?:  [^"\']+
@@ -1263,11 +1337,13 @@ class Service {
          ~xAs';
         return preg_match($invalid_string, $command);
     }
+
     // ------------------------------------------------------------------------
     public function split_command($command) {
         $flags = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE;
         return preg_split(Service::separators, $command, null, $flags);
     }
+
     // ------------------------------------------------------------------------
     public function validate_command($command) {
         if (isset($this->config->settings->guest_commands)) {
@@ -1305,6 +1381,7 @@ class Service {
         }
         return implode($result);
     }
+
     // ------------------------------------------------------------------------
     public function shell($token, $command, $path) {
         if (!$this->valid_token($token)) {
@@ -1317,6 +1394,7 @@ class Service {
         $this->shell_method = true;
         return $this->command($token, $command, $path);
     }
+
     // ------------------------------------------------------------------------
     public function unbuffer($token, $command) {
         if (preg_match("/which unbuffer/", $command)) {
@@ -1331,6 +1409,7 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     public function get_subshells($command) {
         $re = '/(\$\(|\(|\)|`)/';
@@ -1362,6 +1441,7 @@ class Service {
         }
         return array_reverse($subshells);
     }
+
     // ------------------------------------------------------------------------
     function have_sudo($token, $command) {
         $shell_fn = $this->config->settings->shell;
@@ -1385,6 +1465,7 @@ class Service {
         }
         return false;
     }
+
     // ------------------------------------------------------------------------
     private function command($token, $command, $path) {
         if (!$this->valid_token($token)) {
@@ -1458,17 +1539,20 @@ class Service {
             throw new Exception("Internal error, shell function give no result");
         }
     }
+
     // ------------------------------------------------------------------------
     // all functions need the same signature as cgi_python/cgi_perl
     private function shell_exec($token, $code) {
         return shell_exec($code);
     }
+
     // ------------------------------------------------------------------------
     private function exec($token, $code) {
         $result = array();
         exec($code, $result);
         return implode("\n", $result);
     }
+
     // ------------------------------------------------------------------------
     private function system($token, $code) {
         ob_start();
@@ -1477,12 +1561,14 @@ class Service {
         ob_end_clean();
         return $result;
     }
+
     // ------------------------------------------------------------------------
     private function cgi_perl($token, $code) {
         $url = root() . "cgi-bin/cmd.pl?" . $token;
         return $this->post($url, $code);
         $response = json_decode($this->post($url, $code));
     }
+
     // ------------------------------------------------------------------------
     public function cgi_python($token, $code) {
         $url = root() . "/cgi-bin/cmd.py?token=" . $token;
@@ -1496,11 +1582,13 @@ class Service {
             }
         }
     }
+
     // ------------------------------------------------------------------------
     // TEST code
     public function pass($text) {
         return $text;
     }
+
     public function rpc_test_login($user, $pass) {
         if ($user == "foo" && $pass == "bar") {
             return md5(time());
