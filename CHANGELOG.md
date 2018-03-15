@@ -1,11 +1,26 @@
-<a name=""></a>
-#  (2018-01-23)
+<a name="0.18.0"></a>
+##  <small>0.18.0 (2018-03-15)</small>
 
+* disable cache for download + fix for brackets in prompt path ([a712562](https://github.com/jcubic/leash/commit/a712562))
+* Fix big files and disable cache for download ([fe28fe7](https://github.com/jcubic/leash/commit/fe28fe7))
+* fix curl check ([d6f5852](https://github.com/jcubic/leash/commit/d6f5852))
+* Fix for basedir restriction in upload ([65d9aa0](https://github.com/jcubic/leash/commit/65d9aa0))
+* Fix for invalid boolean input when installing ([320b083](https://github.com/jcubic/leash/commit/320b083))
+* Fix html entities in out of sql commands ([1a15f21](https://github.com/jcubic/leash/commit/1a15f21))
+* fix typo in my home page link ([c161363](https://github.com/jcubic/leash/commit/c161363))
+* fix typo in my home page link ([2f408ac](https://github.com/jcubic/leash/commit/2f408ac))
+* fix upload ([ea03ba7](https://github.com/jcubic/leash/commit/ea03ba7))
+* make leash work without curl #9 ([86c70de](https://github.com/jcubic/leash/commit/86c70de)), closes [#9](https://github.com/jcubic/leash/issues/9)
+* Plugins as classes with event methods + fix syntax error + remove some loggers ([8590416](https://github.com/jcubic/leash/commit/8590416))
+* put cwd path in quotes so you can navitate to directory that contain restricted shell characters ([3a08475](https://github.com/jcubic/leash/commit/3a08475))
+* Read file by chunks in download + bump up the year ([9d780d2](https://github.com/jcubic/leash/commit/9d780d2))
+* remove download iframe after init ([c2291ba](https://github.com/jcubic/leash/commit/c2291ba))
+* remove testing condition ([1281a3b](https://github.com/jcubic/leash/commit/1281a3b))
 
 
 
 <a name="0.17.1"></a>
-## 0.17.1 (2018-01-23)
+## <small>0.17.1 (2018-01-23)</small>
 
 * Add plugins ([be534e2](https://github.com/jcubic/leash/commit/be534e2))
 * Add windows support ([2ac3f62](https://github.com/jcubic/leash/commit/2ac3f62))
@@ -28,23 +43,23 @@
 
 
 <a name="0.16.0"></a>
-# 0.16.0 (2017-09-24)
+## 0.16.0 (2017-09-24)
 
 * grab command + hash for assets + update jQuery ([6ebcd33](https://github.com/jcubic/leash/commit/6ebcd33))
 
 
 
 <a name="0.15.3"></a>
-## 0.15.3 (2017-08-17)
+## <small>0.15.3 (2017-08-17)</small>
 
 * Fix wrong json in config handling ([196fc50](https://github.com/jcubic/leash/commit/196fc50))
-* unlink on write only if file exist #7 ([1d6c8c8](https://github.com/jcubic/leash/commit/1d6c8c8))
+* unlink on write only if file exist #7 ([1d6c8c8](https://github.com/jcubic/leash/commit/1d6c8c8)), closes [#7](https://github.com/jcubic/leash/issues/7)
 * version 0.15.3 ([1e4f738](https://github.com/jcubic/leash/commit/1e4f738))
 
 
 
 <a name="0.15.2"></a>
-## 0.15.2 (2017-07-29)
+## <small>0.15.2 (2017-07-29)</small>
 
 * Add .gitattributes file ([4d7e5a9](https://github.com/jcubic/leash/commit/4d7e5a9))
 * Add key polyfill + unlink file before write ([e685064](https://github.com/jcubic/leash/commit/e685064))
@@ -58,7 +73,7 @@
 
 
 <a name="0.15.0"></a>
-# 0.15.0 (2017-06-22)
+## 0.15.0 (2017-06-22)
 
 * Add changelog ([5b36f46](https://github.com/jcubic/leash/commit/5b36f46))
 * Add help command ([6d1e438](https://github.com/jcubic/leash/commit/6d1e438))
@@ -94,7 +109,7 @@
 
 
 <a name="0.14.0"></a>
-# 0.14.0 (2017-04-12)
+## 0.14.0 (2017-04-12)
 
 * Add sudo option to shell and /me to homepage ([96d3d17](https://github.com/jcubic/leash/commit/96d3d17))
 * Fix  multi upload in chrome ([e0e771f](https://github.com/jcubic/leash/commit/e0e771f))
@@ -103,7 +118,7 @@
 
 
 <a name="0.13.1"></a>
-## 0.13.1 (2017-03-13)
+## <small>0.13.1 (2017-03-13)</small>
 
 * (c) 2017 ([1b82e03](https://github.com/jcubic/leash/commit/1b82e03))
 * 2016 -> 2017 ([a15fdfd](https://github.com/jcubic/leash/commit/a15fdfd))
@@ -124,14 +139,14 @@
 
 
 <a name="0.12.1"></a>
-## 0.12.1 (2016-12-25)
+## <small>0.12.1 (2016-12-25)</small>
 
 * Fix ascii table ([49250ad](https://github.com/jcubic/leash/commit/49250ad))
 
 
 
 <a name="0.12.0"></a>
-# 0.12.0 (2016-12-24)
+## 0.12.0 (2016-12-24)
 
 * call fill-paragraph on license text ([6cdc888](https://github.com/jcubic/leash/commit/6cdc888))
 * Check token in command_exists ([e4a1f07](https://github.com/jcubic/leash/commit/e4a1f07))
@@ -149,7 +164,7 @@
 
 
 <a name="0.10.0"></a>
-# 0.10.0 (2016-08-23)
+## 0.10.0 (2016-08-23)
 
 * Add completion for variables ([72ec43d](https://github.com/jcubic/leash/commit/72ec43d))
 * Add download command ([8053f90](https://github.com/jcubic/leash/commit/8053f90))
@@ -176,7 +191,7 @@
 
 
 <a name="0.9.3"></a>
-## 0.9.3 (2016-05-05)
+## <small>0.9.3 (2016-05-05)</small>
 
 * Fix typo, php error and update jQuery Terminal ([ac8bdcc](https://github.com/jcubic/leash/commit/ac8bdcc))
 * use jquery.terminal.min.js ([9195e01](https://github.com/jcubic/leash/commit/9195e01))
@@ -184,14 +199,14 @@
 
 
 <a name="0.9.2"></a>
-## 0.9.2 (2016-05-02)
+## <small>0.9.2 (2016-05-02)</small>
 
 * Add official website template to wikipedia command ([906bdac](https://github.com/jcubic/leash/commit/906bdac))
 
 
 
 <a name="0.9.1"></a>
-## 0.9.1 (2016-05-02)
+## <small>0.9.1 (2016-05-02)</small>
 
 * Add back exec permissions to executable ([90fe52c](https://github.com/jcubic/leash/commit/90fe52c))
 * Fix space after comma regex for jargon command ([ae820fa](https://github.com/jcubic/leash/commit/ae820fa))
@@ -202,7 +217,7 @@
 
 
 <a name="0.9.0"></a>
-# 0.9.0 (2016-05-01)
+## 0.9.0 (2016-05-01)
 
 * Add system shell + fix error when stop animation on ajax error ([9285cbb](https://github.com/jcubic/leash/commit/9285cbb))
 * Add update command ([7b8e481](https://github.com/jcubic/leash/commit/7b8e481))
@@ -219,7 +234,7 @@
 
 
 <a name="0.8.1"></a>
-## 0.8.1 (2016-03-25)
+## <small>0.8.1 (2016-03-25)</small>
 
 * Add rfc command + Fix ajax errors ([a3e1e0c](https://github.com/jcubic/leash/commit/a3e1e0c))
 * Better cite template handling ([771d74b](https://github.com/jcubic/leash/commit/771d74b))
@@ -265,7 +280,7 @@
 
 
 <a name="0.7.9"></a>
-## 0.7.9 (2016-01-23)
+## <small>0.7.9 (2016-01-23)</small>
 
 * Fix links in wikipedia command ([257423e](https://github.com/jcubic/leash/commit/257423e))
 * Update version ([28b3222](https://github.com/jcubic/leash/commit/28b3222))
@@ -273,7 +288,7 @@
 
 
 <a name="0.7.8"></a>
-## 0.7.8 (2016-01-23)
+## <small>0.7.8 (2016-01-23)</small>
 
 * Add wiki search + fix less mousewheel ([7864451](https://github.com/jcubic/leash/commit/7864451))
 * Extra new line before unordered list in wikipedia articles ([68188ac](https://github.com/jcubic/leash/commit/68188ac))
@@ -288,7 +303,7 @@
 
 
 <a name="0.7.7"></a>
-## 0.7.7 (2016-01-21)
+## <small>0.7.7 (2016-01-21)</small>
 
 * Fix ascii table ([922fea2](https://github.com/jcubic/leash/commit/922fea2))
 * Fixes to wikipedia command ([1c39f1c](https://github.com/jcubic/leash/commit/1c39f1c))
@@ -296,14 +311,14 @@
 
 
 <a name="0.7.6"></a>
-## 0.7.6 (2016-01-18)
+## <small>0.7.6 (2016-01-18)</small>
 
 * Fix tables and handle partial templates in wikipedia ([8e74f49](https://github.com/jcubic/leash/commit/8e74f49))
 
 
 
 <a name="0.7.5"></a>
-## 0.7.5 (2016-01-18)
+## <small>0.7.5 (2016-01-18)</small>
 
 * Add new line after main template in wikipedia article ([efc6842](https://github.com/jcubic/leash/commit/efc6842))
 * Don't format links if they don't begin with ftp or http in wikipedia command ([63617db](https://github.com/jcubic/leash/commit/63617db))
@@ -315,7 +330,7 @@
 
 
 <a name="0.7.4"></a>
-## 0.7.4 (2016-01-17)
+## <small>0.7.4 (2016-01-17)</small>
 
 * Fix table header in wikipedia command ([c1cd0c2](https://github.com/jcubic/leash/commit/c1cd0c2))
 * Fix tables in wikipedia command ([bee6d81](https://github.com/jcubic/leash/commit/bee6d81))
@@ -328,7 +343,7 @@
 
 
 <a name="0.7.3"></a>
-## 0.7.3 (2016-01-14)
+## <small>0.7.3 (2016-01-14)</small>
 
 * Fix no referrer ([a7e71e3](https://github.com/jcubic/leash/commit/a7e71e3))
 * fix option linksNoReferrer ([9fe3437](https://github.com/jcubic/leash/commit/9fe3437))
@@ -340,7 +355,7 @@
 
 
 <a name="0.7.2"></a>
-## 0.7.2 (2016-01-14)
+## <small>0.7.2 (2016-01-14)</small>
 
 * handle blockquote and images for wikipedia command ([04e82d5](https://github.com/jcubic/leash/commit/04e82d5))
 * Update version ([ecc02a6](https://github.com/jcubic/leash/commit/ecc02a6))
@@ -348,7 +363,7 @@
 
 
 <a name="0.7.1"></a>
-## 0.7.1 (2016-01-13)
+## <small>0.7.1 (2016-01-13)</small>
 
 * Fix single newline in wikipedia command ([8f5bad3](https://github.com/jcubic/leash/commit/8f5bad3))
 * remove debug changes ([5998eb4](https://github.com/jcubic/leash/commit/5998eb4))
@@ -356,7 +371,7 @@
 
 
 <a name="0.7.0"></a>
-# 0.7.0 (2016-01-13)
+## 0.7.0 (2016-01-13)
 
 * Add passwd command ([ce02a7d](https://github.com/jcubic/leash/commit/ce02a7d))
 * Add purge command ([6f3a479](https://github.com/jcubic/leash/commit/6f3a479))
@@ -421,7 +436,7 @@
 
 
 <a name="0.6.0"></a>
-# 0.6.0 (2015-12-24)
+## 0.6.0 (2015-12-24)
 
 * Add perl shell + Fix python cgi ([319a6a5](https://github.com/jcubic/leash/commit/319a6a5))
 * Add sqlite command ([928f6ab](https://github.com/jcubic/leash/commit/928f6ab))
@@ -437,7 +452,7 @@
 
 
 <a name="0.5.0"></a>
-# 0.5.0 (2015-12-21)
+## 0.5.0 (2015-12-21)
 
 * Add init.js file for jsvi ([8b0f99f](https://github.com/jcubic/leash/commit/8b0f99f))
 * Add vi command ([edf9ee8](https://github.com/jcubic/leash/commit/edf9ee8))
@@ -457,7 +472,7 @@
 
 
 <a name="0.4.0"></a>
-# 0.4.0 (2015-12-19)
+## 0.4.0 (2015-12-19)
 
 * Add exec permission ([d4790a5](https://github.com/jcubic/leash/commit/d4790a5))
 * Add exec permission ([ff8db53](https://github.com/jcubic/leash/commit/ff8db53))
@@ -485,7 +500,7 @@
 
 
 <a name="0.3.0"></a>
-# 0.3.0 (2015-08-25)
+## 0.3.0 (2015-08-25)
 
 * Add .htaccess and .bashrc ([4240db2](https://github.com/jcubic/leash/commit/4240db2))
 * Add empty /tmp ([3e99e0f](https://github.com/jcubic/leash/commit/3e99e0f))
