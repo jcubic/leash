@@ -1,13 +1,13 @@
 /**@license
  *  This file is part of Leash (Browser Shell)
- *  Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl/me>
+ *  Copyright (c) 2013-2018 Jakub Jankiewicz <http://jcubic.pl/me>
  *
  *  Released under the MIT license
  *
  *  Date: {{DATE}}
  */
 /* global sysend, $, Directory, File, FormData, rpc, wcwidth, clearTimeout, setTimeout,
-          optparse, ImageCapture, URL
+          optparse, ImageCapture, URL, setInterval, clearInterval
  */
 function Uploader(leash) {
     this.token = leash.terminal.token();
@@ -245,7 +245,7 @@ var leash = (function() {
         };
     });
     var copyright = [
-        'Copyright (c) 2013-2017 Jakub Jankiewicz <http://jcubic.pl/me>',
+        'Copyright (c) 2013-2018 Jakub Jankiewicz <http://jcubic.pl/me>',
         '',
         'Licensed under MIT license'
     ].map(function(line) {
@@ -428,6 +428,9 @@ var leash = (function() {
     // :: UNIX COLOR PROMPT
     // -------------------------------------------------------------------------
     function unix_prompt(user, server, path) {
+        if (path) {
+            path = $.terminal.escape_brackets(path);
+        }
         var name = colors.green(user + '&#64;' + server);
         var end = colors.grey(user === 'root' ? '# ' : '$ ');
         return name + colors.grey(':') + colors.blue(path) + end;
@@ -544,6 +547,9 @@ var leash = (function() {
                     }
                     return item;
                 }).join(' | ') + ' |';
+            });
+            array = array.map(function(line) {
+                return line.replace(/&/g, '&amp;');
             });
             var sep = '+' + lengths.map(function(length) {
                 return new Array(length + 3).join('-');
@@ -749,7 +755,6 @@ var leash = (function() {
                             term.echo('[[b;#fff;]' + question.text + ']');
                         }
                         term.push(function(command) {
-                            term.pop();
                             if (question.mask) {
                                 term.set_mask(false);
                             }
@@ -762,10 +767,12 @@ var leash = (function() {
                                 }
                                 if (typeof value != 'undefined') {
                                     settings[question.name] = value;
+                                    term.pop();
                                     install(step+1, finish);
                                 }
                             } else {
                                 settings[question.name] = command;
+                                term.pop();
                                 install(step+1, finish);
                             }
                         }, {
@@ -1846,12 +1853,24 @@ var leash = (function() {
                 download: function(cmd, token, term) {
                     if (cmd.args.length == 1) {
                         var filename = leash.cwd + '/' + cmd.args[0];
-                        var iframe = $('<iframe/>').hide().appendTo('body');
-                        iframe.load(function() {
-                            iframe.remove();
+                        var iframe = $('<iframe/>').hide();
+                        var time = +new Date();
+                        var params = $.param({
+                            filename: filename,
+                            token: token,
+                            v: time // no cache
                         });
-                        var params = $.param({filename: filename, token: token});
+                        // this is not triggered on complete download but we don't care
+                        // since we only want to remove the iframe
+                        var id = setInterval(function() {
+                            if (iframe[0].contentDocument &&
+                                iframe[0].contentDocument.readyState == 'complete') {
+                                iframe.remove();
+                                clearInterval(id);
+                            }
+                        }, 500);
                         iframe.attr('src', 'lib/download.php?' + params);
+                        iframe.appendTo('body');
                     } else {
                         term.echo('usage: download {FILENAME}');
                     }

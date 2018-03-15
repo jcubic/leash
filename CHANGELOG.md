@@ -1,6 +1,12 @@
 <a name=""></a>
 #  (2018-01-23)
 
+
+
+
+<a name="0.17.1"></a>
+## 0.17.1 (2018-01-23)
+
 * Add plugins ([be534e2](https://github.com/jcubic/leash/commit/be534e2))
 * Add windows support ([2ac3f62](https://github.com/jcubic/leash/commit/2ac3f62))
 * better hash for no cache ([ac8cfc4](https://github.com/jcubic/leash/commit/ac8cfc4))
@@ -8,6 +14,7 @@
 * fix upload - errors handling and plugin path ([c3692f0](https://github.com/jcubic/leash/commit/c3692f0))
 * Fix warning in write log file + better clear of file in __write ([58594cd](https://github.com/jcubic/leash/commit/58594cd))
 * Typo in logger code ([7883ea5](https://github.com/jcubic/leash/commit/7883ea5))
+* update changelog ([a6451b2](https://github.com/jcubic/leash/commit/a6451b2))
 * update jquery terminal ([dcb3f77](https://github.com/jcubic/leash/commit/dcb3f77))
 * update jquery Terminal ([934750c](https://github.com/jcubic/leash/commit/934750c))
 * update jQuery terminal ([beb8216](https://github.com/jcubic/leash/commit/beb8216))
