@@ -1102,7 +1102,7 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
-        if (is_curl_enabled()) {
+        if (!is_curl_enabled()) {
             throw new Exception("You can't update because curl is disabled");
         }
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
@@ -1142,7 +1142,7 @@ class Service {
         if (!file_exists($fname)) {
             return null;
         }
-        if (is_curl_enabled()) {
+        if (!is_curl_enabled()) {
             return "Curl is disabled, you will not be able to use all the functions of Leash";
         }
         $url = 'https://raw.githubusercontent.com/jcubic/leash/master/version';
