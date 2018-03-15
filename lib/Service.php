@@ -89,7 +89,7 @@ function root() {
 }
 // ----------------------------------------------------------------------------
 function is_curl_enabled()  {
-    return false || function_exists('curl_version');
+    return function_exists('curl_version');
 }
 // ----------------------------------------------------------------------------
 // :: function that check if it's safe to use function on directory
