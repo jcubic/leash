@@ -1397,16 +1397,12 @@ class Service {
 
     // ------------------------------------------------------------------------
     public function unbuffer($token, $command) {
-        if (preg_match("/which unbuffer/", $command)) {
+        $shell_fn = $this->config->settings->shell;
+        $path = preg_replace("/\s$/", "", $this->$shell_fn($token, "command -v unbuffer"));
+        if (empty($path)) {
             return $command;
         } else {
-            $shell_fn = $this->config->settings->shell;
-            $path = preg_replace("/\s$/", "", $this->$shell_fn($token, "which unbuffer"));
-            if (empty($path)) {
-                return $command;
-            } else {
-                return $path . " " . $command;
-            }
+            return $path . " " . $command;
         }
     }
 
@@ -1547,7 +1543,7 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
-    private function exec($token, $code) {
+    public function exec($token, $code) {
         $result = array();
         exec($code, $result);
         return implode("\n", $result);
