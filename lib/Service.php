@@ -1319,10 +1319,16 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
-    private function sudo($username, $command) {
+    private function sudo_commnad($token) {
+        $shell_fn = $this->config->settings->shell;
+        return preg_replace("/\s+$/", "", $this->$shell_fn($token, "command -v sudo"));
+    }
+
+    // ------------------------------------------------------------------------
+    public function sudo($token, $username, $command) {
         if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
             $username != 'guest') {
-            return "/usr/bin/sudo -u '$username' $command";
+            return $this->sudo_commnad($token) . " -u '$username' $command";
         }
         return $command;
     }
@@ -1443,7 +1449,7 @@ class Service {
         $shell_fn = $this->config->settings->shell;
         $subshells = $this->get_subshells($command);
         if ($subshells == -1) {
-            return -1;
+            return false;
         }
         if (count($subshells)) {
             foreach($subshells as $subshell) {
@@ -1452,7 +1458,7 @@ class Service {
                 }
             }
         } else {
-            $re = "!^(sudo|" . $this->$shell_fn($token, "which sudo") . ")!";
+            $re = "!^(sudo|" . $this->sudo_commnad($token) . ")!";
             foreach ($this->split_command($command) as $part) {
                 if (preg_match($re, trim($part))) {
                     return true;
@@ -1511,7 +1517,7 @@ class Service {
         }
         $post = ";echo -n \"$marker\";pwd";
         $command = escapeshellarg($pre . $command . $post);
-        $command = $this->sudo($username, '/bin/bash -c ' . $command . ' 2>&1');
+        $command = $this->sudo($token, $username, '/bin/bash -c ' . $command . ' 2>&1');
         $command = $this->unbuffer($token, $command);
         $result = $this->$shell_fn($token, $command);
         if (preg_match("%>/dev/null & echo $!$%", $command)) {
