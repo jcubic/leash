@@ -441,10 +441,13 @@ var leash = (function() {
     function resume(term) {
         term.resume().find('.prompt').visible();
     }
-    function init(service, index, d) {
+    function init(service, index, d, options) {
         // -----------------------------------------------------------------
         // :: LEASH
         // -----------------------------------------------------------------
+        var settings = $.extend({}, {
+            onDirectoryChange: $.noop
+        }, options);
         var home;
         var config;
         var init_formatters = $.terminal.defaults.formatters;
@@ -868,6 +871,9 @@ var leash = (function() {
                                 }
                                 leash.settings = config = result;
                                 leash.cwd = config.home;
+                                leash.home = config.home;
+                                leash.server = config.server;
+                                settings.onDirectoryChange(leash.cwd);
                                 if (result.show_messages !== false) {
                                     var messages = result.messages || [];
                                     term.echo(messages.map(function(msg) {
@@ -905,9 +911,12 @@ var leash = (function() {
                 var deferr = $.Deferred();
                 command = expand_env_vars(command);
                 pause(term);
+                var options = {
+                    columns: term.cols()
+                };
                 if (command.match(re)) {
                     command = command.replace(re, '');
-                    service.shell(token, command, leash.cwd)(function(err, res) {
+                    service.shell(token, command, leash.cwd, options)(function(err, res) {
                         if (err) {
                             print_error(err);
                         } else {
@@ -918,7 +927,7 @@ var leash = (function() {
                         deferr.resolve();
                     });
                 } else {
-                    service.shell(token, command, leash.cwd)(function(err, res) {
+                    service.shell(token, command, leash.cwd, options)(function(err, res) {
                         if (err) {
                             print_error(err);
                             resume(term);
@@ -930,6 +939,9 @@ var leash = (function() {
                                         replace(/\]\]/g, '&#93;&#93;');
                                 term.echo(output);
                             }
+                            if (leash.cwd !== res.cwd) {
+                                settings.onDirectoryChange(res.cwd);
+                            }
                             leash.cwd = res.cwd;
                             leash.refresh_dir(function() {
                                 resume(term);
@@ -939,6 +951,13 @@ var leash = (function() {
                     });
                 }
                 return deferr.promise();
+            },
+            option: function(name, value) {
+                if (typeof value === 'undefined') {
+                    return settings[name];
+                } else {
+                    settings[name] = value;
+                }
             },
             wikipedia: function(text, title) {
                 function list(list) {
@@ -2568,6 +2587,7 @@ var leash = (function() {
                                     name: 'su_' + user,
                                     onExit: function() {
                                         leash.cwd = cwd.pop();
+                                        settings.onDirectoryChange(leash.cwd);
                                         interpreters.pop();
                                         leash.env.TOKEN = term.token(true);
                                         $(window).off('unload', unload);
@@ -2730,6 +2750,7 @@ var leash = (function() {
                 };
                 leash.onImport = function(view) {
                     leash.cwd = view.cwd;
+                    settings.onDirectoryChange(leash.cwd);
                     leash.dir = view.dir;
                     leash.terminal.set_prompt(leash.prompt);
                 };
@@ -2829,7 +2850,7 @@ var leash = (function() {
                     //console.log(arrow + ' ' + JSON.stringify(json));
                 }
             })(function(service) {
-                init(service, i, d);
+                init(service, i, d, options || {});
             });
         }
         return d.promise();

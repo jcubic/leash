@@ -1389,16 +1389,16 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
-    public function shell($token, $command, $path) {
+    public function shell($token, $command, $path, $options = null) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
         $user = $this->get_username($token);
         if ($user == 'guest') {
-            return $this->command($token, $this->validate_command($command), $path);
+            return $this->command($token, $this->validate_command($command), $path, $options);
         }
         $this->shell_method = true;
-        return $this->command($token, $command, $path);
+        return $this->command($token, $command, $path, $options);
     }
 
     // ------------------------------------------------------------------------
@@ -1469,7 +1469,7 @@ class Service {
     }
 
     // ------------------------------------------------------------------------
-    private function command($token, $command, $path) {
+    private function command($token, $command, $path, $options = null) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
@@ -1511,10 +1511,14 @@ class Service {
                    "alias set='php -f \"$cmd_path/cmd.php\" storage_set \"$token\"';";
         if ($shell_fn == 'exec' || $shell_fn == 'shell_exec' ||
             $shell_fn == 'system') {
-            $pre = ". .bashrc\nexport HOME='$home'\ncd '$path';$aliases\n";
+            $pre = ". .bashrc";
         } else {
-            $pre = ". ../.bashrc\nexport HOME='$home'\ncd '$path';$aliases\n";
+            $pre = ". ../.bashrc";
         }
+        if ($options && isset($options->columns)) {
+            $pre .= "\nexport COLUMNS=" . $options->columns;
+        }
+        $pre .= "\nexport HOME='$home'\ncd '$path';$aliases\n";
         $post = ";echo -n \"$marker\";pwd";
         $command = escapeshellarg($pre . $command . $post);
         $command = $this->sudo($token, $username, '/bin/bash -c ' . $command . ' 2>&1');
