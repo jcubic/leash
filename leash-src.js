@@ -832,7 +832,7 @@ var leash = (function() {
                     term.echo("Detect Shell");
                     service.list_shells(null)(function(err, shells) {
                         test_shells(shells, function() {
-                            service.configure(settings)(function(err) {
+                            service.configure(settings, '/')(function(err) {
                                 resume(term);
                                 if (err) {
                                     term.error(err.message);
