@@ -10,15 +10,15 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
 ini_set('display_errors', 'On');
 
 require('lib/Service.php');
-$service = new Service('config.json', getcwd());
+$leash = new Leash('config.json', getcwd());
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
     require_once('lib/json-rpc.php');
-    if ($service->debug()) {
+    if ($leash->debug()) {
         error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
         ini_set('display_errors', 'On');
     }
-    echo handle_json_rpc($service);
+    echo handle_json_rpc($leash);
     exit;
 }
 
@@ -64,14 +64,14 @@ function with_hash($url) {
     </div>
   </div>
   <div id="shell" style="display:none"></div>
-  <?php if ($service->debug()) { ?>
+  <?php if ($leash->debug()) { ?>
       <script src="lib/jquery-1.12.0.js"></script>
   <?php } else { ?>
       <script src="lib/jquery-1.12.0.min.js"></script>
   <?php } ?>
   <script src="<?= with_hash('lib/json-rpc.js') ?>"></script>
   <script src="<?= with_hash('lib/wcwidth.js') ?>"></script>
-  <?php if ($service->debug()) { ?>
+  <?php if ($leash->debug()) { ?>
     <script src="<?= with_hash('lib/jquery.terminal-src.js') ?>"></script>
   <?php } else { ?>
     <script src="<?= with_hash('lib/jquery.terminal.min.js') ?>"></script>
@@ -83,7 +83,7 @@ function with_hash($url) {
   <script src="<?= with_hash('lib/jquery.ba-hashchange.min.js') ?>"></script>
   <script src="<?= with_hash('lib/keyboardeventKeyPolyfill.js') ?>"></script>
   <script src="<?= with_hash('lib/sysend.js') ?>"></script>
-  <?php if ($service->debug()) { ?>
+  <?php if ($leash->debug()) { ?>
     <script src="<?= with_hash('leash-src.js') ?>"></script>
   <?php } else { ?>
     <script src="<?= with_hash('leash.min.js') ?>"></script>
