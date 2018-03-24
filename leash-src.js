@@ -567,11 +567,21 @@ var leash = (function() {
         // used on exit from wikipedia to deterimine if turn on convertLinks
         var wiki_stack = [];
         var dir_stack = [];
+        // -------------------------------------------------------------------------------
+        function shell(cmd, path) {
+            var term = leash.terminal;
+            var token = term.get_token();
+            var options = {
+                columns: term.cols()
+            };
+            return service.shell(token, cmd, leash.cwd, options);
+        }
+        // -------------------------------------------------------------------------------
         function less_command(cat) {
             return function(cmd, token, term) {
                 var shell_cmd = cat + ' ' + cmd.args[0];
                 pause(term);
-                service.shell(token, shell_cmd, leash.cwd)(function(err, ret) {
+                shell(shell_cmd, leash.cwd)(function(err, ret) {
                     if (err) {
                         print_error(err);
                     } else {
@@ -911,12 +921,9 @@ var leash = (function() {
                 var deferr = $.Deferred();
                 command = expand_env_vars(command);
                 pause(term);
-                var options = {
-                    columns: term.cols()
-                };
                 if (command.match(re)) {
                     command = command.replace(re, '');
-                    service.shell(token, command, leash.cwd, options)(function(err, res) {
+                    shell(command, leash.cwd)(function(err, res) {
                         if (err) {
                             print_error(err);
                         } else {
@@ -927,7 +934,7 @@ var leash = (function() {
                         deferr.resolve();
                     });
                 } else {
-                    service.shell(token, command, leash.cwd, options)(function(err, res) {
+                    shell(command, leash.cwd)(function(err, res) {
                         if (err) {
                             print_error(err);
                             resume(term);
@@ -1619,7 +1626,7 @@ var leash = (function() {
                 var re = new RegExp('^\\s*' + $.terminal.escape_regex(string));
                 var token = leash.token;
                 if (string.match(/^\$/)) {
-                    service.shell(token, 'env', '/')(function(err, result) {
+                    shell('env', '/')(function(err, result) {
                         callback(result.output.split('\n').map(function(pair) {
                             return '$' + pair.split(/=/)[0];
                         }));
@@ -2296,7 +2303,7 @@ var leash = (function() {
                     } else {
                         pause(term);
                         var command = 'MANWIDTH=' + term.cols() + ' ' + cmd.command;
-                        service.shell(token, command, '/')(function(err, ret) {
+                        shell(command, '/')(function(err, ret) {
                             leash.less($.terminal.overtyping(ret.output));
                             resume(term);
                         });
