@@ -142,7 +142,7 @@ class Leash {
         $full_path = $path . "/" . $this->config_file;
         $corrupted = false;
         $this->shell_method = false;
-        $this->plugins = $this->load_plugins("plugins");
+        $this->plugins = $this->load_plugins($path . "/plugins");
         $this->invoke_plugin_method("on_init");
         if (!isset($this->config)) {
             $this->config = new stdClass();
@@ -199,13 +199,13 @@ class Leash {
     // ------------------------------------------------------------------------
     // UTILS
     // ------------------------------------------------------------------------
-    private function get_user($username) {
+    protected function get_user($username) {
         $index = $this->get_user_index($username);
         return $index == -1 ? null : $this->config->users[$index];
     }
 
     // ------------------------------------------------------------------------
-    private function get_user_index($username) {
+    protected function get_user_index($username) {
         foreach($this->config->users as $i => $user) {
             if ($username == $user->username) {
                 return $i;
@@ -231,6 +231,9 @@ class Leash {
 
     // ------------------------------------------------------------------------
     private function load_plugins($directory) {
+        if (!is_dir($directory)) {
+            return array();
+        }
         $dir = $this->path . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR;
         $name_re = "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*";
         $fname_re = "/^($name_re)\.php$/";
@@ -263,7 +266,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function delete_session($token) {
+    protected function delete_session($token) {
         //need index to unset and indexes may not be sequential
         foreach (array_keys($this->config->sessions) as $i) {
             if ($token == $this->config->sessions[$i]->token) {
@@ -315,7 +318,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function __write($filename, $content) {
+    protected function __write($filename, $content) {
         if (file_exists($filename) && !is_writable($filename)) {
             return false;
         }
@@ -601,7 +604,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function get_home_dir($username) {
+    protected function get_home_dir($username) {
         $settings = (array)$this->config->settings;
         if ($username == 'root') {
             return $settings['home'];
@@ -647,7 +650,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function validate_root($token, $msg) {
+    protected function validate_root($token, $msg) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
@@ -657,12 +660,12 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function hash($password) {
+    protected function hash($password) {
         $hash = call_user_func(self::password_hash, $password);
         return self::password_hash . ':' . $hash;
     }
     // ------------------------------------------------------------------------
-    private function new_user($username, $password, $home) {
+    protected function new_user($username, $password, $home) {
         $this->config->users[] = new User($username, $this->hash($password), $home);
     }
 
@@ -858,7 +861,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function mysql_create_connection($host, $username, $password, $db) {
+    protected function mysql_create_connection($host, $username, $password, $db) {
         return $this->mysql_connection = new Database($host, $username, $password, $db);
     }
 
@@ -885,7 +888,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function mysql_connection_from_session($mysql) {
+    protected function mysql_connection_from_session($mysql) {
         return $this->mysql_create_connection($mysql->host,
                                               $mysql->user,
                                               $mysql->pass,
@@ -1131,7 +1134,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function version($version) {
+    protected function version($version) {
         return array_map(function($number) {
             return intval($number);
         }, explode('.', $version));
@@ -1233,7 +1236,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function curl($url) {
+    protected function curl($url) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -1320,7 +1323,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function sudo_commnad($token) {
+    protected function sudo_commnad($token) {
         $shell_fn = $this->config->settings->shell;
         return preg_replace("/\s+$/", "", $this->$shell_fn($token, "command -v sudo"));
     }
@@ -1470,7 +1473,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function command($token, $command, $path, $options = null) {
+    protected function command($token, $command, $path, $options = null) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
@@ -1549,7 +1552,7 @@ class Leash {
 
     // ------------------------------------------------------------------------
     // all functions need the same signature as cgi_python/cgi_perl
-    private function shell_exec($token, $code) {
+    protected function shell_exec($token, $code) {
         return shell_exec($code);
     }
 
@@ -1561,7 +1564,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function system($token, $code) {
+    protected function system($token, $code) {
         ob_start();
         system($code);
         $result = ob_get_contents();
@@ -1570,7 +1573,7 @@ class Leash {
     }
 
     // ------------------------------------------------------------------------
-    private function cgi_perl($token, $code) {
+    protected function cgi_perl($token, $code) {
         $url = root() . "cgi-bin/cmd.pl?" . $token;
         return $this->post($url, $code);
         $response = json_decode($this->post($url, $code));
