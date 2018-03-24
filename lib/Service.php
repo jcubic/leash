@@ -126,7 +126,7 @@ function h($str) {
 // ----------------------------------------------------------------------------
 require_once('json-rpc.php');
 
-class Service {
+class Leash {
     //protected $config_file;
     //protected $config;
     const password_hash = 'h'; // function use for password on installation
@@ -589,10 +589,8 @@ class Service {
         );
 
         // get external libraries
-        if (is_curl_enabled()) {
-            $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
-            $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
-        }
+        $this->get_repo(null, 'jcubic', 'jsvi-app', 'lib/apps/jsvi');
+        $this->get_repo(null, 'mtibben', 'html2text', 'lib/html2text');
 
         $this->new_user('root', $root_password, $settings['home']);
         $this->new_user($username, $password, $settings['home']);
@@ -1091,6 +1089,9 @@ class Service {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        if (!is_curl_enabled()) {
+            return false;
+        }
         $url = "https://github.com/$user/$repo/archive/master.zip";
         $dir = $repo . "-master";
         $desc = $this->path . "/" . $desc;
@@ -1347,7 +1348,7 @@ class Service {
     // ------------------------------------------------------------------------
     public function split_command($command) {
         $flags = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE;
-        return preg_split(Service::separators, $command, null, $flags);
+        return preg_split(Leash::separators, $command, null, $flags);
     }
 
     // ------------------------------------------------------------------------
@@ -1376,7 +1377,7 @@ class Service {
         foreach ($parts as $part) {
             if (preg_match('/>/', $part)) {
                 throw new Exception("guest user can't use redirect to write to files");
-            } else if (!preg_match($re, trim($part)) && !preg_match(Service::separators, $part)) {
+            } else if (!preg_match($re, trim($part)) && !preg_match(Leash::separators, $part)) {
                 $last = array_pop($commands);
                 $message = "guest user can only execute: " .
                          implode(", ", $commands) . " and " . $last;
