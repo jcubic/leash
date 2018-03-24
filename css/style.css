@@ -13,6 +13,7 @@ body {
 }
 .terminal {
   font-weight: bold;
+  height: 100% !important;
 }
 #micro {
   width: 100%;
