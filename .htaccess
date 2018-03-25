@@ -1,6 +1,6 @@
 RewriteEngine on
 
 
-RewriteRule ^/?config\.json$ - [F,L]
-RewriteRule ^/?tmp/.* - [F,L]
-RewriteRule ^/?debug.log - [F,L]
+RewriteRule config\.json$ - [F,L]
+RewriteRule tmp/.* - [F,L]
+RewriteRule debug.log - [F,L]
