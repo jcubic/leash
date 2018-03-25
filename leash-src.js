@@ -598,6 +598,10 @@ var leash = (function() {
             jargon: [],
             dirs: {},
             env: {},
+            change_directory: function(dir, callback) {
+                leash.cwd = dir;
+                leash.refresh_dir(callback);
+            },
             banner: function() {
                 var version = '';
                 // display version only if inside versioned file
