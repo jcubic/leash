@@ -591,6 +591,31 @@ var leash = (function() {
                 });
             };
         }
+        // -----------------------------------------------------------------------
+        // :: Replacemenet for jQuery deferred objects taken from jQuery Terminal
+        // -----------------------------------------------------------------------
+        function DelayQueue() {
+            var callbacks = $.Callbacks();
+            var resolved = false;
+            this.resolve = function() {
+                callbacks.fire();
+                resolved = true;
+            };
+            this.add = function(fn) {
+                if (resolved) {
+                    fn();
+                } else {
+                    callbacks.add(fn);
+                }
+            };
+        }
+        function ready(queue) {
+            return function(fun) {
+                queue.add(fun);
+            };
+        }
+        var init_queue = new DelayQueue();
+        var when_ready = ready(init_queue);
         var leash = {
             formatters: init_formatters,
             version: '{{VERSION}}',
@@ -599,9 +624,11 @@ var leash = (function() {
             dirs: {},
             env: {},
             change_directory: function(dir, callback) {
-                leash.cwd = dir;
-                settings.onDirectoryChange(leash.cwd);
-                leash.refresh_dir(callback);
+                when_ready(function() {
+                    leash.cwd = dir;
+                    settings.onDirectoryChange(leash.cwd);
+                    leash.refresh_dir(callback);
+                });
             },
             banner: function() {
                 var version = '';
@@ -888,6 +915,7 @@ var leash = (function() {
                                 leash.cwd = config.home;
                                 leash.home = config.home;
                                 leash.server = config.server;
+                                init_queue.resolve();
                                 settings.onDirectoryChange(leash.cwd);
                                 if (result.show_messages !== false) {
                                     var messages = result.messages || [];
