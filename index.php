@@ -22,17 +22,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     exit;
 }
 
-function hash36($str) {
-  $arr = unpack("C*", pack("L", crc32($str)));
-  return implode(array_map(function($number) {
-    return base_convert($number, 10, 36);
-  }, $arr));
-}
-
-function with_hash($url) {
-    return $url . "?v=" . hash36(file_get_contents($url));
-}
-
 ?><!DOCTYPE HTML>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>

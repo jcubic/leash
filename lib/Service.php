@@ -71,6 +71,17 @@ class Session {
     }
 }
 // ----------------------------------------------------------------------------
+function hash36($str) {
+  $arr = unpack("C*", pack("L", crc32($str)));
+  return implode(array_map(function($number) {
+    return base_convert($number, 10, 36);
+  }, $arr));
+}
+// ----------------------------------------------------------------------------
+function with_hash($url) {
+    return $url . "?v=" . hash36(file_get_contents($url));
+}
+// ----------------------------------------------------------------------------
 // :: Return root of the url (with http and no port number) to call another
 // :: script on the server using curl
 // ----------------------------------------------------------------------------
@@ -142,7 +153,7 @@ class Leash {
         $full_path = $path . "/" . $this->config_file;
         $corrupted = false;
         $this->shell_method = false;
-        $this->plugins = $this->load_plugins($path . "/plugins");
+        $this->plugins = $this->load_plugins($path . "/plugins/");
         $this->invoke_plugin_method("on_init");
         if (!isset($this->config)) {
             $this->config = new stdClass();
@@ -234,14 +245,13 @@ class Leash {
         if (!is_dir($directory)) {
             return array();
         }
-        $dir = $this->path . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR;
         $name_re = "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*";
         $fname_re = "/^($name_re)\.php$/";
         $plugins = array();
-        if ($dh = opendir($dir)) {
+        if ($dh = opendir($directory)) {
             while (($file = readdir($dh)) !== false) {
-                if (is_file($dir . $file) && preg_match($fname_re, $file, $m)) {
-                    require($dir . $file);
+                if (is_file($directory . $file) && preg_match($fname_re, $file, $m)) {
+                    require($directory . $file);
                     $plugin_name = $m[1];
                     if (class_exists($plugin_name)) {
                         try {
@@ -598,8 +608,11 @@ class Leash {
         $this->new_user('root', $root_password, $settings['home']);
         $this->new_user($username, $password, $settings['home']);
         $this->new_user('guest', 'guest', $settings['home']);
-        if (!file_exists('init.js')) {
-            copy('init.js.src', 'init.js');
+        if (!file_exists($this->path . $repo_path . 'init.js')) {
+            copy(
+                $this->path . $repo_path . 'init.js.src',
+                $this->path . $repo_path . 'init.js'
+            );
         }
     }
 
@@ -1097,7 +1110,6 @@ class Leash {
         }
         $url = "https://github.com/$user/$repo/archive/master.zip";
         $dir = $repo . "-master";
-        $desc = $this->path . "/" . $desc;
         return $this->unzip_url($token, $url, $dir, $desc);
     }
 
