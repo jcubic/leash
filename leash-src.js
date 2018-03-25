@@ -600,6 +600,7 @@ var leash = (function() {
             env: {},
             change_directory: function(dir, callback) {
                 leash.cwd = dir;
+                settings.onDirectoryChange(leash.cwd);
                 leash.refresh_dir(callback);
             },
             banner: function() {
