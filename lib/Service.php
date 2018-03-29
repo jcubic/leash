@@ -522,6 +522,9 @@ class Leash {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        if ($this->get_username($token) == 'guest') {
+            throw new Exception("Guest user can't write to files");
+        }
         $username = $this->get_username($token);
         if ($username == 'guest') {
             throw new Exception("guest users can't write files");
@@ -739,11 +742,9 @@ class Leash {
     // ------------------------------------------------------------------------
     // TODO: Use Shell to get the content of the directory
     public function dir($token, $path) {
-        /* shell method test for valid token
-           if (!$this->valid_token($token)) {
+        if (!$this->valid_token($token)) {
            throw new Exception("Access Denied: Invalid Token");
-           }
-         */
+        }
         // using shell since php can restric to read files from specific directories
         $EXEC = 'X';
         $DIR = 'D';
@@ -753,7 +754,6 @@ class Leash {
                "'$EXEC%p\\0' \\)  -o -type d -printf '$DIR%p\\0' -o \\( -type l -x".
                "type d -printf '$DIR%p\\0' \\) -o -not -type d -printf '$FILE%p\\0'";
         $result = $this->command($token, $cmd, $path);
-        //return $result;
         $files = array();
         $dirs = array();
         $execs = array();
