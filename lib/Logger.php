@@ -9,7 +9,7 @@
 
 class Logger {
     function __construct($path) {
-        $this->file = @is_writable($path) ? fopen($path, 'a+') : null;
+        $this->file = @is_writable(dirname($path)) ? fopen($path, 'a+') : null;
     }
     function log($str) {
         if ($this->file) {
