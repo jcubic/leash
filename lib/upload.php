@@ -14,7 +14,7 @@ require('Service.php');
 header('Content-type: application/json');
 
 $root = preg_replace("/\/[^\/]+\/?$/", "", getcwd());
-$service = new Service('config.json', $root);
+$service = new Leash('config.json', $root);
 
 if (isset($_POST['token']) && isset($_POST['path'])) {
     if ($service->valid_token($_POST['token'])) {

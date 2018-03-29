@@ -8,7 +8,7 @@
  */
 
 require('Service.php');
-$service = new Service('config.json', getcwd() . '/..');
+$service = new Leash('config.json', getcwd() . '/..');
 if ($service->valid_token($_GET['token']) && isset($_GET['filename']) && file_exists($_GET['filename'])) {
     $size = filesize($_GET['filename']);
     header('Content-Type: application/octet-stream');
