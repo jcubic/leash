@@ -1489,6 +1489,9 @@ class Leash {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        $locale = 'en_US.UTF-8';
+        setlocale(LC_ALL, $locale);
+        putenv('LC_ALL='.$locale);
         $username = $this->get_username($token);
         $shell_fn = $this->config->settings->shell;
         if (isset($this->config->settings->sudo) && $this->config->settings->sudo &&
@@ -1534,7 +1537,7 @@ class Leash {
         if ($options && isset($options->columns)) {
             $pre .= "\nexport COLUMNS=" . $options->columns;
         }
-        $pre .= "\nexport HOME='$home'\ncd '$path';$aliases\n";
+        $pre .= "; export LC_ALL=en_US.UTF-8; export HOME='$home';cd '$path'; $aliases\n";
         $post = ";echo -n \"$marker\";pwd";
         $command = escapeshellarg($pre . $command . $post);
         $command = $this->sudo($token, $username, '/bin/bash -c ' . $command . ' 2>&1');

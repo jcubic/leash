@@ -5,10 +5,14 @@
 #  Released under the MIT license
 #
 
-use strict;
 use warnings;
 use lib qw(.);
 use JSON qw( );
+use POSIX qw(locale_h);
+use locale;
+
+setlocale(LC_ALL, 'en_US.UTF-8');
+$ENV{'LC_ALL'} = 'en_US.UTF-8';
 
 sub valid_token {
     my $filename = '../config.json';
@@ -34,7 +38,7 @@ sub valid_token {
 print "Content-Type: text/plain\r\n\r\n";
 
 if ($ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}) {
-    if (valid_token($ENV{'QUERY_STRING'})) { 
+    if (valid_token($ENV{'QUERY_STRING'})) {
         system(join("", <STDIN>));
     } else {
         print "wrong token";
