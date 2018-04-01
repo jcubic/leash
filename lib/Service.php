@@ -595,7 +595,6 @@ class Leash {
 
         $this->config->settings['guest_commands'] = array(
             'echo',
-            'cat',
             'ls',
             'find',
             'cd',
@@ -1371,7 +1370,10 @@ class Leash {
         if (isset($this->config->settings->guest_commands)) {
             $commands = $this->config->settings->guest_commands;
         } else {
-            $commands = array('echo', 'cat', 'ls', 'find', 'cd', 'grep', 'test', 'xargs');
+            $commands = array('echo', 'ls', 'find', 'cd', 'grep', 'test', 'xargs');
+        }
+        if (empty($commands)) {
+            throw new Exception("guest user can't execute any commands");
         }
         $cmd_re = "(" . implode("|", array_diff($commands, array("xargs"))) . ")";
         if (in_array("xargs", $commands)) {
