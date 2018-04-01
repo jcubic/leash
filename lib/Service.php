@@ -498,6 +498,9 @@ class Leash {
         if (!file_exists($filename) || !is_readable($filename)) {
             return null;
         }
+        if (preg_match("/config.json$/", $filename) && $this->get_username($token) == "guest") {
+            throw new Exception("guest users can't read config file");
+        }
         return file_get_contents($filename);
     }
 
@@ -521,9 +524,6 @@ class Leash {
     public function write($token, $filename, $content) {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
-        }
-        if ($this->get_username($token) == 'guest') {
-            throw new Exception("Guest user can't write to files");
         }
         $username = $this->get_username($token);
         if ($username == 'guest') {
@@ -1010,6 +1010,9 @@ class Leash {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        if ($this->get_username($token) == "guest") {
+            throw new Exception("guest users not allowed to copy directory");
+        }
         $dir = opendir($src);
         if (!is_dir($dest)) {
             mkdir($dest);
@@ -1019,6 +1022,10 @@ class Leash {
                 if (is_dir($src . '/' . $file)) {
                     $this->copy_dir($token, $src . '/' . $file, $dest . '/' . $file);
                 } else {
+                    $this->logger->log($src . '/' . $file . ' -> ' . $dest . '/' . $file);
+                    if (file_exists($dest . '/' . $file)) {
+                        unlink($dest . '/' . $file);
+                    }
                     copy($src . '/' . $file, $dest . '/' . $file);
                 }
             }
@@ -1033,6 +1040,9 @@ class Leash {
         }
         if (!is_dir($dir)) {
             throw new Exception("$dir must be a directory");
+        }
+        if ($this->get_username($token) == "guest") {
+            throw new Exception("guest users not allowed to delete directory");
         }
         if (substr($dir, strlen($dir)-1, 1) != '/') {
             $dir .= '/';
@@ -1080,9 +1090,8 @@ class Leash {
         $ret = fwrite($file, $data);
         fclose($file);
         $zip = new ZipArchive();
-        $res = $zip->open($fname);
-        if ($res === true) {
-            $temp_dir = sys_get_temp_dir();
+        if ($zip->open($fname) === true) {
+            $temp_dir = $this->path . "/tmp";
             if (!$zip->extractTo($temp_dir)) {
                 throw new Exception("Have problem extracting files to '$temp_dir'");
             }
@@ -1104,12 +1113,23 @@ class Leash {
         if (!$this->valid_token($token)) {
             throw new Exception("Access Denied: Invalid Token");
         }
+        if ($this->get_username($token) == "guest") {
+            throw new Exception("guest users not allowed to delete directory");
+        }
         if (!is_curl_enabled()) {
             return false;
         }
-        $url = "https://github.com/$user/$repo/archive/master.zip";
+        $url = "https://github.com/$user/$repo/archive/master.zip?_=" . time();
         $dir = $repo . "-master";
         return $this->unzip_url($token, $url, $dir, $desc);
+    }
+
+    // ------------------------------------------------------------------------
+    public function version_need_udpdate($version, $master_version) {
+        return ($master_version[0] == $version[0] && $master_version[1] == $version[1] &&
+                $master_version[2] > $version[2]) ||
+               ($master_version[0] == $version[0] && $master_version[1] > $version[1]) ||
+               $master_version[0] > $version[0];
     }
 
     // ------------------------------------------------------------------------
@@ -1129,12 +1149,22 @@ class Leash {
             $fname = $page . '.zip';
             $master_version = $this->version($page);
             $version = $this->version(trim(file_get_contents('version')));
-            if (($master_version[0] == $version[0] && $master_version[1] == $version[1] &&
-                 $master_version[2] > $version[2]) ||
-                ($master_version[0] == $version[0] && $master_version[1] > $version[1]) ||
-                ($master_version[0] > $version[0])) {
+            if ($this->version_need_udpdate($version, $master_version)) {
                 $url = 'https://github.com/jcubic/leash/archive/' . $fname;
                 $this->unzip_url($token, $url, 'leash-' . $page, $this->path);
+                $directory = $this->path . "/update";
+                if ($dh = opendir($directory)) {
+                    while (($file = readdir($dh)) !== false) {
+                        if (preg_match("/.php$/", $file)) {
+                            $file_version = $this->version(preg_replace("/.php$/", "", $file));
+                            if ($this->version_need_udpdate($version, $file_version)) {
+                                require($directory . "/" . $file);
+                                $update_fn = "update_" . implode("_", $file_version);
+                                $update_fn($token, $this);
+                            }
+                        }
+                    }
+                }
                 return true;
             } else {
                 return false;
