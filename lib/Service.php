@@ -11,6 +11,9 @@ require('Database.php');
 require('Logger.php');
 
 class User {
+    public $username;
+    public $password;
+    public $home;
     function __construct($username, $password, $home) {
         $this->username = $username;
         $this->password = $password;
@@ -138,12 +141,16 @@ function h($str) {
 require_once('json-rpc.php');
 
 class Leash {
-    //protected $config_file;
-    //protected $config;
+    protected $config_file;
+    protected $config;
     const password_hash = 'h'; // function use for password on installation
     const password_regex = '/([A-Za-z_][A-Za-z0-9_]*):(.*)/';
     const separators = "/(?:\"[^\"\\\\]*(?:\\\\[\S\s][^\"\\\\]*)*\"|'[^'\\\\]*(?:\\\\[\S\s][^'\\\\]*)*')(*SKIP)(*F)|(\s+(?:&&|\|{1,2}|;)\s+)/";
     private $safe_to_save = false;
+    protected $logger;
+    protected $plugins;
+    protected $path;
+    private $shell_method;
 
     function __construct($config_file, $path) {
         $this->logger = new Logger($path . "/debug.log");
