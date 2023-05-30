@@ -26,9 +26,8 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>Leash</title>
+    <title>Leash Shell</title>
     <meta name="Description" content=""/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="shortcut icon" href="favicon.ico"/>
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -38,6 +37,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     <style>
      /* some styles before I move them to style.css */
     </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"/>
 </head>
 <body>
   <div id="splash">

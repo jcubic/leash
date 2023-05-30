@@ -5,6 +5,9 @@
  *  Released under the MIT license
  *
  */
+:root {
+   --size: 1.4;
+}
 body {
   margin: 0;
   padding: 0;
