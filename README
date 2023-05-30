@@ -1,7 +1,7 @@
    __   _______   ______ __
   / /  / __/ _ | / __/ // /
  / /__/ _// __ |_\ \/ _  /
-/____/___/_/ |_/___/_//_/ v. 0.19.0
+/____/___/_/ |_/___/_//_/ v. 0.20.0
 
 ----------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ one of the following:
 ----------------------------------------------------------------------------
 :: Requirements
 ----------------------------------------------------------------------------
-* PHP >=5.5 with .htaccess with modules curl, mbstring, json and zip
+* php >=5.5 with .htaccess with modules curl, mbstring, json and zip
 * to have full use of leash you will also need one of functions enabled:
   * exec
   * system
@@ -76,5 +76,5 @@ https://gitter.im/jcubic/leash
 :: License
 ----------------------------------------------------------------------------
 
-Copyright (C) 2013-2023 Jakub Jankiewicz
+Copyright (C) 2013-2018 Jakub Jankiewicz
 Released under the MIT license
