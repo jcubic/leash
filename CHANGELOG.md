@@ -1,3 +1,15 @@
+## 1.20.0 (2023-05-30)
+
+* add info about PHP requirement in README ([9279d19](https://github.com/jcubic/leash/commit/9279d19))
+* fix for chrome+android ([be0b7db](https://github.com/jcubic/leash/commit/be0b7db))
+* one more fix for PHP 8.2 ([70a72c8](https://github.com/jcubic/leash/commit/70a72c8))
+* support for PHP 8.2 ([17f7aea](https://github.com/jcubic/leash/commit/17f7aea))
+* update copyright ([0c8f131](https://github.com/jcubic/leash/commit/0c8f131))
+* update jquery and jquery terminal ([bd4a10c](https://github.com/jcubic/leash/commit/bd4a10c))
+* version 1.20.0 ([e123e25](https://github.com/jcubic/leash/commit/e123e25))
+
+
+
 ## 1.19.0 (2023-05-30)
 
 * add change_directory api method ([9296d07](https://github.com/jcubic/leash/commit/9296d07))
@@ -17,6 +29,7 @@
 * Slight rewording, and fix some typos ([6a94606](https://github.com/jcubic/leash/commit/6a94606))
 * update jQuery Terminal to version 1.14.0 ([e0eb6d4](https://github.com/jcubic/leash/commit/e0eb6d4))
 * use delay queue for calling API methods on init ([a96e675](https://github.com/jcubic/leash/commit/a96e675))
+* version 1.19.0 ([781b854](https://github.com/jcubic/leash/commit/781b854))
 
 
 
