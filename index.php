@@ -54,9 +54,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
   </div>
   <div id="shell" style="display:none"></div>
   <?php if ($leash->debug()) { ?>
-      <script src="lib/jquery-1.12.0.js"></script>
+      <script src="lib/jquery-3.7.0.js"></script>
   <?php } else { ?>
-      <script src="lib/jquery-1.12.0.min.js"></script>
+      <script src="lib/jquery-3.7.0.min.js"></script>
   <?php } ?>
   <script src="<?= with_hash('lib/json-rpc.js') ?>"></script>
   <script src="<?= with_hash('lib/wcwidth.js') ?>"></script>
