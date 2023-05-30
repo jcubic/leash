@@ -1,5 +1,26 @@
-<a name="0.18.0"></a>
-##  <small>0.18.0 (2018-03-15)</small>
+## 1.19.0 (2023-05-30)
+
+* add change_directory api method ([9296d07](https://github.com/jcubic/leash/commit/9296d07))
+* Add column option to shell (used with unbuffer) ([206c8f4](https://github.com/jcubic/leash/commit/206c8f4))
+* add hataccess to exec cgi files ([93ef6d4](https://github.com/jcubic/leash/commit/93ef6d4))
+* add path to install deps ([1f8b801](https://github.com/jcubic/leash/commit/1f8b801))
+* Call onDirectoryChange when change dir using API ([8be2a09](https://github.com/jcubic/leash/commit/8be2a09))
+* don't allow to view config.json and other files when called from other then root path ([6d4418c](https://github.com/jcubic/leash/commit/6d4418c))
+* fix logger, upload and download ([4be6ea6](https://github.com/jcubic/leash/commit/4be6ea6))
+* fix sudo ([f2dca56](https://github.com/jcubic/leash/commit/f2dca56))
+* Fix unbuffer ([7d4bd6a](https://github.com/jcubic/leash/commit/7d4bd6a))
+* leash and shell options (onDirectoryChange, columns) ([209c9d0](https://github.com/jcubic/leash/commit/209c9d0))
+* more hash functions to Service.php ([b49b8ec](https://github.com/jcubic/leash/commit/b49b8ec))
+* rename Service -> Leash + check if curl enabled in get_repo ([924eb66](https://github.com/jcubic/leash/commit/924eb66))
+* replace private methods to protected ([d208126](https://github.com/jcubic/leash/commit/d208126))
+* restrict dir and write by guest user ([0528936](https://github.com/jcubic/leash/commit/0528936))
+* Slight rewording, and fix some typos ([6a94606](https://github.com/jcubic/leash/commit/6a94606))
+* update jQuery Terminal to version 1.14.0 ([e0eb6d4](https://github.com/jcubic/leash/commit/e0eb6d4))
+* use delay queue for calling API methods on init ([a96e675](https://github.com/jcubic/leash/commit/a96e675))
+
+
+
+## 0.18.0 (2018-03-15)
 
 * disable cache for download + fix for brackets in prompt path ([a712562](https://github.com/jcubic/leash/commit/a712562))
 * Fix big files and disable cache for download ([fe28fe7](https://github.com/jcubic/leash/commit/fe28fe7))
@@ -16,10 +37,11 @@
 * Read file by chunks in download + bump up the year ([9d780d2](https://github.com/jcubic/leash/commit/9d780d2))
 * remove download iframe after init ([c2291ba](https://github.com/jcubic/leash/commit/c2291ba))
 * remove testing condition ([1281a3b](https://github.com/jcubic/leash/commit/1281a3b))
+* Update changelog ([0cdffe4](https://github.com/jcubic/leash/commit/0cdffe4))
+* version 1.18.0 ([c6f9209](https://github.com/jcubic/leash/commit/c6f9209))
 
 
 
-<a name="0.17.1"></a>
 ## <small>0.17.1 (2018-01-23)</small>
 
 * Add plugins ([be534e2](https://github.com/jcubic/leash/commit/be534e2))
@@ -42,14 +64,12 @@
 
 
 
-<a name="0.16.0"></a>
 ## 0.16.0 (2017-09-24)
 
 * grab command + hash for assets + update jQuery ([6ebcd33](https://github.com/jcubic/leash/commit/6ebcd33))
 
 
 
-<a name="0.15.3"></a>
 ## <small>0.15.3 (2017-08-17)</small>
 
 * Fix wrong json in config handling ([196fc50](https://github.com/jcubic/leash/commit/196fc50))
@@ -58,7 +78,6 @@
 
 
 
-<a name="0.15.2"></a>
 ## <small>0.15.2 (2017-07-29)</small>
 
 * Add .gitattributes file ([4d7e5a9](https://github.com/jcubic/leash/commit/4d7e5a9))
@@ -72,7 +91,6 @@
 
 
 
-<a name="0.15.0"></a>
 ## 0.15.0 (2017-06-22)
 
 * Add changelog ([5b36f46](https://github.com/jcubic/leash/commit/5b36f46))
@@ -108,7 +126,6 @@
 
 
 
-<a name="0.14.0"></a>
 ## 0.14.0 (2017-04-12)
 
 * Add sudo option to shell and /me to homepage ([96d3d17](https://github.com/jcubic/leash/commit/96d3d17))
@@ -117,7 +134,6 @@
 
 
 
-<a name="0.13.1"></a>
 ## <small>0.13.1 (2017-03-13)</small>
 
 * (c) 2017 ([1b82e03](https://github.com/jcubic/leash/commit/1b82e03))
@@ -138,14 +154,12 @@
 
 
 
-<a name="0.12.1"></a>
 ## <small>0.12.1 (2016-12-25)</small>
 
 * Fix ascii table ([49250ad](https://github.com/jcubic/leash/commit/49250ad))
 
 
 
-<a name="0.12.0"></a>
 ## 0.12.0 (2016-12-24)
 
 * call fill-paragraph on license text ([6cdc888](https://github.com/jcubic/leash/commit/6cdc888))
@@ -163,7 +177,6 @@
 
 
 
-<a name="0.10.0"></a>
 ## 0.10.0 (2016-08-23)
 
 * Add completion for variables ([72ec43d](https://github.com/jcubic/leash/commit/72ec43d))
@@ -190,7 +203,6 @@
 
 
 
-<a name="0.9.3"></a>
 ## <small>0.9.3 (2016-05-05)</small>
 
 * Fix typo, php error and update jQuery Terminal ([ac8bdcc](https://github.com/jcubic/leash/commit/ac8bdcc))
@@ -198,14 +210,12 @@
 
 
 
-<a name="0.9.2"></a>
 ## <small>0.9.2 (2016-05-02)</small>
 
 * Add official website template to wikipedia command ([906bdac](https://github.com/jcubic/leash/commit/906bdac))
 
 
 
-<a name="0.9.1"></a>
 ## <small>0.9.1 (2016-05-02)</small>
 
 * Add back exec permissions to executable ([90fe52c](https://github.com/jcubic/leash/commit/90fe52c))
@@ -216,7 +226,6 @@
 
 
 
-<a name="0.9.0"></a>
 ## 0.9.0 (2016-05-01)
 
 * Add system shell + fix error when stop animation on ajax error ([9285cbb](https://github.com/jcubic/leash/commit/9285cbb))
@@ -233,7 +242,6 @@
 
 
 
-<a name="0.8.1"></a>
 ## <small>0.8.1 (2016-03-25)</small>
 
 * Add rfc command + Fix ajax errors ([a3e1e0c](https://github.com/jcubic/leash/commit/a3e1e0c))
@@ -269,8 +277,8 @@
 * Update jQuery Terminal ([b35cd0b](https://github.com/jcubic/leash/commit/b35cd0b))
 * Update jQuery Terminal ([3a2e256](https://github.com/jcubic/leash/commit/3a2e256))
 * Update jQuery Terminal ([e9283c9](https://github.com/jcubic/leash/commit/e9283c9))
-* Update readme ([8bc6476](https://github.com/jcubic/leash/commit/8bc6476))
 * Update readme ([217c209](https://github.com/jcubic/leash/commit/217c209))
+* Update readme ([8bc6476](https://github.com/jcubic/leash/commit/8bc6476))
 * Update unix formatting ([187c5be](https://github.com/jcubic/leash/commit/187c5be))
 * Update version ([d6effed](https://github.com/jcubic/leash/commit/d6effed))
 * Update year in copyright note ([8f3a808](https://github.com/jcubic/leash/commit/8f3a808))
@@ -279,7 +287,6 @@
 
 
 
-<a name="0.7.9"></a>
 ## <small>0.7.9 (2016-01-23)</small>
 
 * Fix links in wikipedia command ([257423e](https://github.com/jcubic/leash/commit/257423e))
@@ -287,7 +294,6 @@
 
 
 
-<a name="0.7.8"></a>
 ## <small>0.7.8 (2016-01-23)</small>
 
 * Add wiki search + fix less mousewheel ([7864451](https://github.com/jcubic/leash/commit/7864451))
@@ -302,7 +308,6 @@
 
 
 
-<a name="0.7.7"></a>
 ## <small>0.7.7 (2016-01-21)</small>
 
 * Fix ascii table ([922fea2](https://github.com/jcubic/leash/commit/922fea2))
@@ -310,14 +315,12 @@
 
 
 
-<a name="0.7.6"></a>
 ## <small>0.7.6 (2016-01-18)</small>
 
 * Fix tables and handle partial templates in wikipedia ([8e74f49](https://github.com/jcubic/leash/commit/8e74f49))
 
 
 
-<a name="0.7.5"></a>
 ## <small>0.7.5 (2016-01-18)</small>
 
 * Add new line after main template in wikipedia article ([efc6842](https://github.com/jcubic/leash/commit/efc6842))
@@ -329,7 +332,6 @@
 
 
 
-<a name="0.7.4"></a>
 ## <small>0.7.4 (2016-01-17)</small>
 
 * Fix table header in wikipedia command ([c1cd0c2](https://github.com/jcubic/leash/commit/c1cd0c2))
@@ -342,7 +344,6 @@
 
 
 
-<a name="0.7.3"></a>
 ## <small>0.7.3 (2016-01-14)</small>
 
 * Fix no referrer ([a7e71e3](https://github.com/jcubic/leash/commit/a7e71e3))
@@ -354,7 +355,6 @@
 
 
 
-<a name="0.7.2"></a>
 ## <small>0.7.2 (2016-01-14)</small>
 
 * handle blockquote and images for wikipedia command ([04e82d5](https://github.com/jcubic/leash/commit/04e82d5))
@@ -362,7 +362,6 @@
 
 
 
-<a name="0.7.1"></a>
 ## <small>0.7.1 (2016-01-13)</small>
 
 * Fix single newline in wikipedia command ([8f5bad3](https://github.com/jcubic/leash/commit/8f5bad3))
@@ -370,7 +369,6 @@
 
 
 
-<a name="0.7.0"></a>
 ## 0.7.0 (2016-01-13)
 
 * Add passwd command ([ce02a7d](https://github.com/jcubic/leash/commit/ce02a7d))
@@ -400,10 +398,10 @@
 * improve read from stdin ([7c6356d](https://github.com/jcubic/leash/commit/7c6356d))
 * perl shell without cgi and json modules installed ([cde2fb0](https://github.com/jcubic/leash/commit/cde2fb0))
 * Prevent caching files while in debug mode + mobile viewport ([09962b0](https://github.com/jcubic/leash/commit/09962b0))
-* Refactor read from stdin ([bcfd69e](https://github.com/jcubic/leash/commit/bcfd69e))
 * Refactor read from stdin ([203c80f](https://github.com/jcubic/leash/commit/203c80f))
-* refactoring ([f5798a0](https://github.com/jcubic/leash/commit/f5798a0))
+* Refactor read from stdin ([bcfd69e](https://github.com/jcubic/leash/commit/bcfd69e))
 * refactoring ([b140037](https://github.com/jcubic/leash/commit/b140037))
+* refactoring ([f5798a0](https://github.com/jcubic/leash/commit/f5798a0))
 * Remove command replacement from jargon command ([a890e50](https://github.com/jcubic/leash/commit/a890e50))
 * remove newline at the end in jargon command ([605727d](https://github.com/jcubic/leash/commit/605727d))
 * Remove requestAnimationFrame polyfill ([9613eda](https://github.com/jcubic/leash/commit/9613eda))
@@ -415,15 +413,15 @@
 * update jQuery Terminal ([309dffc](https://github.com/jcubic/leash/commit/309dffc))
 * Update jQuery terminal ([e183327](https://github.com/jcubic/leash/commit/e183327))
 * Update jQuery terminal ([6893b9d](https://github.com/jcubic/leash/commit/6893b9d))
-* Update jQuery Terminal ([7c87adc](https://github.com/jcubic/leash/commit/7c87adc))
-* Update jQuery Terminal ([c815577](https://github.com/jcubic/leash/commit/c815577))
-* Update jQuery Terminal ([50a95c5](https://github.com/jcubic/leash/commit/50a95c5))
-* Update jQuery Terminal ([19a6b01](https://github.com/jcubic/leash/commit/19a6b01))
 * Update jQuery Terminal ([7c77587](https://github.com/jcubic/leash/commit/7c77587))
-* Update jQuery Terminal ([f47269e](https://github.com/jcubic/leash/commit/f47269e))
+* Update jQuery Terminal ([19a6b01](https://github.com/jcubic/leash/commit/19a6b01))
+* Update jQuery Terminal ([d3ebb01](https://github.com/jcubic/leash/commit/d3ebb01))
+* Update jQuery Terminal ([c815577](https://github.com/jcubic/leash/commit/c815577))
 * Update jQuery Terminal ([59030f4](https://github.com/jcubic/leash/commit/59030f4))
 * Update jQuery Terminal ([0511b00](https://github.com/jcubic/leash/commit/0511b00))
-* Update jQuery Terminal ([d3ebb01](https://github.com/jcubic/leash/commit/d3ebb01))
+* Update jQuery Terminal ([7c87adc](https://github.com/jcubic/leash/commit/7c87adc))
+* Update jQuery Terminal ([50a95c5](https://github.com/jcubic/leash/commit/50a95c5))
+* Update jQuery Terminal ([f47269e](https://github.com/jcubic/leash/commit/f47269e))
 * update Makefile and gitignore ([4b61ba0](https://github.com/jcubic/leash/commit/4b61ba0))
 * Update readme ([deeb947](https://github.com/jcubic/leash/commit/deeb947))
 * Update version ([c34047f](https://github.com/jcubic/leash/commit/c34047f))
@@ -435,7 +433,6 @@
 
 
 
-<a name="0.6.0"></a>
 ## 0.6.0 (2015-12-24)
 
 * Add perl shell + Fix python cgi ([319a6a5](https://github.com/jcubic/leash/commit/319a6a5))
@@ -451,7 +448,6 @@
 
 
 
-<a name="0.5.0"></a>
 ## 0.5.0 (2015-12-21)
 
 * Add init.js file for jsvi ([8b0f99f](https://github.com/jcubic/leash/commit/8b0f99f))
@@ -471,7 +467,6 @@
 
 
 
-<a name="0.4.0"></a>
 ## 0.4.0 (2015-12-19)
 
 * Add exec permission ([d4790a5](https://github.com/jcubic/leash/commit/d4790a5))
@@ -499,7 +494,6 @@
 
 
 
-<a name="0.3.0"></a>
 ## 0.3.0 (2015-08-25)
 
 * Add .htaccess and .bashrc ([4240db2](https://github.com/jcubic/leash/commit/4240db2))
@@ -543,8 +537,8 @@
 * pick shell and create username on install, use shell from install ([ec7a7f9](https://github.com/jcubic/leash/commit/ec7a7f9))
 * Proper token check in python rpc, move sessions to /tmp, execute shell if python command have args ([3e25837](https://github.com/jcubic/leash/commit/3e25837))
 * purge and reload commands, change hash function ([b3bf46a](https://github.com/jcubic/leash/commit/b3bf46a))
-* Rebrand ([b7ff67d](https://github.com/jcubic/leash/commit/b7ff67d))
 * Rebrand ([860e1bb](https://github.com/jcubic/leash/commit/860e1bb))
+* Rebrand ([b7ff67d](https://github.com/jcubic/leash/commit/b7ff67d))
 * Rebrand and few updates ([c96b3df](https://github.com/jcubic/leash/commit/c96b3df))
 * Refresh terminal after change of height ([4636bdc](https://github.com/jcubic/leash/commit/4636bdc))
 * Remove submodules ([621eb28](https://github.com/jcubic/leash/commit/621eb28))
@@ -567,8 +561,8 @@
 * Update terminal css file ([7415fac](https://github.com/jcubic/leash/commit/7415fac))
 * Update terminal lib ([4b60074](https://github.com/jcubic/leash/commit/4b60074))
 * Update terminal repo ([e8cb5d4](https://github.com/jcubic/leash/commit/e8cb5d4))
-* Update terminal submodule ([85f663e](https://github.com/jcubic/leash/commit/85f663e))
 * Update terminal submodule ([fd47cd8](https://github.com/jcubic/leash/commit/fd47cd8))
+* Update terminal submodule ([85f663e](https://github.com/jcubic/leash/commit/85f663e))
 * update use of terminal ([04694eb](https://github.com/jcubic/leash/commit/04694eb))
 * Update version ([496cc4d](https://github.com/jcubic/leash/commit/496cc4d))
 * use compgen for executables, empty string for mask password, fix bash set builtin ([6d0abe2](https://github.com/jcubic/leash/commit/6d0abe2))

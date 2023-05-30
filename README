@@ -1,12 +1,12 @@
    __   _______   ______ __
   / /  / __/ _ | / __/ // /
  / /__/ _// __ |_\ \/ _  /
-/____/___/_/ |_/___/_//_/ v. 0.18.0
+/____/___/_/ |_/___/_//_/ v. 0.19.0
 
 ----------------------------------------------------------------------------
 
-This is a web application that will give you access to the shell, without
-needing root privileges, ssh or telnet. You only need php-based hosting with 
+This is web application that will give you access to the shell, you will not
+need root priviliges, ssh or telnet only php based hosting. You only need
 one of the following:
 
 * php exec function enabled
@@ -35,7 +35,7 @@ one of the following:
   and clone to lib/apps directory
 * tab completion
 * File Drag & Drop upload (using HTML5) you can upload files that are bigger
-  than the php limit
+  then the php limit
 * wikipedia command that display wikipedia articles
 * rfc command where you can read RFC documents
 * record command where you can save commands in hash and rerun them when you
@@ -45,8 +45,8 @@ one of the following:
 * guest and sudo options:
   * guest, if set, will have limited access to shell, list of commands are
     configurable from config.json
-  * sudo option, if set, will allow to execute commands as real unix user.
-    To create new user, you will need to use linux command line (adduser command
+  * sudo option, if set, will allow to execute commands are real unix user
+    to create new user you will need to use linux command line (adduser command
     from real terminal) and you will need to have leash user with the same name,
     (to add user from leash you need to be root and execute adduser command)
     and have sudo access without password for apache user
@@ -62,7 +62,7 @@ one of the following:
   * or cgi (perl or python in cgi-bin directory)
 * if you want to have mysql or sqlite commands you need to install those databases
   and appropriate php modules
-* you may also want to have program unbuffer installed (in ubuntu it's provied
+* you may also want to have programm unbuffer installed (in ubuntu it's provied
   by package expect - actually it's expect script), it will make not interactive
   shell act like real terminal (tty)
 
