@@ -8,6 +8,7 @@
  */
 
 class Logger {
+    private $file;
     function __construct($path) {
         $this->file = @is_writable(dirname($path)) ? fopen($path, 'a+') : null;
     }
